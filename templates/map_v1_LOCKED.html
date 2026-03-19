@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VT Property Tool</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+    <style>
+        body { margin:0; font-family: Arial; }
+
+        #container { display:flex; height:100vh; }
+
+        #sidebar {
+            width:300px;
+            border-right:1px solid #ccc;
+            padding:10px;
+        }
+
+        #map {
+            flex:1;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="container">
+    <div id="sidebar">
+        <h3>VT Property Tool</h3>
+        <p>Search tools coming next…</p>
+    </div>
+
+    <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+
+// ================= MAP =================
+let map = L.map('map').setView([44,-72.7],8);
+
+// BASEMAPS
+let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+let light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
+let satellite = L.tileLayer(
+'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+);
+
+street.addTo(map);
+
+let activeBase = "street";
+
+map.on("baselayerchange", function(e){
+    activeBase = e.name.toLowerCase();
+    loadData();
+});
+
+L.control.layers({
+    "Street": street,
+    "Light Satellite": light,
+    "Satellite": satellite
+}).addTo(map);
+
+
+// ================= STATE =================
+let markersLayer = L.layerGroup().addTo(map);
+let selectedSales = {};
+let markerRefs = {};
+let popupTimer = null;
+
+
+// ================= LOAD DATA =================
+function loadData(){
+
+    let b = map.getBounds();
+
+    let url = `/data?xmin=${b.getWest()}&ymin=${b.getSouth()}&xmax=${b.getEast()}&ymax=${b.getNorth()}`;
+
+    fetch(url)
+    .then(r=>r.json())
+    .then(data=>{
+
+        markersLayer.clearLayers();
+        markerRefs = {};
+
+        let grouped = {};
+
+        data.data.forEach(p=>{
+            let key = p.address + "_" + p.city;
+            if(!grouped[key]) grouped[key] = [];
+            grouped[key].push(p);
+        });
+
+        Object.keys(grouped).forEach(key=>{
+
+            let sales = grouped[key];
+            let p = sales[0];
+
+            let lat = p.lat + 0.00005;
+            let lon = p.lon + 0.00005;
+
+            let baseColor = (activeBase === "satellite") ? "red" : "black";
+            let isSelected = sales.some(s => selectedSales[s.id]);
+
+            let marker = L.circleMarker([lat,lon],{
+                radius:5,
+                color: isSelected ? "blue" : baseColor,
+                fillColor: isSelected ? "blue" : baseColor,
+                fillOpacity: isSelected ? 1 : 0,
+                weight:2
+            });
+
+            sales.forEach(s=>{
+                markerRefs[s.id] = { marker: marker, sales: sales, prop: p };
+            });
+
+            let html = buildPopupHTML(p, sales);
+
+            marker.bindPopup(html);
+
+            markersLayer.addLayer(marker);
+        });
+    });
+}
+
+
+// ================= BUILD POPUP =================
+function buildPopupHTML(p, sales){
+
+    let html = `<b>${p.address}</b><br>${p.city}<br><br>`;
+    html += `<b>Select for Download:</b><br>`;
+
+    sales.forEach(s=>{
+        let checked = selectedSales[s.id] ? "checked" : "";
+
+        html += `
+        <input type="checkbox" ${checked}
+        onclick="event.stopPropagation(); toggleSale('${s.id}')">
+        Sale: $${s.price} | ${formatDate(s.date)}<br>
+        `;
+    });
+
+    return html;
+}
+
+
+// ================= DATE =================
+function formatDate(ms){
+    if(!ms) return "";
+    let d = new Date(ms);
+    return (d.getMonth()+1)+"/"+d.getDate()+"/"+d.getFullYear();
+}
+
+
+// ================= SELECT (FIXED) =================
+function toggleSale(id){
+
+    if(selectedSales[id]){
+        delete selectedSales[id];
+    } else {
+        selectedSales[id] = true;
+    }
+
+    let ref = markerRefs[id];
+
+    if(ref){
+        let marker = ref.marker;
+
+        // update marker color
+        marker.setStyle({
+            color:"blue",
+            fillColor:"blue",
+            fillOpacity:1
+        });
+
+        // 🔥 REBUILD POPUP IMMEDIATELY (FIX)
+        let newHTML = buildPopupHTML(ref.prop, ref.sales);
+
+        marker.setPopupContent(newHTML);
+        marker.openPopup();
+    }
+}
+
+
+// ================= POPUP TIMER =================
+map.on('popupopen', function(){
+
+    if(popupTimer){
+        clearTimeout(popupTimer);
+    }
+
+    popupTimer = setTimeout(()=>{
+        map.closePopup();
+    }, 8000);
+
+});
+
+
+// ================= EVENTS =================
+map.on("moveend", loadData);
+
+
+// ================= INIT =================
+loadData();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VT Property Transfer Tool</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+    <style>
+        body { margin:0; display:flex; height:100vh; font-family:Arial; }
+        #sidebar { width:300px; padding:10px; background:#f5f5f5; }
+        #map { flex:1; }
+
+        .export-btn {
+            margin-bottom:10px;
+            padding:8px;
+            background:black;
+            color:white;
+            cursor:pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="sidebar">
+    <div class="export-btn" onclick="exportSelected()">Export Selected</div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+
+// ================= MAP =================
+let map = L.map('map', {
+    closePopupOnClick: false
+}).setView([44.0, -72.7], 8);
+
+let currentLayer = "street";
+
+// ================= BASEMAPS =================
+
+// STREET
+let street = L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    { subdomains: 'abcd', maxZoom: 19 }
+).addTo(map);
+
+// SATELLITE (imagery only)
+let satellite = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19 }
+);
+
+// 🔥 LIGHT SATELLITE (HOUSE NUMBERS + FOOTPRINT STYLE)
+let lightSat = L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+        maxZoom: 19
+    }
+);
+
+L.control.layers({
+    "Street": street,
+    "Light Satellite": lightSat,
+    "Satellite": satellite
+}).addTo(map);
+
+map.on("baselayerchange", function(e){
+    currentLayer = (e.name === "Street") ? "street" : "satellite";
+    updateAllMarkers();
+});
+
+// ================= DATA =================
+
+let selectedSales = {};
+let markers = [];
+
+function loadData() {
+
+    let bounds = map.getBounds();
+
+    let url = `/data?xmin=${bounds.getWest()}&ymin=${bounds.getSouth()}&xmax=${bounds.getEast()}&ymax=${bounds.getNorth()}`;
+
+    fetch(url)
+    .then(r => r.json())
+    .then(res => {
+
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+
+        let grouped = {};
+
+        res.data.forEach(r => {
+            let key = (r.address || "") + "_" + (r.city || "");
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(r);
+        });
+
+        Object.values(grouped).forEach(group => {
+
+            let r = group[0];
+            if (!r.lat || !r.lon) return;
+
+            let isSelected = group.some(s => selectedSales[s.id]);
+
+            let marker = L.circleMarker([r.lat, r.lon], {
+                radius: 3,
+                color: getColor(group),
+                weight: 2,
+                fillOpacity: isSelected ? 1 : 0   // 🔥 SOLID IF SELECTED
+            }).addTo(map);
+
+            marker.group = group;
+
+            let html = "<b>" + (r.address || "") + "</b><br>";
+            html += (r.city || "") + "<br><br>";
+            html += "<b>Select for Download:</b><br>";
+
+            group.forEach(sale => {
+
+                let id = sale.id;
+                let checked = selectedSales[id] ? "checked" : "";
+                let recordStr = JSON.stringify(sale).replace(/'/g, "&apos;");
+
+                html += "<input type='checkbox' " + checked +
+                        " data-record='" + recordStr + "'" +
+                        " onclick='event.stopPropagation();' " +
+                        " onchange='toggleSale(\"" + id + "\", JSON.parse(this.dataset.record))'> ";
+
+                html += "Sale: $" + (sale.price || 0) + " | " + sale.date + "<br>";
+            });
+
+            marker.bindPopup(html, {
+                autoClose: false,
+                closeOnClick: false
+            });
+
+            // Popup auto-close (5 sec)
+            marker.on("popupopen", function(e){
+                setTimeout(function(){
+                    map.closePopup(e.popup);
+                }, 5000);
+            });
+
+            markers.push(marker);
+        });
+    });
+}
+
+// ================= COLORS =================
+
+function getColor(group) {
+
+    let isSelected = group.some(s => selectedSales[s.id]);
+
+    if (isSelected) return "blue";
+
+    return (currentLayer === "street") ? "black" : "red";
+}
+
+function updateAllMarkers() {
+    markers.forEach(marker => {
+
+        let isSelected = marker.group.some(s => selectedSales[s.id]);
+
+        marker.setStyle({
+            color: getColor(marker.group),
+            fillOpacity: isSelected ? 1 : 0   // 🔥 UPDATE FILL STATE
+        });
+    });
+}
+
+// ================= SELECTION =================
+
+function toggleSale(id, record) {
+
+    if (selectedSales[id]) {
+        delete selectedSales[id];
+    } else {
+        selectedSales[id] = record;
+    }
+
+    updateAllMarkers();
+}
+
+// ================= LOAD =================
+
+map.on("moveend", loadData);
+loadData();
+
+// ================= EXPORT =================
+
+function exportSelected() {
+
+    let data = Object.values(selectedSales);
+
+    if (data.length === 0) {
+        alert("No sales selected");
+        return;
+    }
+
+    fetch("/export", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({data: data})
+    })
+    .then(res => res.blob())
+    .then(blob => {
+
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement("a");
+        a.href = url;
+        a.download = "selected_sales.xlsx";
+        a.click();
+    });
+}
+
+</script>
+
+</body>
+</html>
