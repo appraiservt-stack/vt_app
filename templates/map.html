@@ -2117,6 +2117,21 @@ function shapeCenter(s){
   return L.latLng(lat, lng);
 }
 
+// Returns a point just outside the top edge of the shape's bounding box.
+// Used to place the Area label so it doesn't cover interior dots.
+function shapeTopEdge(s){
+  if(s.type === 'circle'){
+    const c = s.layer.getLatLng();
+    const r = s.layer.getRadius(); // metres
+    // Approx: 1 degree lat ≈ 111320 m
+    return L.latLng(c.lat + r / 111320, c.lng);
+  }
+  const pts = s.layer.getLatLngs()[0];
+  const maxLat = pts.reduce((a,p) => Math.max(a, p.lat), -Infinity);
+  const avgLng = pts.reduce((a,p) => a + p.lng, 0) / pts.length;
+  return L.latLng(maxLat, avgLng);
+}
+
 function makeLabelMarker(s){
   // iconSize:[0,0] + iconAnchor:[0,0] prevents Leaflet from adding any
   // background dot or default marker styles. className must be non-empty
@@ -2130,7 +2145,7 @@ function makeLabelMarker(s){
       padding:4px 10px; border-radius:12px; white-space:nowrap;
       box-shadow:0 2px 6px rgba(0,0,0,0.45);
       display:inline-flex; align-items:center; gap:8px;
-      transform:translate(-50%,-50%);">
+      transform:translate(-50%,-100%) translateY(-4px);">
       <span style="pointer-events:none;">Area ${s.displayNum}</span>
       <span id="shape-del-${s.id}"
         style="cursor:pointer; font-size:17px; line-height:1; opacity:0.85;
@@ -2138,7 +2153,8 @@ function makeLabelMarker(s){
         onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.85">&times;</span>
     </div>`
   });
-  const m = L.marker(shapeCenter(s), { icon, interactive: true, zIndexOffset: 1500 }).addTo(map);
+  // Place label at top edge of shape so it doesn't cover interior dots
+  const m = L.marker(shapeTopEdge(s), { icon, interactive: true, zIndexOffset: 1500 }).addTo(map);
   // Attach click after DOM insertion via a short delay
   setTimeout(() => {
     const del = document.getElementById(`shape-del-${s.id}`);
@@ -2557,13 +2573,15 @@ function downloadExport(selectedOnly){
   const params = buildFilterParams();
   params.set('format', fmt);
 
-  // Build groups: [{label, ids, stats}, ...]
-  // Each visible markerRef is assigned to the FIRST shape containing it
-  const groups = drawnShapes.map(s => ({
-    label: `Area ${s.displayNum}`,
-    ids:   [],
-    stats: computeShapeStats(s.id)
-  }));
+  // Build groups: [{label, ids, stats}, ...] sorted by displayNum so
+  // the spreadsheet tabs and rows appear in Area 1, Area 2, Area 3 order.
+  const groups = [...drawnShapes]
+    .sort((a, b) => a.displayNum - b.displayNum)
+    .map(s => ({
+      label: `Area ${s.displayNum}`,
+      ids:   [],
+      stats: computeShapeStats(s.id)
+    }));
 
   Object.keys(markerRefs).forEach(id => {
     const ref  = markerRefs[id];
