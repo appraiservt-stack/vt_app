@@ -2,342 +2,3273 @@
 <html>
 <head>
     <title>VT Property Transfer Tool</title>
-
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
     <style>
-        body { margin:0; font-family: Arial; }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family: Arial, sans-serif; font-size:13px; }
         #container { display:flex; height:100vh; }
-        #sidebar { width:300px; border-right:1px solid #ccc; padding:10px; overflow:auto; }
+
+        /* ---- SIDEBAR ---- */
+        #sidebar {
+            width:320px;
+            border-right:1px solid #ccc;
+            padding:8px;
+            overflow-y:auto;
+            background:#fafafa;
+            display:flex;
+            flex-direction:column;
+            gap:4px;
+        }
+        #sidebar h3 { margin:4px 0 6px 0; font-size:14px; }
+
+        /* ---- MAP ---- */
         #map { flex:1; }
 
+        /* ---- DROPDOWN BOXES ---- */
         .dropdown-box {
-            border:1px solid #ccc;
-            padding:6px;
+            border:1px solid #aaa;
+            padding:5px 8px;
             cursor:pointer;
-            background:#f5f5f5;
-            margin-bottom:5px;
+            background:#e8edf2;
+            border-radius:3px;
+            font-weight:bold;
+            font-size:12px;
+            user-select:none;
         }
+        .dropdown-box:hover { background:#d0dae5; }
 
         .dropdown-content {
             display:none;
             border:1px solid #ccc;
-            padding:5px;
-            max-height:250px;
-            overflow:auto;
+            padding:6px;
             background:white;
+            border-radius:3px;
+            margin-bottom:2px;
+        }
+
+        /* ---- COUNTY / TOWN ---- */
+        .county-row { border-bottom:1px solid #eee; padding:3px 0; }
+        .county-header { display:flex; align-items:center; justify-content:space-between; }
+        .county-name { flex:1; }
+        .town-flyout { margin-top:3px; margin-left:10px; border-left:2px solid #ddd; padding-left:6px; display:none; }
+
+        /* ---- FILTER SECTIONS ---- */
+        .filter-row { display:flex; align-items:center; gap:4px; margin-bottom:4px; }
+        .filter-row label { min-width:60px; font-size:11px; color:#555; }
+        .filter-row input[type=text],
+        .filter-row input[type=number],
+        .filter-row input[type=date] {
+            flex:1; padding:3px 4px; border:1px solid #ccc; border-radius:2px; font-size:12px;
+        }
+        .filter-label { font-size:11px; font-weight:bold; color:#333; margin:4px 0 2px 0; }
+
+        .checkbox-scroll {
+            max-height:130px;
+            overflow-y:auto;
+            border:1px solid #ddd;
+            padding:4px;
+            border-radius:2px;
+            background:#fff;
+        }
+        .checkbox-scroll label { display:block; font-size:11px; padding:1px 0; }
+
+        .quick-date-row { display:flex; gap:3px; flex-wrap:wrap; margin-bottom:4px; }
+        .quick-date-row button {
+            font-size:10px; padding:2px 5px; cursor:pointer;
+            border:1px solid #aaa; border-radius:2px; background:#f0f0f0;
+        }
+        .quick-date-row button:hover { background:#ddd; }
+
+        /* ---- BUTTONS ---- */
+        button.small {
+            font-size:11px; padding:2px 6px; margin-left:2px;
+            border:1px solid #aaa; border-radius:2px; background:#f0f0f0; cursor:pointer;
+        }
+        button.small:hover { background:#ddd; }
+
+        #applyBtn {
+            width:100%; padding:6px; background:#1F4E79; color:white;
+            border:none; border-radius:3px; font-size:13px; font-weight:bold;
+            cursor:pointer; margin-top:6px;
+        }
+        #applyBtn:hover { background:#163a5a; }
+
+        .download-row {
+            display:flex; gap:4px; margin-top:4px;
+        }
+        .download-row button {
+            flex:1; padding:5px 4px; font-size:11px; font-weight:bold;
+            border:none; border-radius:3px; cursor:pointer;
+        }
+        #dlAllBtn    { background:#2e7d32; color:white; }
+        #dlAllBtn:hover { background:#1b5e20; }
+        #dlSelBtn    { background:#1565c0; color:white; }
+        #dlSelBtn:hover { background:#0d47a1; }
+
+        .format-row {
+            display:flex; align-items:center; gap:6px; font-size:11px; margin-top:3px;
+        }
+
+        /* ---- STATUS BAR ---- */
+        #statusBar {
+            font-size:11px; color:#555; padding:2px 0; min-height:16px;
+        }
+
+        /* ---- SECTION TITLE ---- */
+        .section-title { font-weight:bold; margin:4px 0 3px 0; font-size:12px; }
+
+        /* ---- POPUP SCROLL FIX ---- */
+        /* Allow the inner scroll div to receive wheel events without
+           triggering map zoom or closing the popup */
+        .leaflet-popup-content {
+            overflow: visible;
+        }
+        .leaflet-popup-content div[style*="overflow-y"] {
+            pointer-events: auto;
+        }
+
+        /* ---- BOUNDARY LABEL (no default Leaflet bg) ---- */
+        .bdy-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* ---- SHAPE LABEL ICON (no Leaflet default dot) ---- */
+        .shape-label-icon {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* ---- STATS PANEL (tethered tail) ---- */
+        .stats-panel-wrap {
+            position: absolute;
+            z-index: 1200;
+            pointer-events: none;
+        }
+        .stats-panel-wrap svg.stats-tail {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: visible;
+            pointer-events: none;
+        }
+        .stats-panel-box {
+            position: absolute;
+            background: white;
+            border: 2px solid #7B00D4;
+            border-radius: 6px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            min-width: 190px;
+            font-family: Arial, sans-serif;
+            user-select: none;
+            pointer-events: auto;
+            cursor: default;
         }
     </style>
 </head>
-
 <body>
 
 <div id="container">
 
-    <div id="sidebar">
-        <h3>Filters</h3>
-
-        <div class="dropdown-box" onclick="toggleCountyDropdown()">
-            Select Counties
-        </div>
-
-        <div id="countyDropdown" class="dropdown-content">
-            <label>
-                <input type="checkbox" onclick="selectAllCounties(this)">
-                Entire State
-            </label><br><br>
-
-            <div id="countyList"></div>
-
-            <br>
-            <button onclick="finishCountySelection()">Finished</button>
-        </div>
-
+  <!-- ==================== SIDEBAR ==================== -->
+  <div id="sidebar">
+    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+      <h3 style="margin:0;">VT Property Transfer Tool</h3>
+      <button id="searchTipsBtn" onclick="toggleSearchTips(event)"
+        style="padding:3px 8px; font-size:11px; font-weight:bold; background:#add8e6; color:#1a3a5c;
+               border:1px solid #7ab8d4; border-radius:3px; cursor:pointer; white-space:nowrap;">
+        Search Tips
+      </button>
+    </div>
+    <!-- Search Tips popup -->
+    <div id="searchTipsPopup" style="display:none; position:absolute; left:330px; top:8px;
+         width:340px; background:white; border:1px solid #aaa; border-radius:5px;
+         box-shadow:2px 4px 12px rgba(0,0,0,0.25); padding:10px 12px; z-index:9999;
+         font-size:11px; line-height:1.6; max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <b style="font-size:12px;">Search Tips</b>
+        <span onclick="document.getElementById('searchTipsPopup').style.display='none'"
+          style="cursor:pointer; font-size:14px; color:#666;">&times;</span>
+      </div>
+      <ol style="margin:0; padding-left:16px;">
+        <li>The sales database starts on January 1, 2019 through present date. On startup transfers are loaded into the map window.</li>
+        <li>The map displays up to 2,000 records. As the map is zoomed in more records populate in the window area.</li>
+        <li>If the user hovers over a property a popup window will show the sale history.</li>
+        <li>The user can select whichever search criteria they desire by selecting or unselecting checkboxes.</li>
+        <li>The default setting includes $0 sales, such as family transfers, corrective deeds, etc. Setting $1 in the Sale Price eliminates them.</li>
+        <li>The user can download all filtered sales or sales selected from the map selections using the two download buttons.</li>
+        <li>Clicking on a search heading opens the search box. Clicking it again closes the search box.</li>
+        <li>Filtering by County(s) and/or Town(s) is recommended to be enabled before other refinement filters are set.</li>
+        <li>Immediately above the Location heading the display shows X sales at X properties. The second number is how many sales are in the current window. If the first number is more than the second number this indicates some of the properties have more than one transaction during the date range. This will identify sale/resale properties.</li>
+        <li>The default startup for the map loads all sales and checks all possible property selection options.</li>
+        <li>As selection options are enabled or disabled the Apply Filters button can be clicked at any time to update the search criteria.</li>
+        <li style="background:#fffde7; border-left:3px solid #f9a825; margin-top:6px; padding:4px 6px; list-style-position:inside;">
+          <b>NEIGHBORHOOD COMPARISON:</b> The polygon, circle, or box can be used to highlight different neighborhoods on the same map at the same time. The map will calculate the High, Low, Average, Median, and count of sales in each selection. $0 are not included in the calculations. Filtering applies to the entire map, not individual polygons, boxes, or circles. If you select Single Family Homes, for example, all highlighted areas will contain only Single Family Homes.
+        </li>
+      </ol>
     </div>
 
-    <div id="map"></div>
+    <!-- STATUS -->
+    <div id="statusBar">Loading...</div>
 
-</div>
+    <!-- ===== LOCATION (COUNTIES & TOWNS) ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('locationDropdown')">
+      &#9660; Location (Counties &amp; Towns)
+    </div>
+    <div id="locationDropdown" class="dropdown-content" onclick="event.stopPropagation()">
+      <div class="section-title">Counties &amp; Towns</div>
+      <div style="margin-bottom:5px;">
+        <button class="small" onclick="selectAllCountiesGlobal()">All Counties</button>
+        <button class="small" onclick="clearAllCounties()">Clear Counties</button>
+        <button class="small" onclick="clearAllTowns()">Clear Towns</button>
+      </div>
+      <div id="countyContainer"></div>
+    </div>
+
+    <!-- ===== DATE RANGE ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('dateDropdown')">
+      &#9660; Closing Date Range
+    </div>
+    <div id="dateDropdown" class="dropdown-content">
+      <div class="quick-date-row">
+        <button onclick="setQuickDate(12)">Last 12 mo</button>
+        <button onclick="setQuickDate(18)">Last 18 mo</button>
+        <button onclick="setQuickDate(24)">Last 24 mo</button>
+        <button onclick="setQuickDate(36)">Last 36 mo</button>
+        <button onclick="clearDates()">Clear</button>
+      </div>
+      <div class="filter-row">
+        <label>From:</label>
+        <input type="date" id="dateFrom">
+      </div>
+      <div class="filter-row">
+        <label>To:</label>
+        <input type="date" id="dateTo">
+      </div>
+    </div>
+
+    <!-- ===== PRICE RANGE ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('priceDropdown')">
+      &#9660; Sale Price Range
+    </div>
+    <div id="priceDropdown" class="dropdown-content">
+      <div class="filter-row">
+        <label>Low ($):</label>
+        <input type="number" id="priceLow" placeholder="0" min="0">
+      </div>
+      <div class="filter-row">
+        <label>High ($):</label>
+        <input type="number" id="priceHigh" placeholder="No limit" min="0">
+      </div>
+    </div>
+
+    <!-- ===== LAND SIZE ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('landDropdown')">
+      &#9660; Land Size (acres)
+    </div>
+    <div id="landDropdown" class="dropdown-content">
+      <div class="filter-row">
+        <label>Low:</label>
+        <input type="number" id="landLow" placeholder="No minimum" min="0" step="0.01">
+      </div>
+      <div class="filter-row">
+        <label>High:</label>
+        <input type="number" id="landHigh" placeholder="No maximum" min="0" step="0.01">
+      </div>
+    </div>
+
+    <!-- ===== BUILDING TYPE ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('buildingDropdown')">
+      &#9660; Building Type
+    </div>
+    <div id="buildingDropdown" class="dropdown-content">
+      <div style="font-size:10px; color:#888; margin-bottom:3px;">
+        Default shown. Apply to filter by selection.
+      </div>
+      <div style="margin-bottom:4px;">
+        <button class="small" onclick="checkAllIn('buildingList')">All</button>
+        <button class="small" onclick="uncheckAllIn('buildingList')">Clear</button>
+      </div>
+      <div class="checkbox-scroll" id="buildingList"></div>
+    </div>
+
+    <!-- ===== INTEREST TYPE ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('interestDropdown')">
+      &#9660; Interest Type
+    </div>
+    <div id="interestDropdown" class="dropdown-content">
+      <div style="font-size:10px; color:#888; margin-bottom:3px;">
+        Default shown. Apply to filter by selection.
+      </div>
+      <div style="margin-bottom:4px;">
+        <button class="small" onclick="checkAllIn('interestList')">All</button>
+        <button class="small" onclick="uncheckAllIn('interestList')">Clear</button>
+      </div>
+      <div class="checkbox-scroll" id="interestList"></div>
+    </div>
+
+    <!-- ===== SELLER USE OF PROPERTY ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('sellerUseDropdown')">
+      &#9660; Seller Use of Property
+    </div>
+    <div id="sellerUseDropdown" class="dropdown-content">
+      <div style="font-size:10px; color:#888; margin-bottom:3px;">
+        Post-Aug 2024 descriptions shown. Pre-Aug records matched by code.
+      </div>
+      <div style="font-size:10px; color:#888; margin-bottom:3px;">
+        Default shown. Apply to filter by selection.
+      </div>
+      <div style="margin-bottom:4px;">
+        <button class="small" onclick="checkAllIn('sellerUseList')">All</button>
+        <button class="small" onclick="uncheckAllIn('sellerUseList')">Clear</button>
+      </div>
+      <div class="checkbox-scroll" id="sellerUseList"></div>
+    </div>
+
+    <!-- ===== BUYER USE OF PROPERTY ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('buyerUseDropdown')">
+      &#9660; Buyer Use of Property
+    </div>
+    <div id="buyerUseDropdown" class="dropdown-content">
+      <div style="font-size:10px; color:#888; margin-bottom:3px;">
+        Post-Aug 2024 descriptions shown. Pre-Aug records matched by code.
+      </div>
+      <div style="font-size:10px; color:#888; margin-bottom:3px;">
+        Default shown. Apply to filter by selection.
+      </div>
+      <div style="margin-bottom:4px;">
+        <button class="small" onclick="checkAllIn('buyerUseList')">All</button>
+        <button class="small" onclick="uncheckAllIn('buyerUseList')">Clear</button>
+      </div>
+      <div class="checkbox-scroll" id="buyerUseList"></div>
+    </div>
+
+    <!-- ===== GRAND LIST CATEGORY ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('grandListDropdown')">
+      &#9660; Grand List Category
+    </div>
+    <div id="grandListDropdown" class="dropdown-content">
+      <div style="font-size:10px; color:#888; margin-bottom:3px;">
+        Default shown. Apply to filter by selection.
+      </div>
+      <div style="margin-bottom:4px;">
+        <button class="small" onclick="checkAllIn('grandListList')">All</button>
+        <button class="small" onclick="uncheckAllIn('grandListList')">Clear</button>
+      </div>
+      <div class="checkbox-scroll" id="grandListList"></div>
+    </div>
+
+    <!-- ===== PTT EXEMPTION ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('pttDropdown')">
+      &#9660; PTT Exemption
+    </div>
+    <div id="pttDropdown" class="dropdown-content">
+      <div style="font-size:10px; color:#888; margin-bottom:3px;">
+        Default shown. Apply to filter by selection.
+      </div>
+      <div style="margin-bottom:4px;">
+        <button class="small" onclick="checkAllIn('pttList')">All</button>
+        <button class="small" onclick="uncheckAllIn('pttList')">Clear</button>
+      </div>
+      <div class="checkbox-scroll" id="pttList"></div>
+    </div>
+
+    <!-- ===== NAMES & SPAN ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('namesDropdown')">
+      &#9660; Names &amp; SPAN
+    </div>
+    <div id="namesDropdown" class="dropdown-content">
+      <div class="filter-label">Seller</div>
+      <div class="filter-row">
+        <label>Entity:</label>
+        <input type="text" id="sellerEntity" placeholder="contains...">
+      </div>
+      <div class="filter-row">
+        <label>Last:</label>
+        <input type="text" id="sellerLast" placeholder="contains...">
+      </div>
+      <div class="filter-row">
+        <label>First:</label>
+        <input type="text" id="sellerFirst" placeholder="contains...">
+      </div>
+      <div class="filter-label">Buyer</div>
+      <div class="filter-row">
+        <label>Entity:</label>
+        <input type="text" id="buyerEntity" placeholder="contains...">
+      </div>
+      <div class="filter-row">
+        <label>Last:</label>
+        <input type="text" id="buyerLast" placeholder="contains...">
+      </div>
+      <div class="filter-row">
+        <label>First:</label>
+        <input type="text" id="buyerFirst" placeholder="contains...">
+      </div>
+      <div class="filter-label">Property</div>
+      <div class="filter-row">
+        <label>Street:</label>
+        <input type="text" id="streetAddr" placeholder="contains...">
+      </div>
+      <div class="filter-row">
+        <label>SPAN:</label>
+        <input type="text" id="spanInput" placeholder="e.g. 441-139-10408">
+      </div>
+    </div>
+
+    <!-- ===== OTHER FLAGS ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('flagsDropdown')">
+      &#9660; Other Flags
+    </div>
+    <div id="flagsDropdown" class="dropdown-content">
+      <div class="filter-row" style="gap:8px;">
+        <label style="min-width:auto; font-size:12px;">Enrolled in Current Use:</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
+        <label><input type="radio" name="enrolledCurrentUse" value="" checked> Any</label>
+        <label><input type="radio" name="enrolledCurrentUse" value="true"> Yes</label>
+        <label><input type="radio" name="enrolledCurrentUse" value="false"> No</label>
+      </div>
+      <div class="filter-row" style="gap:8px;">
+        <label style="min-width:auto; font-size:12px;">Development Rights Previously Conveyed:</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
+        <label><input type="radio" name="devPrevConv" value="" checked> Any</label>
+        <label><input type="radio" name="devPrevConv" value="true"> Yes</label>
+        <label><input type="radio" name="devPrevConv" value="false"> No</label>
+      </div>
+      <div class="filter-row" style="gap:8px;">
+        <label style="min-width:auto; font-size:12px;">Buyer Owns Adjoining Property:</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
+        <label><input type="radio" name="buyerAdjoining" value="" checked> Any</label>
+        <label><input type="radio" name="buyerAdjoining" value="true"> Yes</label>
+        <label><input type="radio" name="buyerAdjoining" value="false"> No</label>
+      </div>
+      <div class="filter-row" style="gap:8px;">
+        <label style="min-width:auto; font-size:12px;">Foreclosed Property:</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-left:4px;">
+        <label><input type="radio" name="foreclosed" value="" checked> Any</label>
+        <label><input type="radio" name="foreclosed" value="true"> Yes</label>
+        <label><input type="radio" name="foreclosed" value="false"> No</label>
+      </div>
+    </div>
+
+    <!-- ===== APPLY BUTTON ===== -->
+    <button id="applyBtn" onclick="applyFilters()">Apply Filters</button>
+
+    <!-- ===== DOWNLOAD BUTTONS ===== -->
+    <div class="download-row">
+      <button id="dlAllBtn" onclick="downloadExport(false)">&#8659; Download All Filtered</button>
+      <button id="dlSelBtn" onclick="downloadExport(true)">&#8659; Download Selected (<span id="selCount">0</span>)</button>
+      <div id="dlSelStatus" style="font-size:10px; color:#555; text-align:center; min-height:14px;"></div>
+    </div>
+    <div style="margin-top:3px;">
+      <button onclick="clearSelectedSales()"
+        style="width:100%; padding:4px; font-size:11px; font-weight:bold; border:1px solid #b8a800; border-radius:3px; cursor:pointer; background:#ffe600; color:#333;">
+        &#10005; Clear Map Selections
+      </button>
+    </div>
+    <div class="format-row">
+      <label>Format:</label>
+      <label><input type="radio" name="exportFormat" value="xlsx" checked> XLSX</label>
+      <label><input type="radio" name="exportFormat" value="csv"> CSV</label>
+    </div>
+    <div class="format-row" style="margin-top:3px;">
+      <label style="display:flex; align-items:center; gap:5px; font-size:11px; cursor:pointer;">
+        <input type="checkbox" id="screenCaptureChk" checked>
+        Include screen capture in export
+      </label>
+    </div>
+
+    <!-- ===== SELECT / CLEAR ALL CHECKBOXES ===== -->
+    <div class="download-row" style="margin-top:6px;">
+      <button id="selectAllChkBtn"
+        title="Selects all checkboxes except location"
+        onclick="selectAllCheckboxes()"
+        style="flex:1; padding:5px 4px; font-size:11px; font-weight:bold; border:none; border-radius:3px; cursor:pointer; background:#5c6bc0; color:white;">
+        Select All Checkboxes
+      </button>
+      <button id="clearAllChkBtn"
+        title="Unselects all checkboxes including location"
+        onclick="clearAllCheckboxes()"
+        style="flex:1; padding:5px 4px; font-size:11px; font-weight:bold; border:none; border-radius:3px; cursor:pointer; background:#78909c; color:white;">
+        Clear All Checkboxes
+      </button>
+    </div>
+
+    <!-- ===== SUBJECT PROPERTY PIN ===== -->
+    <div style="border-top:1px solid #ddd; padding-top:6px; margin-top:4px;">
+      <div class="section-title" style="margin-bottom:4px;">&#128204; Subject Property Pin</div>
+
+      <!-- Tab selector -->
+      <div style="display:flex; gap:2px; margin-bottom:5px;">
+        <button id="pinTabAddr" onclick="switchPinTab('addr')"
+          style="flex:1; padding:3px; font-size:10px; font-weight:bold; border:1px solid #aaa;
+                 border-radius:3px 3px 0 0; cursor:pointer; background:#1F4E79; color:white;">Address</button>
+        <button id="pinTabSpan" onclick="switchPinTab('span')"
+          style="flex:1; padding:3px; font-size:10px; font-weight:bold; border:1px solid #aaa;
+                 border-radius:3px 3px 0 0; cursor:pointer; background:#e8edf2; color:#333;">SPAN</button>
+        <button id="pinTabManual" onclick="switchPinTab('manual')"
+          style="flex:1; padding:3px; font-size:10px; font-weight:bold; border:1px solid #aaa;
+                 border-radius:3px 3px 0 0; cursor:pointer; background:#e8edf2; color:#333;">Manual</button>
+      </div>
+
+      <!-- Address tab -->
+      <div id="pinPanelAddr">
+        <div class="filter-row">
+          <input type="text" id="subjectAddrInput" placeholder="e.g. 148 VT Route 12 Middlesex VT"
+            style="flex:1; font-size:11px; padding:3px 5px;">
+        </div>
+        <div style="font-size:10px; color:#777; margin-bottom:3px;">
+          Tip: use short form — "148 VT 12 Middlesex VT" works better than full route names.
+        </div>
+        <button onclick="placeSubjectPin()" style="width:100%; padding:4px; font-size:11px; font-weight:bold;
+          background:#c0392b; color:white; border:none; border-radius:3px; cursor:pointer;">Place Pin by Address</button>
+      </div>
+
+      <!-- SPAN tab -->
+      <div id="pinPanelSpan" style="display:none;">
+        <div class="filter-row">
+          <input type="text" id="subjectSpanInput" placeholder="e.g. 441-139-10408"
+            style="flex:1; font-size:11px; padding:3px 5px;">
+        </div>
+        <div style="font-size:10px; color:#777; margin-bottom:3px;">
+          Enter the 13-digit SPAN. Hyphens optional.
+        </div>
+        <button onclick="placeSubjectPinBySpan()" style="width:100%; padding:4px; font-size:11px; font-weight:bold;
+          background:#c0392b; color:white; border:none; border-radius:3px; cursor:pointer;">Place Pin by SPAN</button>
+      </div>
+
+      <!-- Manual tab -->
+      <div id="pinPanelManual" style="display:none;">
+        <div style="font-size:10px; color:#555; margin-bottom:4px; line-height:1.4;">
+          Click anywhere on the map to place the pin. Useful for vacant land or properties without a standard address.
+        </div>
+        <button id="manualPinBtn" onclick="toggleManualPinMode()" style="width:100%; padding:4px; font-size:11px; font-weight:bold;
+          background:#c0392b; color:white; border:none; border-radius:3px; cursor:pointer;">Click Map to Place Pin</button>
+      </div>
+
+      <!-- Shared controls -->
+      <div style="display:flex; gap:4px; margin-top:4px;">
+        <button onclick="removeSubjectPin()" style="width:100%; padding:4px; font-size:11px; font-weight:bold;
+          background:#7f8c8d; color:white; border:none; border-radius:3px; cursor:pointer;">Remove Pin</button>
+      </div>
+      <div id="subjectPinStatus" style="font-size:10px; color:#555; margin-top:3px;"></div>
+    </div>
+
+    <!-- ===== TOWN CLERK LOOKUP ===== -->
+    <div style="border-top:1px solid #ddd; padding-top:6px; margin-top:4px;">
+      <div class="section-title" style="margin-bottom:4px;">&#127963; Town Clerk Information</div>
+      <div style="position:relative;">
+        <input type="text" id="townClerkInput" placeholder="Enter your Subject Town"
+          autocomplete="off"
+          oninput="townClerkAutocomplete(this.value)"
+          onfocus="townClerkAutocomplete(this.value)"
+          style="width:100%; font-size:11px; padding:3px 5px; border:1px solid #ccc; border-radius:2px; box-sizing:border-box;">
+        <div id="townClerkSuggestions" style="display:none; position:absolute; top:100%; left:0; right:0;
+          background:white; border:1px solid #aaa; border-top:none; border-radius:0 0 3px 3px;
+          max-height:160px; overflow-y:auto; z-index:9999; box-shadow:0 3px 8px rgba(0,0,0,0.15);"></div>
+      </div>
+      <button onclick="openTownClerkPage()" style="width:100%; margin-top:4px; padding:5px; font-size:11px;
+        font-weight:bold; background:#1F4E79; color:white; border:none; border-radius:3px; cursor:pointer;">
+        Town Clerk Information
+      </button>
+    </div>
+
+    <!-- ===== BOUNDARY STYLE CONTROLS ===== -->
+    <div style="border-top:1px solid #ddd; padding-top:6px; margin-top:4px;">
+      <div class="section-title" style="margin-bottom:4px;">&#9711; Boundary Layer Styles</div>
+      <div style="font-size:10px; color:#777; margin-bottom:5px;">Enable layers using the map legend (top right). Set styles here first.</div>
+
+      <!-- Town boundaries -->
+      <div style="margin-bottom:6px;">
+        <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">Town / Municipal Boundaries</div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="font-size:11px; min-width:40px;">Color:</label>
+          <input type="color" id="townBdyColor" value="#8B00FF"
+            oninput="updateBoundaryStyle('town')"
+            style="width:36px; height:24px; padding:1px; border:1px solid #ccc; cursor:pointer;">
+          <label style="font-size:11px;">Width:</label>
+          <input type="range" id="townBdyWidth" min="1" max="6" value="2" step="0.5"
+            oninput="updateBoundaryStyle('town'); document.getElementById('townBdyWidthVal').textContent=this.value"
+            style="flex:1;">
+          <span id="townBdyWidthVal" style="font-size:11px; min-width:20px;">2</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
+          <label style="font-size:11px; min-width:40px;">Style:</label>
+          <select id="townBdyDash" oninput="updateBoundaryStyle('town')"
+            style="font-size:11px; padding:1px 3px; border:1px solid #ccc; border-radius:2px;">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+          </select>
+          <label style="font-size:11px;">Labels:</label>
+          <input type="checkbox" id="townBdyLabels" checked onchange="updateBoundaryStyle('town')">
+        </div>
+      </div>
+
+      <!-- County boundaries -->
+      <div>
+        <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="font-size:11px; min-width:40px;">Color:</label>
+          <input type="color" id="cntyBdyColor" value="#FF6600"
+            oninput="updateBoundaryStyle('cnty')"
+            style="width:36px; height:24px; padding:1px; border:1px solid #ccc; cursor:pointer;">
+          <label style="font-size:11px;">Width:</label>
+          <input type="range" id="cntyBdyWidth" min="1" max="8" value="3" step="0.5"
+            oninput="updateBoundaryStyle('cnty'); document.getElementById('cntyBdyWidthVal').textContent=this.value"
+            style="flex:1;">
+          <span id="cntyBdyWidthVal" style="font-size:11px; min-width:20px;">3</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
+          <label style="font-size:11px; min-width:40px;">Style:</label>
+          <select id="cntyBdyDash" oninput="updateBoundaryStyle('cnty')"
+            style="font-size:11px; padding:1px 3px; border:1px solid #ccc; border-radius:2px;">
+            <option value="solid">Solid</option>
+            <option value="dashed" selected>Dashed</option>
+            <option value="dotted">Dotted</option>
+          </select>
+          <label style="font-size:11px;">Labels:</label>
+          <input type="checkbox" id="cntyBdyLabels" checked onchange="updateBoundaryStyle('cnty')">
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DISCLAIMER ===== -->
+    <div style="font-size:9px; color:#888; margin-top:8px; border-top:1px solid #ddd; padding-top:6px; line-height:1.5;">
+      <b>Notice.</b> The information in this database is believed to be true and accurate. The user is advised to independently verify search results. The developer is not responsible for third party data obtained through searches and search results.
+    </div>
+
+  </div><!-- end sidebar -->
+
+  <!-- ==================== MAP ==================== -->
+  <div id="map"></div>
+
+</div><!-- end container -->
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
 <script>
-
-// ================= COUNTY MAP =================
+// ===================================================
+// COUNTY MAP & SORTED CODES
+// ===================================================
 const countyMap = {
-"01":"Addison",
-"02":"Bennington",
-"03":"Caledonia",
-"04":"Chittenden",
-"05":"Essex",
-"06":"Franklin",
-"07":"Grand Isle",
-"08":"Lamoille",
-"09":"Orange",
-"10":"Orleans",
-"11":"Rutland",
-"12":"Washington",
-"13":"Windham",
-"14":"Windsor"
+  "01":"Addison","02":"Bennington","03":"Caledonia","04":"Chittenden",
+  "05":"Essex","06":"Franklin","07":"Grand Isle","08":"Lamoille",
+  "09":"Orange","10":"Orleans","11":"Rutland","12":"Washington",
+  "13":"Windham","14":"Windsor"
 };
 
-const countyReverse = {};
-for (let code in countyMap){
-    countyReverse[countyMap[code]] = code;
-}
-
-const counties = Object.values(countyMap).sort((a,b)=>a.localeCompare(b));
-let selectedCounties = [];
-
-// 🔥 COUNTY CENTER POINTS (APPROXIMATE)
-const countyCenters = {
-"Addison":[44.015,-73.167],
-"Bennington":[42.878,-73.196],
-"Caledonia":[44.416,-72.023],
-"Chittenden":[44.463,-73.083],
-"Essex":[44.801,-71.998],
-"Franklin":[44.840,-72.882],
-"Grand Isle":[44.722,-73.289],
-"Lamoille":[44.562,-72.686],
-"Orange":[44.005,-72.368],
-"Orleans":[44.814,-72.204],
-"Rutland":[43.610,-72.972],
-"Washington":[44.260,-72.575],
-"Windham":[42.997,-72.655],
-"Windsor":[43.480,-72.384]
-};
-
-// ================= MAP =================
-let map = L.map('map').setView([44,-72.7],8);
-
-let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-let light = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png');
-let satellite = L.tileLayer(
-'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+const countyCodesSorted = Object.keys(countyMap).sort(
+  (a,b) => countyMap[a].localeCompare(countyMap[b])
 );
 
-street.addTo(map);
+// ===================================================
+// STATE
+// ===================================================
+let selectedCounties     = new Set();
+let selectedTownsByCounty = {};
+let townsByCounty         = {};
+let shouldFitBounds       = false;
+let selectedSales         = {};   // { id: fullRecordObj }
+let markerRefs            = {};   // { id: { marker, sales, prop } }
 
+// Cache for name/SPAN/street searches — fetched statewide once, re-rendered on pan/zoom
+let nameSearchCache       = null;  // null when no cache; array of records when active
+
+// Code lookup tables (loaded from /codes)
+let CODES = {};
+
+// filterApplied tracks whether the user has clicked Apply at least once.
+// Checkbox groups are always active (all checked by default on startup).
+let filterApplied = true;  // true from the start so checkboxes apply immediately
+
+// ---- Screen capture stream (held open for the session) ----
+// Initialised once on first download; reused for all subsequent downloads.
+let _screenStream = null;
+let _screenStreamPending = false;
+
+function getScreenFrame(){
+  // Returns a Promise<base64 PNG string | null>
+  return new Promise(function(resolve){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
+      resolve(null); return;
+    }
+
+    function captureFrame(stream){
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.onloadedmetadata = function(){
+        video.play();
+        requestAnimationFrame(function(){
+          const c = document.createElement('canvas');
+          c.width  = video.videoWidth;
+          c.height = video.videoHeight;
+          c.getContext('2d').drawImage(video, 0, 0);
+          // Don't stop the stream — keep it for next time
+          try{ resolve(c.toDataURL('image/png').split(',')[1]); }
+          catch(e){ resolve(null); }
+        });
+      };
+    }
+
+    // If stream already active, capture a fresh frame from it
+    if(_screenStream && _screenStream.active){
+      captureFrame(_screenStream);
+      return;
+    }
+
+    // Otherwise request permission (shows dialog once per session)
+    navigator.mediaDevices.getDisplayMedia({
+      video: { displaySurface: 'browser' },  // pre-selects current tab in Chrome
+      audio: false,
+      preferCurrentTab: true                  // Chrome 107+ skips tab picker
+    })
+    .then(function(stream){
+      _screenStream = stream;
+      // If user ends the share externally, clear our reference
+      stream.getVideoTracks()[0].addEventListener('ended', function(){
+        _screenStream = null;
+      });
+      captureFrame(stream);
+    })
+    .catch(function(){ resolve(null); });
+  });
+}
+
+// ===================================================
+// MAP INIT
+// ===================================================
+let map = L.map('map').setView([44, -72.7], 8);
+
+// ---- BASEMAPS (6) ----
+let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  errorTileUrl: '',   // blank on error rather than broken image icon
+});
+// Retry failed OSM tiles after 5 seconds (handles rate limiting)
+street.on('tileerror', function(e){
+  const tile = e.tile;
+  if(tile._retryCount >= 3) return;
+  tile._retryCount = (tile._retryCount || 0) + 1;
+  setTimeout(function(){
+    tile.src = tile.src.split('?')[0] + '?retry=' + tile._retryCount;
+  }, 5000 * tile._retryCount);
+});
+let esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, HERE, DeLorme, USGS'
+});
+let esriTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, USGS, NOAA'
+});
+let satellite = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, USGS, NOAA'
+});
+let usgsTopo = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}', {
+  maxNativeZoom: 16,   // tiles only exist up to zoom 16; scale them up beyond that
+  maxZoom: 19,
+  attribution: 'USGS National Map'
+});
+// Imagery with Labels = ESRI World Imagery + labels/roads overlay stacked
+let imageryLabels = L.layerGroup([
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 20,
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, USGS, NOAA'
+  }),
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 20,
+    attribution: 'Tiles &copy; Esri'
+  })
+]);
+
+street.addTo(map);
 let activeBase = "street";
 
 map.on("baselayerchange", function(e){
-    activeBase = e.name.toLowerCase();
-    loadData();
+  const eLower = e.name.toLowerCase();
+  activeBase = (eLower.indexOf("satellite") >= 0 || eLower.indexOf("imagery") >= 0) ? "satellite" : "other";
+  loadData();
+  // Re-style parcel layer to match the new basemap (green vs white)
+  if(parcelsOn){
+    const style = getParcelStyle();
+    parcelLayer.setStyle(style);
+  }
 });
 
-L.control.layers({
-    "Street": street,
-    "Light Satellite": light,
-    "Satellite": satellite
-}).addTo(map);
+// ---- VERMONT PARCEL OVERLAY ----
+// Loaded on demand from VCGI FeatureServer (layer 1 = active parcels).
+// Only fetches when zoom >= 14 to avoid loading statewide polygon data.
+// Drawn as a GeoJSON layer; refreshes on every map move/zoom while enabled.
+// Parcel style switches between green (all non-satellite basemaps) and
+// white (satellite) so the boundaries remain visible against vegetation.
+function getParcelStyle(){
+  if(activeBase === 'satellite'){
+    return { color: '#ffffff', weight: 2, fillOpacity: 0 };
+  }
+  return { color: '#1a7a1a', weight: 2, fillOpacity: 0 };
+}
 
-// ================= STATE =================
+let parcelLayer  = L.geoJSON(null, { style: getParcelStyle() });
+let parcelsOn    = false;   // controlled by the overlay checkbox
+let parcelXhr    = null;    // cancel in-flight request on new move
+
+const PARCEL_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
+const PARCEL_MIN_ZOOM = 14;
+
+function loadParcels(){
+  if(!parcelsOn) return;
+  if(map.getZoom() < PARCEL_MIN_ZOOM){
+    parcelLayer.clearLayers();
+    return;
+  }
+  const b = map.getBounds();
+  // Convert Leaflet LatLngBounds to Web Mercator (EPSG:3857 / wkid 102100)
+  // VCGI FeatureServer requires inSR=102100 when using envelope geometry
+  const toMerc = (lng, lat) => {
+    const x = lng * 20037508.34 / 180;
+    const y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180;
+    return [x, y];
+  };
+  const sw = toMerc(b.getWest(),  b.getSouth());
+  const ne = toMerc(b.getEast(),  b.getNorth());
+  const env = `${sw[0]},${sw[1]},${ne[0]},${ne[1]}`;
+
+  if(parcelXhr) parcelXhr.abort();
+  const ctrl = new AbortController();
+  parcelXhr = ctrl;
+
+  const params = new URLSearchParams({
+    where:           '1=1',
+    geometryType:    'esriGeometryEnvelope',
+    geometry:        env,
+    inSR:            '102100',
+    spatialRel:      'esriSpatialRelIntersects',
+    outFields:       'SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,GLYEAR,CAT,MUNGL1PCT',
+    returnGeometry:  'true',
+    outSR:           '4326',
+    f:               'json',
+    resultRecordCount: '500'
+  });
+
+  fetch(PARCEL_URL + '?' + params.toString(), { signal: ctrl.signal })
+  .then(r => r.json())
+  .then(data => {
+    if(data.error){ console.warn('Parcel query error:', data.error.message); return; }
+    parcelLayer.clearLayers();
+    (data.features || []).forEach(feat => {
+      if(!feat.geometry || !feat.geometry.rings) return;
+      // Convert esriGeometryPolygon to GeoJSON
+      const gj = {
+        type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: feat.geometry.rings },
+        properties: feat.attributes
+      };
+      parcelLayer.addData(gj);
+    });
+    // Apply current basemap-aware style then bind popups
+    parcelLayer.setStyle(getParcelStyle());
+    parcelLayer.eachLayer(l => {
+      const p = l.feature.properties;
+      const fmt$ = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
+      const fmtN = v => (v != null && v !== '') ? Number(v).toLocaleString() : '—';
+      const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
+
+      const addr   = p.E911ADDR  || '';
+      const town   = p.TNAME     || '';
+      const span   = p.SPAN      || '';
+      const owner1 = p.OWNER1    || '';
+      const owner2 = p.OWNER2    || '';
+      const ptype  = p.PROPTYPE  || '';
+      const cat    = p.CAT       || '';
+      const glyear = p.GLYEAR    || '';
+      const acres  = fmtA(p.ACRESGL);
+      const realFLV  = fmt$(p.REAL_FLV);
+      const landLV   = fmt$(p.LAND_LV);
+      const imprvLV  = fmt$(p.IMPRV_LV);
+      const hstedFLV = fmt$(p.HSTED_FLV);
+      const munGL    = fmt$(p.MUNGL1PCT);
+      const hsdecl   = (p.HSDECL === 'Y' || p.HSDECL === true) ? 'Yes' : (p.HSDECL ? p.HSDECL : '—');
+
+      const html = `
+        <div style="font-size:12px; min-width:220px;">
+          <div style="background:#1a7a1a; color:white; font-weight:bold; padding:4px 8px;
+                      border-radius:3px 3px 0 0; margin-bottom:4px;">
+            &#x1F4CB; Grand List Data
+          </div>
+          <b>${addr}</b>${addr && town ? ', ' : ''}${town}<br>
+          ${owner1 ? `<span style="font-size:11px;">${owner1}${owner2 ? '<br>' + owner2 : ''}</span><br>` : ''}
+          <table style="font-size:11px; border-collapse:collapse; width:100%; margin-top:4px;">
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">SPAN:</td>
+                <td style="font-weight:bold;">${span}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Type:</td>
+                <td>${ptype}${cat ? ' / ' + cat : ''}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">GL Year:</td>
+                <td>${glyear}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Acres (GL):</td>
+                <td>${acres}</td></tr>
+            <tr style="border-top:1px solid #eee;">
+                <td style="color:#555; padding:3px 4px 1px 0;">Listed Value:</td>
+                <td style="font-weight:bold;">${realFLV}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Land:</td>
+                <td>${landLV}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Improvements:</td>
+                <td>${imprvLV}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Val:</td>
+                <td>${hstedFLV}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Mun. 1% GL:</td>
+                <td>${munGL}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Decl:</td>
+                <td>${hsdecl}</td></tr>
+          </table>
+        </div>`;
+
+      l.bindPopup(html, { maxWidth: 260, maxHeight: 380 });
+    });
+  })
+  .catch(e => { if(e.name !== 'AbortError') console.warn('Parcel fetch error:', e); });
+}
+
+// ---- FEMA FLOOD ZONES OVERLAY ----
+// Fetches flood zone polygons from the FEMA NFHL MapServer (layer 28) as
+// GeoJSON for the current map view. Colored by zone type:
+//   Zone A   — light orange  (high risk, no BFE established)
+//   Zone AE  — light blue    (high risk, BFE established)
+//   Floodway — light red     (AE subtype, most restricted)
+//   Zone X (500yr) — light yellow  (moderate risk)
+//   Zone X (minimal) — transparent (minimal risk, no fill)
+// Refreshes on pan/zoom while the overlay is enabled.
+
+const FEMA_URL     = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
+const FEMA_MIN_ZOOM = 12;  // don't fetch statewide polygons below this zoom
+
+const FEMA_ZONE_STYLE = {
+  'A':        { color: '#e07000', fillColor: '#ffb347', fillOpacity: 0.35, weight: 1 },
+  'AE':       { color: '#1a6fa8', fillColor: '#a8d8f0', fillOpacity: 0.35, weight: 1 },
+  'FLOODWAY': { color: '#b00000', fillColor: '#f08080', fillOpacity: 0.40, weight: 1.5 },
+  'X_500':    { color: '#b8a000', fillColor: '#fff176', fillOpacity: 0.30, weight: 1 },
+  'X_MIN':    { color: '#aaaaaa', fillColor: '#ffffff', fillOpacity: 0,    weight: 0.5 },
+  'DEFAULT':  { color: '#888888', fillColor: '#cccccc', fillOpacity: 0.20, weight: 1 },
+};
+
+function getFemaStyle(props){
+  const zone = (props.FLD_ZONE || '').toUpperCase();
+  const sub  = (props.ZONE_SUBTY || '').toUpperCase();
+  if(zone === 'AE' && sub.includes('FLOODWAY')) return FEMA_ZONE_STYLE['FLOODWAY'];
+  if(zone === 'AE')  return FEMA_ZONE_STYLE['AE'];
+  if(zone === 'A')   return FEMA_ZONE_STYLE['A'];
+  if(zone === 'X' && sub.includes('0.2')) return FEMA_ZONE_STYLE['X_500'];
+  if(zone === 'X')   return FEMA_ZONE_STYLE['X_MIN'];
+  return FEMA_ZONE_STYLE['DEFAULT'];
+}
+
+let femaGeoLayer = L.geoJSON(null, {
+  style: f => getFemaStyle(f.properties),
+  onEachFeature: function(feature, layer){
+    const p    = feature.properties;
+    const zone = (p.FLD_ZONE || '').toUpperCase();
+    const sub  = (p.ZONE_SUBTY || '').toUpperCase();
+    // Suppress tooltip for Zone X minimal hazard
+    if(zone === 'X' && (sub === 'AREA OF MINIMAL FLOOD HAZARD' || !sub)) return;
+    const subLabel = p.ZONE_SUBTY ? ` (${p.ZONE_SUBTY})` : '';
+    layer.bindTooltip(`Zone ${p.FLD_ZONE}${subLabel}`, { sticky: true, opacity: 0.85 });
+  }
+});
+
+let femaOn  = false;
+let femaXhr = null;
+
+function loadFema(){
+  if(!femaOn) return;
+  if(map.getZoom() < FEMA_MIN_ZOOM){ femaGeoLayer.clearLayers(); return; }
+  const b  = map.getBounds();
+  const bb = `${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+  if(femaXhr) femaXhr.abort();
+  const ctrl = new AbortController();
+  femaXhr = ctrl;
+  const params = new URLSearchParams({
+    geometry:     bb,
+    geometryType: 'esriGeometryEnvelope',
+    inSR:         '4326',
+    spatialRel:   'esriSpatialRelIntersects',
+    outFields:    'FLD_ZONE,ZONE_SUBTY,SFHA_TF',
+    returnGeometry: 'true',
+    outSR:        '4326',
+    f:            'geojson',
+    resultRecordCount: '1000'
+  });
+  fetch(FEMA_URL + '?' + params.toString(), { signal: ctrl.signal })
+  .then(r => r.json())
+  .then(data => {
+    femaGeoLayer.clearLayers();
+    if(data.features) femaGeoLayer.addData(data);
+  })
+  .catch(e => { if(e.name !== 'AbortError') console.warn('FEMA fetch error:', e); });
+}
+
+// femaFloodLayer is what gets registered in the layers control
+const femaFloodLayer = femaGeoLayer;
+
+// ============================================================
+// TOWN & COUNTY BOUNDARY LAYERS
+// ============================================================
+const TOWN_BDY_URL  = 'https://maps.vcgi.vermont.gov/arcgis/rest/services/VCGI_services/VCGI_BASEMAP_WM_CACHE_v2/MapServer/20/query';
+const CNTY_BDY_URL  = 'https://maps.vcgi.vermont.gov/arcgis/rest/services/VCGI_services/VCGI_BASEMAP_WM_CACHE_v2/MapServer/22/query';
+const TOWN_BDY_MIN_ZOOM = 8;
+const CNTY_BDY_MIN_ZOOM = 6;
+
+let townBdyOn = false, cntyBdyOn = false;
+let townBdyXhr = null, cntyBdyXhr = null;
+
+// GeoJSON layers for polygons
+let townBdyLayer = L.geoJSON(null);
+let cntyBdyLayer = L.geoJSON(null);
+
+// Label layers (L.layerGroup of L.markers with divIcons)
+let townLblLayer = L.layerGroup();
+let cntyLblLayer = L.layerGroup();
+
+// ---- Get current style settings from sidebar controls ----
+function getBdyStyle(which){
+  const color = document.getElementById(which + 'BdyColor').value;
+  const width = parseFloat(document.getElementById(which + 'BdyWidth').value);
+  const dash  = document.getElementById(which + 'BdyDash').value;
+  const dashArray = dash === 'dashed' ? '8,6' : dash === 'dotted' ? '2,4' : null;
+  return { color, weight: width, fillOpacity: 0, dashArray, opacity: 0.85 };
+}
+
+function getBdyLabels(which){
+  return document.getElementById(which + 'BdyLabels').checked;
+}
+
+// ---- Apply style changes live ----
+function updateBoundaryStyle(which){
+  const layer = which === 'town' ? townBdyLayer : cntyBdyLayer;
+  const lblLayer = which === 'town' ? townLblLayer : cntyLblLayer;
+  layer.setStyle(getBdyStyle(which));
+  // Show/hide labels
+  const showLabels = getBdyLabels(which);
+  lblLayer.eachLayer(function(l){
+    const el = l.getElement && l.getElement();
+    if(el) el.style.display = showLabels ? '' : 'none';
+  });
+}
+
+// ---- Fetch and render boundary polygons + labels ----
+function _loadBoundaryLayer(which){
+  const isOn      = which === 'town' ? townBdyOn      : cntyBdyOn;
+  const minZoom   = which === 'town' ? TOWN_BDY_MIN_ZOOM : CNTY_BDY_MIN_ZOOM;
+  const url       = which === 'town' ? TOWN_BDY_URL   : CNTY_BDY_URL;
+  const nameField = which === 'town' ? 'TOWNNAME'     : 'CNTYNAME';
+  const polyLayer = which === 'town' ? townBdyLayer   : cntyBdyLayer;
+  const lblLayer  = which === 'town' ? townLblLayer   : cntyLblLayer;
+
+  if(!isOn){ polyLayer.clearLayers(); lblLayer.clearLayers(); return; }
+  if(map.getZoom() < minZoom){ polyLayer.clearLayers(); lblLayer.clearLayers(); return; }
+
+  // For town boundaries fetch only the current viewport;
+  // county boundaries are statewide (only 14) so fetch all
+  let whereClause = '1=1';
+  let geometryParams = {};
+  if(which === 'town'){
+    const b  = map.getBounds();
+    const bb = `${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+    geometryParams = {
+      geometry:     bb,
+      geometryType: 'esriGeometryEnvelope',
+      inSR:         '4326',
+      spatialRel:   'esriSpatialRelIntersects'
+    };
+  }
+
+  const ctrl = new AbortController();
+  if(which === 'town') townBdyXhr = ctrl; else cntyBdyXhr = ctrl;
+
+  const params = new URLSearchParams(Object.assign({
+    where:          whereClause,
+    outFields:      which === 'town' ? 'TOWNNAME,CNTY' : 'CNTYNAME',
+    returnGeometry: 'true',
+    outSR:          '4326',
+    f:              'geojson',
+    resultRecordCount: which === 'town' ? '300' : '20'
+  }, geometryParams));
+
+  fetch(url + '?' + params.toString(), { signal: ctrl.signal })
+  .then(r => r.json())
+  .then(data => {
+    polyLayer.clearLayers();
+    lblLayer.clearLayers();
+    if(!data.features || !data.features.length) return;
+
+    const style = getBdyStyle(which);
+    const showLabels = getBdyLabels(which);
+
+    // Add polygons
+    polyLayer.addData(data);
+    polyLayer.setStyle(style);
+
+    // Add name labels at centroid of each polygon
+    data.features.forEach(function(feat){
+      if(!feat.geometry) return;
+      const name = feat.properties[nameField] ||
+                   feat.properties['TOWNNAME'] ||
+                   feat.properties['CNTYNAME'] || '';
+      if(!name) return;
+
+      // Compute centroid
+      let lat = 0, lng = 0, count = 0;
+      const coords = feat.geometry.coordinates;
+      const ring = feat.geometry.type === 'Polygon' ? coords[0]
+                 : feat.geometry.type === 'MultiPolygon' ? coords[0][0] : null;
+      if(!ring) return;
+      ring.forEach(function(pt){ lng += pt[0]; lat += pt[1]; count++; });
+      if(!count) return;
+      lat /= count; lng /= count;
+
+      const fontSize = which === 'town' ? 10 : 12;
+      const fontWeight = which === 'cnty' ? 'bold' : 'normal';
+      const icon = L.divIcon({
+        className: 'bdy-label',
+        html: `<span style="
+          font-size:${fontSize}px; font-weight:${fontWeight};
+          color:${style.color}; text-shadow: 0 0 3px white, 0 0 3px white, 0 0 3px white;
+          white-space:nowrap; pointer-events:none;
+          display:${showLabels ? '' : 'none'};
+        ">${name}</span>`,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+      });
+      lblLayer.addLayer(L.marker([lat, lng], { icon, interactive: false }));
+    });
+  })
+  .catch(function(e){ if(e.name !== 'AbortError') console.warn('Boundary fetch error:', e); });
+}
+
+function loadTownBoundaries(){ _loadBoundaryLayer('town'); }
+function loadCntyBoundaries(){ _loadBoundaryLayer('cnty'); }
+
+// ---- LAYERS CONTROL ----
+L.control.layers(
+  {
+    "Street (OSM)":          street,
+    "Street (ESRI)":         esriStreet,
+    "Topo (ESRI)":           esriTopo,
+    "Satellite (ESRI)":      satellite,
+    "Topo (USGS)":           usgsTopo,
+    "Imagery with Labels":   imageryLabels,
+  },
+  {
+    // Overlays — toggle independently of the basemap
+    "VT Parcels (zoom 14+)": parcelLayer,
+    "FEMA Flood Zones":      femaFloodLayer,
+    "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
+    "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
+  }
+).addTo(map);
+
+// Listen for overlay add/remove to know when parcels are toggled
+map.on('overlayadd', function(e){
+  if(e.name === 'VT Parcels (zoom 14+)'){
+    parcelsOn = true;
+    loadParcels();
+  }
+  if(e.name === 'FEMA Flood Zones'){
+    femaOn = true;
+    loadFema();
+  }
+  if(e.name === 'Town Boundaries'){
+    townBdyOn = true;
+    loadTownBoundaries();
+  }
+  if(e.name === 'County Boundaries'){
+    cntyBdyOn = true;
+    loadCntyBoundaries();
+  }
+});
+map.on('overlayremove', function(e){
+  if(e.name === 'VT Parcels (zoom 14+)'){
+    parcelsOn = false;
+    parcelLayer.clearLayers();
+  }
+  if(e.name === 'FEMA Flood Zones'){
+    femaOn = false;
+    femaGeoLayer.clearLayers();
+  }
+  if(e.name === 'Town Boundaries'){
+    townBdyOn = false;
+    townBdyLayer.clearLayers();
+    townLblLayer.clearLayers();
+  }
+  if(e.name === 'County Boundaries'){
+    cntyBdyOn = false;
+    cntyBdyLayer.clearLayers();
+    cntyLblLayer.clearLayers();
+  }
+});
+
 let markersLayer = L.layerGroup().addTo(map);
-let selectedSales = {};
-let markerRefs = {};
-let popupTimer = null;
-let hoverTimer = null;
-let hoverEnabled = true;
+let popupTimer      = null;
+let hoverTimer      = null;
+let hoverEnabled    = true;
 
-// ================= COUNTY UI =================
-function buildCountyList(){
-    let html = "";
-    counties.forEach(c=>{
-        html += `<label>
-        <input type="checkbox" value="${c}" onclick="updateCountySelection(this)">
-        ${c}
-        </label><br>`;
-    });
-    document.getElementById("countyList").innerHTML = html;
-}
-buildCountyList();
-
-function toggleCountyDropdown(){
-    let d = document.getElementById("countyDropdown");
-    d.style.display = d.style.display === "block" ? "none" : "block";
-}
-
-function selectAllCounties(cb){
-    let checked = cb.checked;
-    selectedCounties = checked ? [...counties] : [];
-
-    document.querySelectorAll('#countyList input').forEach(c=>{
-        c.checked = checked;
-    });
+// ===================================================
+// LOAD CODE TABLES FROM SERVER
+// ===================================================
+function loadCodes(){
+  fetch('/codes')
+  .then(r => r.json())
+  .then(data => {
+    CODES = data;
+    // Build checkbox lists — default = ONE item checked per group
+    buildCheckboxList('buildingList',  CODES.building_types);
+    buildCheckboxList('interestList',  CODES.interest_types);
+    buildCheckboxList('sellerUseList', CODES.use_of_property);
+    buildCheckboxList('buyerUseList',  CODES.use_of_property);
+    buildCheckboxList('grandListList', CODES.grand_list_categories);
+    buildCheckboxList('pttList',       CODES.ptt_exemptions);
+    // Now safe to start the map
+    initMapEvents();
+  });
 }
 
-function updateCountySelection(cb){
-    if(cb.checked){
-        if(!selectedCounties.includes(cb.value)){
-            selectedCounties.push(cb.value);
+/**
+ * Build a checkbox list for a filter group.
+ * All items are checked by default on startup.
+ */
+function buildCheckboxList(containerId, codesObj){
+  const el = document.getElementById(containerId);
+  el.innerHTML = "";
+  Object.entries(codesObj).forEach(([code, desc]) => {
+    const div = document.createElement("div");
+    div.innerHTML = `<label><input type="checkbox" data-code="${code}" checked> ${desc}</label>`;
+    el.appendChild(div);
+  });
+}
+
+function checkAllIn(containerId){
+  document.querySelectorAll(`#${containerId} input[type=checkbox]`).forEach(cb => cb.checked = true);
+}
+
+function uncheckAllIn(containerId){
+  document.querySelectorAll(`#${containerId} input[type=checkbox]`).forEach(cb => cb.checked = false);
+}
+
+function getCheckedCodes(containerId){
+  const codes = [];
+  document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`).forEach(cb => {
+    codes.push(cb.dataset.code);
+  });
+  return codes;
+}
+
+// ===================================================
+// SEARCH TIPS TOGGLE
+// ===================================================
+function toggleSearchTips(event){
+  const popup = document.getElementById('searchTipsPopup');
+  popup.style.display = (popup.style.display === 'none' || !popup.style.display) ? 'block' : 'none';
+  event.stopPropagation();
+}
+// Close tips popup when clicking elsewhere
+document.addEventListener('click', function(e){
+  const popup = document.getElementById('searchTipsPopup');
+  const btn   = document.getElementById('searchTipsBtn');
+  if(popup && btn && !popup.contains(e.target) && e.target !== btn){
+    popup.style.display = 'none';
+  }
+});
+
+// ===================================================
+// DROPDOWN TOGGLE
+// ===================================================
+function toggleDropdown(id){
+  const el = document.getElementById(id);
+  el.style.display = (el.style.display === "block") ? "none" : "block";
+}
+
+// ===================================================
+// DATE QUICK SELECT
+// ===================================================
+function setQuickDate(months){
+  const now   = new Date();
+  const from  = new Date();
+  from.setMonth(now.getMonth() - months);
+  document.getElementById("dateTo").value   = now.toISOString().split("T")[0];
+  document.getElementById("dateFrom").value = from.toISOString().split("T")[0];
+}
+
+function clearDates(){
+  document.getElementById("dateFrom").value = "";
+  document.getElementById("dateTo").value   = "";
+}
+
+// ===================================================
+// LOCATION UI — COUNTY / TOWN
+// ===================================================
+function buildCountyRows(){
+  const container = document.getElementById("countyContainer");
+  let html = "";
+  countyCodesSorted.forEach(code => {
+    const name = countyMap[code];
+    html += `
+    <div class="county-row" id="county-row-${code}">
+      <div class="county-header">
+        <label class="county-name">
+          <input type="checkbox" value="${code}" onclick="toggleCountySelected('${code}', this)">
+          ${name}
+        </label>
+        <button class="small" onclick="toggleTownFlyout('${code}')">Towns...</button>
+      </div>
+      <div class="town-flyout" id="town-flyout-${code}">
+        <div>
+          <button class="small" onclick="selectAllTownsInCounty('${code}')">All towns</button>
+          <button class="small" onclick="clearTownsInCounty('${code}')">Clear</button>
+        </div>
+        <div id="town-list-${code}"></div>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+buildCountyRows();
+
+function toggleCountySelected(code, cb){
+  if(cb.checked) selectedCounties.add(code);
+  else           selectedCounties.delete(code);
+}
+
+function toggleTownFlyout(code){
+  const el = document.getElementById(`town-flyout-${code}`);
+  if(el) el.style.display = (el.style.display === "block") ? "none" : "block";
+}
+
+function selectAllCountiesGlobal(){
+  selectedCounties = new Set(countyCodesSorted);
+  countyCodesSorted.forEach(code => {
+    const cb = document.querySelector(`#county-row-${code} input[type=checkbox]`);
+    if(cb) cb.checked = true;
+  });
+}
+
+function clearAllCounties(){
+  selectedCounties.clear();
+  countyCodesSorted.forEach(code => {
+    const cb = document.querySelector(`#county-row-${code} input[type=checkbox]`);
+    if(cb) cb.checked = false;
+  });
+}
+
+function clearAllTowns(){
+  selectedTownsByCounty = {};
+  countyCodesSorted.forEach(code => {
+    const listDiv = document.getElementById(`town-list-${code}`);
+    if(listDiv) listDiv.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+  });
+}
+
+function selectAllTownsInCounty(code){
+  if(!selectedTownsByCounty[code]) selectedTownsByCounty[code] = new Set();
+  const towns = townsByCounty[code] ? Array.from(townsByCounty[code]) : [];
+  towns.forEach(t => selectedTownsByCounty[code].add(t));
+  rebuildTownListForCounty(code);
+}
+
+function clearTownsInCounty(code){
+  selectedTownsByCounty[code] = new Set();
+  rebuildTownListForCounty(code);
+}
+
+function toggleTownInCounty(code, townName, cb){
+  if(!selectedTownsByCounty[code]) selectedTownsByCounty[code] = new Set();
+  if(cb.checked) selectedTownsByCounty[code].add(townName);
+  else           selectedTownsByCounty[code].delete(townName);
+}
+
+function addKnownTown(trustedTown, trustedCountyCode){
+  if(!trustedTown || !trustedCountyCode) return;
+  const code = String(trustedCountyCode).padStart(2, "0");
+  if(!townsByCounty[code]) townsByCounty[code] = new Set();
+  townsByCounty[code].add(trustedTown);
+}
+
+function rebuildTownListForCounty(code){
+  const listDiv = document.getElementById(`town-list-${code}`);
+  if(!listDiv || !townsByCounty[code]) return;
+  listDiv.innerHTML = "";
+  const towns = Array.from(townsByCounty[code]).sort((a,b) => a.localeCompare(b));
+  if(!selectedTownsByCounty[code]) selectedTownsByCounty[code] = new Set();
+  towns.forEach(town => {
+    const checked  = selectedTownsByCounty[code].has(town) ? "checked" : "";
+    const safeTown = town.replace(/'/g, "&#39;");
+    const row = document.createElement("div");
+    row.innerHTML = `<label><input type="checkbox" value="${safeTown}" ${checked}
+      onclick="toggleTownInCounty('${code}','${safeTown}',this)"> ${town}</label>`;
+    listDiv.appendChild(row);
+  });
+}
+
+function rebuildAllTownLists(){
+  for(const code of Object.keys(townsByCounty)){
+    rebuildTownListForCounty(code);
+  }
+}
+
+// ===================================================
+// BUILD FILTER PARAMS
+// ===================================================
+function buildFilterParams(){
+  const params = new URLSearchParams();
+
+  // Location
+  if(selectedCounties.size > 0)
+    params.set("counties", Array.from(selectedCounties).join(","));
+
+  const allTowns = new Set();
+  for(const [, townSet] of Object.entries(selectedTownsByCounty)){
+    townSet.forEach(t => allTowns.add(t));
+  }
+  if(allTowns.size > 0)
+    params.set("towns", Array.from(allTowns).join(","));
+
+  // Date
+  const df = document.getElementById("dateFrom").value;
+  const dt = document.getElementById("dateTo").value;
+  if(df) params.set("date_from", df);
+  if(dt) params.set("date_to", dt);
+
+  // Price
+  const pl = document.getElementById("priceLow").value;
+  const ph = document.getElementById("priceHigh").value;
+  if(pl) params.set("price_low", pl);
+  if(ph) params.set("price_high", ph);
+
+  // Land
+  const ll = document.getElementById("landLow").value;
+  const lh = document.getElementById("landHigh").value;
+  if(ll) params.set("land_low", ll);
+  if(lh) params.set("land_high", lh);
+
+  // -------------------------------------------------------
+  // Checkbox groups — only send filter params if:
+  //   1. Apply has been clicked at least once (filterApplied), AND
+  //   2. Fewer than all options are checked (partial selection)
+  // On initial load, all checkbox groups are treated as "no restriction".
+  // -------------------------------------------------------
+  if(filterApplied){
+    const bldg = getCheckedCodes("buildingList");
+    if(bldg.length > 0 && bldg.length < Object.keys(CODES.building_types || {}).length)
+      params.set("building", bldg.join("|"));
+
+    const interest = getCheckedCodes("interestList");
+    if(interest.length > 0 && interest.length < Object.keys(CODES.interest_types || {}).length)
+      params.set("interest", interest.join("|"));
+
+    const su = getCheckedCodes("sellerUseList");
+    if(su.length > 0 && su.length < Object.keys(CODES.use_of_property || {}).length)
+      params.set("seller_use", su.join("|"));
+
+    const bu = getCheckedCodes("buyerUseList");
+    if(bu.length > 0 && bu.length < Object.keys(CODES.use_of_property || {}).length)
+      params.set("buyer_use", bu.join("|"));
+
+    const gl = getCheckedCodes("grandListList");
+    if(gl.length > 0 && gl.length < Object.keys(CODES.grand_list_categories || {}).length)
+      params.set("grand_list", gl.join("|"));
+
+    const ptt = getCheckedCodes("pttList");
+    if(ptt.length > 0 && ptt.length < Object.keys(CODES.ptt_exemptions || {}).length)
+      params.set("ptt_exemption", ptt.join("|"));
+  }
+
+  // Names / SPAN
+  const se = document.getElementById("sellerEntity").value.trim();
+  const sl = document.getElementById("sellerLast").value.trim();
+  const sf = document.getElementById("sellerFirst").value.trim();
+  const be = document.getElementById("buyerEntity").value.trim();
+  const bl = document.getElementById("buyerLast").value.trim();
+  const bf = document.getElementById("buyerFirst").value.trim();
+  const sa = document.getElementById("streetAddr").value.trim();
+  const sp = document.getElementById("spanInput").value.trim();
+  if(se) params.set("seller_entity", se);
+  if(sl) params.set("seller_last",   sl);
+  if(sf) params.set("seller_first",  sf);
+  if(be) params.set("buyer_entity",  be);
+  if(bl) params.set("buyer_last",    bl);
+  if(bf) params.set("buyer_first",   bf);
+  if(sa) params.set("street",        sa);
+  if(sp) params.set("span",          sp);
+
+  // Flags
+  const ecu = document.querySelector('input[name="enrolledCurrentUse"]:checked');
+  if(ecu && ecu.value) params.set("enrolled_current_use", ecu.value);
+
+  const dpc = document.querySelector('input[name="devPrevConv"]:checked');
+  if(dpc && dpc.value) params.set("dev_prev_conv", dpc.value);
+
+  const ba = document.querySelector('input[name="buyerAdjoining"]:checked');
+  if(ba && ba.value) params.set("buyer_adjoining", ba.value);
+
+  const fc = document.querySelector('input[name="foreclosed"]:checked');
+  if(fc && fc.value) params.set("foreclosed", fc.value);
+
+  return params;
+}
+
+// ===================================================
+// HELPER: detect whether a name/SPAN/street filter is active
+// When true, we fetch statewide and cache results instead of
+// re-querying on every pan/zoom (faster and prevents disappearing dots).
+// ===================================================
+function hasNameFilter(){
+  const ids = ['sellerEntity','sellerLast','sellerFirst','buyerEntity','buyerLast','buyerFirst','streetAddr','spanInput'];
+  return ids.some(id => document.getElementById(id).value.trim() !== '');
+}
+
+// ===================================================
+// APPLY FILTERS
+// ===================================================
+function applyFilters(){
+  filterApplied = true;
+  nameSearchCache = null;  // always invalidate cache on a fresh Apply
+
+  // Name/SPAN/street search: must fetch statewide since results could be
+  // anywhere in VT. Zoom to results so the user can find them.
+  if(hasNameFilter()){
+    const params = buildFilterParams();
+    params.set("xmin", "-73.5");
+    params.set("ymin", "42.7");
+    params.set("xmax", "-71.4");
+    params.set("ymax", "45.1");
+    document.getElementById("statusBar").textContent = "Searching...";
+    fetch("/data?" + params.toString())
+    .then(r => r.json())
+    .then(data => {
+      nameSearchCache = data.data || [];
+      let bounds = null;
+      nameSearchCache.forEach(p => {
+        if(p.lat != null && p.lon != null){
+          const pt = L.latLng(p.lat, p.lon);
+          bounds = bounds ? bounds.extend(pt) : L.latLngBounds(pt, pt);
         }
-    } else {
-        selectedCounties = selectedCounties.filter(c=>c !== cb.value);
-    }
+      });
+      if(bounds){
+        map.off("moveend", onMoveEnd);
+        map.off("zoomend", onZoomEnd);
+        map.fitBounds(bounds, {padding: [50, 50]});
+        setTimeout(() => {
+          map.on("moveend", onMoveEnd);
+          map.on("zoomend", onZoomEnd);
+          renderData(nameSearchCache);
+        }, 400);
+      } else {
+        renderData(nameSearchCache);
+      }
+    });
+    return;
+  }
+
+  // All other filters: just reload data in the current map view.
+  // The map stays exactly where it is — no fitBounds, no repositioning.
+  loadData();
 }
 
-function finishCountySelection(){
-
-    document.getElementById("countyDropdown").style.display = "none";
-
-    // 🔥 AUTO CENTER MAP
-    if(selectedCounties.length === 1){
-        let center = countyCenters[selectedCounties[0]];
-        if(center){
-            map.setView(center, 10);
-        }
-    }
-
-    loadData();
-}
-
-// ================= LOAD DATA =================
+// ===================================================
+// LOAD DATA (MAP) — viewport-bounded fetch
+// ===================================================
 function loadData(){
+  // If a name search cache is active, just re-render from it (no new fetch)
+  if(nameSearchCache !== null){
+    renderData(nameSearchCache);
+    return;
+  }
 
-    let b = map.getBounds();
+  const b      = map.getBounds();
+  const params = buildFilterParams();
+  params.set("xmin", b.getWest());
+  params.set("ymin", b.getSouth());
+  params.set("xmax", b.getEast());
+  params.set("ymax", b.getNorth());
 
-    let countyCodes = selectedCounties.map(c => countyReverse[c]).join(",");
+  document.getElementById("statusBar").textContent = "Loading...";
 
-    let url = `/data?xmin=${b.getWest()}&ymin=${b.getSouth()}&xmax=${b.getEast()}&ymax=${b.getNorth()}`;
-
-    if(countyCodes){
-        url += `&counties=${countyCodes}`;
-    }
-
-    fetch(url)
-    .then(r=>r.json())
-    .then(data=>{
-
-        markersLayer.clearLayers();
-        markerRefs = {};
-
-        let grouped = {};
-
-        data.data.forEach(p=>{
-            let key = p.address + "_" + p.city;
-            if(!grouped[key]) grouped[key] = [];
-            grouped[key].push(p);
-        });
-
-        Object.keys(grouped).forEach(key=>{
-
-            let sales = grouped[key];
-            let p = sales[0];
-
-            let lat = p.lat + 0.00005;
-            let lon = p.lon + 0.00005;
-
-            let baseColor = (activeBase === "satellite") ? "red" : "black";
-            let isSelected = sales.some(s => selectedSales[s.id]);
-
-            let marker = L.circleMarker([lat,lon],{
-                radius:5,
-                color: isSelected ? "blue" : baseColor,
-                fillColor: isSelected ? "blue" : baseColor,
-                fillOpacity: isSelected ? 1 : 0,
-                weight:2
-            });
-
-            sales.forEach(s=>{
-                markerRefs[s.id] = { marker: marker, sales: sales, prop: p };
-            });
-
-            let html = buildPopupHTML(p, sales);
-            marker.bindPopup(html);
-
-            marker.on('mouseover', function(){
-                if(!hoverEnabled) return;
-                hoverTimer = setTimeout(()=>{ marker.openPopup(); }, 700);
-            });
-
-            marker.on('mouseout', function(){
-                if(hoverTimer) clearTimeout(hoverTimer);
-                if(hoverEnabled){
-                    setTimeout(()=>{ map.closePopup(); }, 300);
-                }
-            });
-
-            markersLayer.addLayer(marker);
-        });
-    });
+  fetch("/data?" + params.toString())
+  .then(r => r.json())
+  .then(data => { renderData(data.data || []); });
 }
 
-// ================= POPUP =================
-function buildPopupHTML(p, sales){
+// ===================================================
+// RENDER DATA — place markers for a given records array
+// ===================================================
+function renderData(records){
+  markersLayer.clearLayers();
+  markerRefs = {};
 
-    let html = `<b>${p.address}</b><br>${p.city}<br><br>`;
-    html += `<b>Select for Download:</b><br>`;
+  let grouped = {};
+  records.forEach(p => {
+    if(p.trustedTown && p.trustedCountyCode)
+      addKnownTown(p.trustedTown, p.trustedCountyCode);
 
-    sales.forEach(s=>{
-        let checked = selectedSales[s.id] ? "checked" : "";
+    // Group by rounded lat/lon (4 decimal places ≈ 11m) so condo units
+    // with different address strings but the same coordinates cluster
+    // into one marker.  Fall back to address+city for records with no coords.
+    let key;
+    if(p.lat != null && p.lon != null){
+      const rlat = Math.round(p.lat * 10000) / 10000;
+      const rlon = Math.round(p.lon * 10000) / 10000;
+      key = rlat + "|" + rlon;
+    } else {
+      key = (p.address || "") + "_" + (p.city || "");
+    }
+    if(!grouped[key]) grouped[key] = [];
+    grouped[key].push(p);
+  });
 
-        html += `
-        <input type="checkbox" ${checked}
-        onclick="event.stopPropagation(); toggleSale('${s.id}')">
-        Sale: $${s.price} | ${formatDate(s.date)}<br>
-        `;
+  rebuildAllTownLists();
+
+  let propCount = 0;
+
+  Object.keys(grouped).forEach(key => {
+    const sales = grouped[key];
+    const p     = sales[0];
+    propCount++;
+
+    const lat = (p.lat || 0) + 0.00005;
+    const lon = (p.lon || 0) + 0.00005;
+
+    const isSelected  = sales.some(s => selectedSales[s.id]);
+    const baseColor   = (activeBase === "satellite") ? "red" : "#1a1a1a";
+    const isApprox    = sales.some(s => s.approxLocation);
+    // Approx markers (town centroid fallback): orange outline, hollow fill
+    const markerColor = isSelected ? "#0066ff"
+                      : isApprox   ? "#e65c00"
+                      : baseColor;
+
+    const marker = L.circleMarker([lat, lon], {
+      radius:      isApprox ? 6 : 5,
+      color:       markerColor,
+      fillColor:   markerColor,
+      fillOpacity: isSelected ? 1 : isApprox ? 0 : 0,
+      weight:      isApprox ? 2.5 : 2,
+      dashArray:   isApprox ? "4 3" : null
     });
 
-    return html;
+    sales.forEach(s => {
+      markerRefs[s.id] = { marker, sales, prop: p };
+    });
+
+    marker.bindPopup(buildPopupHTML(p, sales, null), {
+      maxWidth:   280,
+      maxHeight:  420,
+      autoPan:    false,
+      keepInView: false
+    });
+
+    marker.on('mouseover', function(){
+      if(!hoverEnabled) return;
+      hoverTimer = setTimeout(() => openPopupWithHistory(marker, p, sales), 700);
+    });
+    marker.on('mouseout', function(){
+      if(hoverTimer) clearTimeout(hoverTimer);
+      // If the popup is open and the cursor left the marker WITHOUT entering
+      // the popup, close it. We use a short delay so that a mousemove from
+      // marker → popup doesn't cause a flicker close.
+      if(map.hasLayer(marker._popup || {}) || (marker.getPopup && marker.getPopup() && marker.getPopup().isOpen())){
+        popupTimer = setTimeout(function(){
+          // Only close if the cursor is NOT inside the popup element
+          const el = marker.getPopup() && marker.getPopup().getElement();
+          if(el && el.matches(':hover')) return;   // cursor is in the popup, leave it open
+          map.closePopup();
+        }, 100);
+      }
+    });
+
+    markersLayer.addLayer(marker);
+  });
+
+  const saleWord  = records.length === 1 ? "sale" : "sales";
+  const propWord  = propCount === 1 ? "property" : "properties";
+  const viewNote  = nameSearchCache !== null ? "statewide" : "in current view";
+  document.getElementById("statusBar").textContent =
+    `${records.length} ${saleWord} at ${propCount} ${propWord} ${viewNote}`;
+
+  // Re-apply any persistent drawn shapes so filter changes update selection
+  reapplyDrawnShapes();
+}
+
+// ===================================================
+// POPUP
+// ===================================================
+
+// Helper: is a date filter currently active?
+function hasDateFilter(){
+  return !!(document.getElementById('dateFrom').value || document.getElementById('dateTo').value);
+}
+
+// Build one sale row for the popup
+function buildSaleRow(s, dimmed){
+  const checked = selectedSales[s.id] ? 'checked' : '';
+  const dateStr = s.date ? formatDate(s.date) : '';
+  const price   = s.price != null ? '$' + Number(s.price).toLocaleString() : '';
+  const bldg    = s.buildingConstruction1Desc || '';
+  const itype   = s.interestUndivPercentDesc  || '';
+  const addr    = s.address || '';
+  const style   = dimmed ? 'opacity:0.65;' : '';
+  return `
+  <div style="border-top:1px solid #eee; padding:3px 0; ${style}">
+    <input type="checkbox" ${checked} onclick="event.stopPropagation(); toggleSale('${s.id}', this)">
+    <b>${price}</b> &nbsp; ${dateStr}<br>
+    <span style="font-size:11px;">${addr}</span><br>
+    <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
+  </div>`;
+}
+
+function buildPopupHTML(p, sales, historySales){
+  // Header (outside scroll area so it's always visible)
+  let header = '';
+  if(p.trustedTown)
+    header += `<i>${p.trustedTown}, ${p.trustedCountyName || ''}</i><br>`;
+  if(sales.some(s => s.approxLocation))
+    header += `<span style="font-size:10px;color:#e65c00;">&#9888; Approximate location (town center) &mdash; source coordinates were invalid.</span><br>`;
+
+  // Google Maps / Street View button — uses the property coordinates
+  const lat = p.lat || (sales[0] && sales[0].lat);
+  const lon = p.lon || (sales[0] && sales[0].lon);
+  if(lat && lon){
+    // Open in Google Maps standard view (loads instantly, no black screen).
+    // User can click the yellow pegman in Google Maps to switch to Street View.
+    const addr0 = p.address || (sales[0] && sales[0].address) || '';
+    const town0 = p.city    || (sales[0] && sales[0].city)    || '';
+    const query = addr0 ? encodeURIComponent(addr0 + (town0 ? ', ' + town0 + ', VT' : ', VT'))
+                        : `${lat},${lon}`;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    header += `<a href="${mapsUrl}" target="_blank" rel="noopener"
+      style="display:inline-block; margin-bottom:4px; padding:2px 8px;
+             background:#4285F4; color:white; font-size:10px; font-weight:bold;
+             border-radius:3px; text-decoration:none;">
+      &#x1F5FA; View in Google Maps / Street View
+    </a><br>`;
+  }
+
+  header += `<b>Sales — check to select for export:</b>`;
+
+  // Sales rows (scrollable)
+  let rows = '';
+  if(historySales && historySales.length > 0){
+    const filteredIds = new Set(sales.map(s => String(s.id)));
+    const olderSales   = historySales.filter(s => !filteredIds.has(String(s.id)));
+    const currentSales = historySales.filter(s =>  filteredIds.has(String(s.id)));
+    if(olderSales.length > 0){
+      rows += `<div style="font-size:10px;color:#888;margin:2px 0;">&#x1F4C5; Older sales (outside date filter)</div>`;
+      olderSales.forEach(s => { rows += buildSaleRow(s, true); });
+      rows += `<div style="border-top:2px dashed #aaa; margin:4px 0;"></div>`;
+      rows += `<div style="font-size:10px;color:#555;margin:2px 0;">&#x1F4C5; Within date filter</div>`;
+    }
+    currentSales.forEach(s => { rows += buildSaleRow(s, false); });
+  } else {
+    sales.forEach(s => { rows += buildSaleRow(s, false); });
+  }
+
+  const totalSales = historySales ? historySales.length : sales.length;
+  const scrollNote = totalSales > 6
+    ? `<div style="font-size:10px;color:#888;text-align:center;padding:2px 0;">&#9651; scroll to see all ${totalSales} sales &#9651;</div>`
+    : '';
+
+  return `${header}
+    ${scrollNote}
+    <div style="max-height:340px; overflow-y:auto; overscroll-behavior:contain;">
+      ${rows}
+    </div>`;
+}
+
+// Open popup for a marker, fetching full history if date filter is active
+function openPopupWithHistory(marker, p, sales){
+  const span = p.span || (sales[0] && sales[0].span);
+  if(hasDateFilter() && span){
+    // Show a quick placeholder first
+    marker.setPopupContent(buildPopupHTML(p, sales, null));
+    marker.openPopup();
+    // Then fetch full history and update
+    fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')))
+    .then(r => r.json())
+    .then(data => {
+      if(data.data && data.data.length > sales.length){
+        marker.setPopupContent(buildPopupHTML(p, sales, data.data));
+      }
+    })
+    .catch(() => {});
+  } else {
+    marker.setPopupContent(buildPopupHTML(p, sales, null));
+    marker.openPopup();
+  }
 }
 
 function formatDate(ms){
-    if(!ms) return "";
-    let d = new Date(ms);
-    return (d.getMonth()+1)+"/"+d.getDate()+"/"+d.getFullYear();
+  if(!ms) return "";
+  const d = new Date(ms);
+  return (d.getMonth()+1) + "/" + d.getDate() + "/" + d.getFullYear();
 }
 
-// ================= SELECT =================
-function toggleSale(id){
+// ===================================================
+// SALE SELECTION (for export)
+// ===================================================
+function toggleSale(id, cb){
+  const ref = markerRefs[id];
+  if(!ref) return;
 
-    if(selectedSales[id]){
-        delete selectedSales[id];
-    } else {
-        selectedSales[id] = true;
-    }
+  if(cb.checked){
+    // Store the full sale data — find it from ref.sales
+    const sale = ref.sales.find(s => String(s.id) === String(id));
+    if(sale) selectedSales[id] = sale;
+  } else {
+    delete selectedSales[id];
+  }
 
-    let ref = markerRefs[id];
+  updateSelCount();
+  updateMarkerStyle(ref);
 
-    if(ref){
-        let marker = ref.marker;
-
-        marker.setStyle({
-            color:"blue",
-            fillColor:"blue",
-            fillOpacity:1
-        });
-
-        let newHTML = buildPopupHTML(ref.prop, ref.sales);
-        marker.setPopupContent(newHTML);
-        marker.openPopup();
-    }
+  const newHTML = buildPopupHTML(ref.prop, ref.sales, null);
+  ref.marker.setPopupContent(newHTML);
+  ref.marker.openPopup();
 }
 
-// ================= POPUP CONTROL =================
-map.on('popupopen', function(){
+function updateMarkerStyle(ref){
+  const anySelected = ref.sales.some(s => selectedSales[s.id]);
+  const isApprox    = ref.sales.some(s => s.approxLocation);
+  const baseColor   = activeBase === "satellite" ? "red" : "#1a1a1a";
+  const col = anySelected ? "#0066ff" : isApprox ? "#e65c00" : baseColor;
+  ref.marker.setStyle({
+    color:       col,
+    fillColor:   col,
+    fillOpacity: anySelected ? 1 : 0,
+    dashArray:   anySelected ? null : isApprox ? "4 3" : null,
+  });
+}
 
-    hoverEnabled = false;
+function updateSelCount(){
+  document.getElementById("selCount").textContent = Object.keys(selectedSales).length;
+}
 
-    if(popupTimer){
-        clearTimeout(popupTimer);
-    }
+// ===================================================
+// POPUP TIMING
+// ===================================================
+// Popup opens on marker mouseover (700ms delay).
+// It closes when the mouse leaves the popup element itself.
+// We attach a mouseleave listener to the popup wrapper after it is added to the DOM.
+map.on('popupopen', function(e){
+  hoverEnabled = false;
+  if(popupTimer) clearTimeout(popupTimer);
 
-    popupTimer = setTimeout(()=>{
-        map.closePopup();
-    }, 8000);
+  setTimeout(function(){
+    const el = e.popup.getElement();
+    if(!el) return;
 
+    // Prevent scroll wheel inside popup from zooming the map
+    L.DomEvent.disableScrollPropagation(el);
+
+    // Close when cursor leaves the popup element
+    el.addEventListener('mouseleave', function onLeave(){
+      el.removeEventListener('mouseleave', onLeave);
+      map.closePopup();
+    });
+  }, 0);
 });
-
 map.on('popupclose', function(){
-    hoverEnabled = true;
+  hoverEnabled = true;
+  if(popupTimer) clearTimeout(popupTimer);
 });
 
-// ================= EVENTS =================
-map.on("moveend", loadData);
+// ===================================================
+// DOWNLOAD / EXPORT
+// ===================================================
+function _simpleDownloadExport(selectedOnly){
+  // Standard export — no drawn shapes involved
+  const fmt    = document.querySelector('input[name="exportFormat"]:checked').value;
+  const params = buildFilterParams();
+  params.set("format", fmt);
 
-// ================= INIT =================
-loadData();
+  if(selectedOnly){
+    const ids = Object.keys(selectedSales);
+    if(ids.length === 0){
+      alert("No sales selected. Check boxes in the map popups first.");
+      return;
+    }
+    params.set("ids", ids.join("|"));
+  }
 
+  const url  = "/export?" + params.toString();
+  const link = document.createElement("a");
+  link.href  = url;
+  link.download = "vt_property_transfers." + fmt;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ===================================================
+// CLEAR SELECTED PROPERTIES
+// ===================================================
+function clearSelectedSales(){
+  // Deselect all sales and reset all markers to their unselected style
+  Object.keys(selectedSales).forEach(id => {
+    const ref = markerRefs[id];
+    if(ref) updateMarkerStyle(ref);
+  });
+  selectedSales = {};
+  updateSelCount();
+  // Close any open popup so stale checkboxes don't remain visible
+  map.closePopup();
+}
+
+// ===================================================
+// SELECT / CLEAR ALL CHECKBOXES
+// ===================================================
+function selectAllCheckboxes(){
+  // Check all options in the 6 filter checkbox groups (NOT location)
+  ['buildingList','interestList','sellerUseList','buyerUseList','grandListList','pttList'].forEach(id => {
+    checkAllIn(id);
+  });
+}
+
+function clearAllCheckboxes(){
+  // Uncheck all filter checkbox groups
+  ['buildingList','interestList','sellerUseList','buyerUseList','grandListList','pttList'].forEach(id => {
+    uncheckAllIn(id);
+  });
+  // Clear county and town selections
+  clearAllCounties();
+  clearAllTowns();
+  // Clear date range
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value   = '';
+  // Clear price range
+  document.getElementById('priceLow').value  = '';
+  document.getElementById('priceHigh').value = '';
+  // Clear land size range
+  document.getElementById('landLow').value  = '';
+  document.getElementById('landHigh').value = '';
+  // Clear all name and SPAN fields
+  ['sellerEntity','sellerLast','sellerFirst',
+   'buyerEntity','buyerLast','buyerFirst',
+   'streetAddr','spanInput'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  // Reset Other Flags radios to 'Any' (empty value)
+  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed'].forEach(name => {
+    const radio = document.querySelector(`input[name="${name}"][value=""]`);
+    if(radio) radio.checked = true;
+  });
+  // Invalidate any name search cache since fields are now cleared
+  nameSearchCache = null;
+}
+
+// ===================================================
+// MAP EVENTS & INIT — attached AFTER codes load
+// Named handlers so they can be temporarily detached during fitBounds.
+// ===================================================
+function onMoveEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
+function onZoomEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
+
+function initMapEvents(){
+  map.on("moveend", onMoveEnd);
+  map.on("zoomend", onZoomEnd);
+  loadData();
+}
+
+loadCodes();
+
+// ===================================================
+// DRAW-TO-SELECT TOOLBAR (Leaflet Draw)
+// ===================================================
+// Each drawn shape is stored in drawnShapes[] with:
+//   id        — unique ever-incrementing number
+//   displayNum — sequential display label (1, 2, 3…) renumbered on delete
+//   type      — 'circle' | 'polygon'
+//   layer     — Leaflet layer
+//   labelMarker — Leaflet marker showing "Area N  ×" button
+//   statsPopup  — Leaflet popup anchored at shape center with stats
+//
+// On every renderData() call, reapplyDrawnShapes() rebuilds selectedSales
+// so filter changes dynamically update dots + count.
+//
+// "Download Selected" → grouped export via /export_grouped
+
+const drawLayer = new L.FeatureGroup().addTo(map);
+
+const drawControl = new L.Control.Draw({
+  position: 'topleft',
+  draw: {
+    circle:    { shapeOptions: { color: '#1F4E79', weight: 2, fillOpacity: 0.08 } },
+    rectangle: { shapeOptions: { color: '#1F4E79', weight: 2, fillOpacity: 0.08 } },
+    polygon:   {
+      allowIntersection: false,
+      shapeOptions: { color: '#1F4E79', weight: 2, fillOpacity: 0.08 },
+      showArea: false
+    },
+    polyline:     false,
+    marker:       false,
+    circlemarker: false
+  },
+  edit: { featureGroup: drawLayer, edit: false, remove: false }
+});
+drawControl.addTo(map);
+
+let drawnShapes  = [];   // array of shape objects (see above)
+let shapeCounter = 0;    // ever-incrementing unique id
+
+// ---- Geometry helpers ----
+function pointInPolygon(lat, lng, latlngs){
+  let inside = false;
+  const x = lng, y = lat;
+  for(let i=0, j=latlngs.length-1; i<latlngs.length; j=i++){
+    const xi=latlngs[i].lng, yi=latlngs[i].lat;
+    const xj=latlngs[j].lng, yj=latlngs[j].lat;
+    if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+
+function isInsideShape(lat, lng, s){
+  if(s.type === 'circle'){
+    return s.layer.getLatLng().distanceTo(L.latLng(lat, lng)) <= s.layer.getRadius();
+  }
+  return pointInPolygon(lat, lng, s.layer.getLatLngs()[0]);
+}
+
+// Returns the FIRST shape the point falls inside (priority = draw order)
+function firstShapeContaining(lat, lng){
+  for(const s of drawnShapes){
+    if(isInsideShape(lat, lng, s)) return s;
+  }
+  return null;
+}
+
+// ---- Stats ----
+function computeShapeStats(shapeId){
+  // Collect prices > 0 for all visible sales assigned to this shape
+  const prices = [];
+  Object.keys(markerRefs).forEach(id => {
+    const ref = markerRefs[id];
+    const ll  = ref.marker.getLatLng();
+    const s   = firstShapeContaining(ll.lat, ll.lng);
+    if(!s || s.id !== shapeId) return;
+    const sale = ref.sales.find(r => String(r.id) === String(id));
+    if(sale && sale.price > 0) prices.push(sale.price);
+  });
+  if(prices.length === 0) return { count:0, high:null, low:null, avg:null, median:null };
+  prices.sort((a,b) => a-b);
+  const sum  = prices.reduce((a,b)=>a+b,0);
+  const mid  = Math.floor(prices.length/2);
+  const med  = prices.length%2 === 0 ? (prices[mid-1]+prices[mid])/2 : prices[mid];
+  return {
+    count:  prices.length,
+    high:   prices[prices.length-1],
+    low:    prices[0],
+    avg:    Math.round(sum/prices.length),
+    median: Math.round(med)
+  };
+}
+
+function fmt$(n){ return n != null ? '$'+Number(n).toLocaleString() : 'N/A'; }
+
+function buildStatsHTML(num, stats){
+  return `<div style="font-size:12px; line-height:1.7; min-width:170px;">
+    <b>Area ${num}</b><br>
+    <table style="font-size:11px; border-collapse:collapse; width:100%;">
+      <tr><td>Sales (>$0):</td><td style="text-align:right;"><b>${stats.count}</b></td></tr>
+      <tr><td>High:</td><td style="text-align:right;">${fmt$(stats.high)}</td></tr>
+      <tr><td>Low:</td><td style="text-align:right;">${fmt$(stats.low)}</td></tr>
+      <tr><td>Average:</td><td style="text-align:right;">${fmt$(stats.avg)}</td></tr>
+      <tr><td>Median:</td><td style="text-align:right;">${fmt$(stats.median)}</td></tr>
+    </table>
+  </div>`;
+}
+
+// ---- Label marker ("Area N  ×") ----
+function shapeCenter(s){
+  if(s.type === 'circle') return s.layer.getLatLng();
+  const pts = s.layer.getLatLngs()[0];
+  const lat = pts.reduce((a,p)=>a+p.lat,0)/pts.length;
+  const lng = pts.reduce((a,p)=>a+p.lng,0)/pts.length;
+  return L.latLng(lat, lng);
+}
+
+function makeLabelMarker(s){
+  // iconSize:[0,0] + iconAnchor:[0,0] prevents Leaflet from adding any
+  // background dot or default marker styles. className must be non-empty
+  // but we override everything via inline styles on the inner div.
+  const icon = L.divIcon({
+    className: 'shape-label-icon',  // styled in CSS to have no bg/border/shadow
+    iconSize:   [0, 0],
+    iconAnchor: [0, 0],
+    html: `<div id="shape-label-${s.id}" style="
+      background:#7B00D4; color:#ffffff; font-size:14px; font-weight:bold;
+      padding:4px 10px; border-radius:12px; white-space:nowrap;
+      box-shadow:0 2px 6px rgba(0,0,0,0.45);
+      display:inline-flex; align-items:center; gap:8px;
+      transform:translate(-50%,-50%);">
+      <span style="pointer-events:none;">Area ${s.displayNum}</span>
+      <span id="shape-del-${s.id}"
+        style="cursor:pointer; font-size:17px; line-height:1; opacity:0.85;
+               pointer-events:auto; color:#ffffff;"
+        onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.85">&times;</span>
+    </div>`
+  });
+  const m = L.marker(shapeCenter(s), { icon, interactive: true, zIndexOffset: 1500 }).addTo(map);
+  // Attach click after DOM insertion via a short delay
+  setTimeout(() => {
+    const del = document.getElementById(`shape-del-${s.id}`);
+    if(del) del.addEventListener('click', function(e){
+      e.stopPropagation();
+      e.preventDefault();
+      deleteShape(s.id);
+    });
+    // Click on the label itself (not X) opens/recalls stats panel
+    const lbl = document.getElementById(`shape-label-${s.id}`);
+    if(lbl) lbl.addEventListener('click', function(e){
+      if(e.target && e.target.id === `shape-del-${s.id}`) return;
+      e.stopPropagation();
+      const sh = drawnShapes.find(x => x.id === s.id);
+      if(sh){
+        const existing = document.getElementById('stats-panel-' + s.id);
+        if(existing){
+          // Panel already open — bring to front
+          existing.style.zIndex = '1400';
+        } else {
+          showStatsPanel(sh);
+        }
+      }
+    });
+  }, 50);
+  return m;
+}
+
+function updateLabelMarker(s){
+  if(s.labelMarker) map.removeLayer(s.labelMarker);
+  s.labelMarker = makeLabelMarker(s);
+}
+
+// ============================================================
+// STATS PANEL
+// ============================================================
+// The panel box is a Leaflet marker with a divIcon so it moves
+// automatically with map pan/zoom (just like the Area label).
+// The tail is an SVG line drawn in a full-map overlay div,
+// updated on every map move/zoom to connect the polygon center
+// to the box's current screen position.
+// Dragging the purple header repositions the marker on the map.
+
+function showStatsPanel(s){
+  // Remove any existing panel for this shape
+  _removeStatsPanel(s);
+
+  const stats  = computeShapeStats(s.id);
+  const center = shapeCenter(s);
+  // ---- Position the box marker offset from the polygon center ----
+  // Use a pixel offset so the distance is consistent regardless of zoom.
+  // Start 220px to the right and 80px up from the polygon center.
+  const anchorPx0 = map.latLngToContainerPoint(center);
+  const staggerPx = (s.displayNum - 1) * 22;
+  const boxPx0 = L.point(
+    anchorPx0.x + 220 + staggerPx,
+    anchorPx0.y - 80 - staggerPx
+  );
+  let boxLatLng = map.containerPointToLatLng(boxPx0);
+
+  // ---- Build the box HTML ----
+  function buildBoxHTML(){
+    const st = computeShapeStats(s.id);
+    return `
+      <div id="stats-drag-${s.id}" style="
+        background:#7B00D4; color:white; font-size:13px; font-weight:bold;
+        padding:5px 10px; border-radius:4px 4px 0 0;
+        display:flex; justify-content:space-between; align-items:center;
+        cursor:move; white-space:nowrap; user-select:none;">
+        <span>Area ${s.displayNum}</span>
+        <span id="stats-close-${s.id}"
+          style="cursor:pointer;font-size:16px;line-height:1;margin-left:14px;opacity:0.85;"
+          onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.85">&times;</span>
+      </div>
+      <div style="padding:8px 10px; background:white; border-radius:0 0 5px 5px;">
+        <table style="font-size:12px; border-collapse:collapse; width:100%;">
+          <tr><td>Sales (&gt;$0):</td><td id="st-cnt-${s.id}" style="text-align:right;font-weight:bold;">${st.count}</td></tr>
+          <tr><td>High:</td>          <td id="st-hi-${s.id}"  style="text-align:right;">${fmt$(st.high)}</td></tr>
+          <tr><td>Low:</td>           <td id="st-lo-${s.id}"  style="text-align:right;">${fmt$(st.low)}</td></tr>
+          <tr><td>Average:</td>       <td id="st-av-${s.id}"  style="text-align:right;">${fmt$(st.avg)}</td></tr>
+          <tr><td>Median:</td>        <td id="st-md-${s.id}"  style="text-align:right;">${fmt$(st.median)}</td></tr>
+        </table>
+      </div>`;
+  }
+
+  // ---- Create marker with divIcon ----
+  const icon = L.divIcon({
+    className: 'shape-label-icon',  // no default Leaflet bg/border
+    iconSize:   [0, 0],
+    iconAnchor: [0, 0],
+    html: `<div id="stats-panel-${s.id}" style="
+      border:2px solid #7B00D4; border-radius:6px;
+      box-shadow:0 3px 10px rgba(0,0,0,0.3);
+      min-width:190px; font-family:Arial,sans-serif;
+      user-select:none; pointer-events:auto;
+      transform:translate(-50%,-50%);
+    ">${buildBoxHTML()}</div>`
+  });
+
+  const boxMarker = L.marker(boxLatLng, {
+    icon,
+    interactive: true,
+    zIndexOffset: 1600
+  }).addTo(map);
+
+  s.statsPopup  = boxMarker;   // truthy = open
+  s._boxLatLng  = boxLatLng;
+  s._boxMarker  = boxMarker;
+
+  // ---- SVG tail overlay ----
+  const mapEl  = document.getElementById('map');
+  const svgNS  = 'http://www.w3.org/2000/svg';
+
+  const wrap = document.createElement('div');
+  wrap.id = 'stats-wrap-' + s.id;
+  const mr = mapEl.getBoundingClientRect();
+  wrap.style.cssText = `position:absolute;top:0;left:0;width:${mr.width}px;height:${mr.height}px;pointer-events:none;z-index:1199;`;
+
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none;';
+
+  const line = document.createElementNS(svgNS, 'line');
+  line.setAttribute('stroke','#7B00D4'); line.setAttribute('stroke-width','2');
+  line.setAttribute('stroke-dasharray','5,4'); line.setAttribute('opacity','0.7');
+
+  const dot = document.createElementNS(svgNS, 'circle');
+  dot.setAttribute('r','5'); dot.setAttribute('fill','#7B00D4'); dot.setAttribute('opacity','0.85');
+
+  svg.appendChild(line); svg.appendChild(dot);
+  wrap.appendChild(svg);
+  mapEl.appendChild(wrap);
+
+  function updateTail(){
+    const anchorPx = map.latLngToContainerPoint(shapeCenter(s));
+    const boxPx    = map.latLngToContainerPoint(s._boxLatLng);
+    const newMr    = mapEl.getBoundingClientRect();
+    wrap.style.width  = newMr.width  + 'px';
+    wrap.style.height = newMr.height + 'px';
+    dot.setAttribute('cx', anchorPx.x); dot.setAttribute('cy', anchorPx.y);
+    line.setAttribute('x1', anchorPx.x); line.setAttribute('y1', anchorPx.y);
+    line.setAttribute('x2', boxPx.x);    line.setAttribute('y2', boxPx.y);
+  }
+  updateTail();
+
+  const tailUpdater = function(){ updateTail(); };
+  map.on('move zoom moveend zoomend', tailUpdater);
+  wrap._tailUpdater = tailUpdater;
+  s._updateTail = updateTail;  // stored so refreshStatsPanel can use it
+
+  // ---- Wire up close + drag after DOM insertion ----
+  setTimeout(function(){
+    const panel  = document.getElementById('stats-panel-' + s.id);
+    const handle = document.getElementById('stats-drag-'  + s.id);
+    const closeB = document.getElementById('stats-close-' + s.id);
+    if(!panel || !handle || !closeB) return;
+    L.DomEvent.on(closeB, 'click', function(e){
+      L.DomEvent.stopPropagation(e);
+      _removeStatsPanel(s);
+    });
+    _wireStatsDrag(s, handle, closeB, boxMarker, updateTail);
+    L.DomEvent.disableClickPropagation(panel);
+    L.DomEvent.disableScrollPropagation(panel);
+  }, 60);
+}
+
+// Shared drag wiring — called from showStatsPanel and refreshStatsPanel
+function _wireStatsDrag(s, handle, closeB, boxMarker, updateTail){
+  // boxMarker and updateTail come from showStatsPanel's closure via s._boxMarker / s._updateTail
+  const bm = boxMarker || s._boxMarker;
+  const ut = updateTail || s._updateTail;
+  if(!bm || !ut) return;
+  L.DomEvent.on(handle, 'mousedown', function(e){
+    if(e.target === closeB || closeB.contains(e.target)) return;
+    L.DomEvent.stopPropagation(e);
+    L.DomEvent.preventDefault(e);
+    map.dragging.disable();
+    const startPx = map.latLngToContainerPoint(s._boxLatLng);
+    const startX  = e.clientX;
+    const startY  = e.clientY;
+    function onMove(ev){
+      const newPx = L.point(
+        startPx.x + ev.clientX - startX,
+        startPx.y + ev.clientY - startY
+      );
+      s._boxLatLng = map.containerPointToLatLng(newPx);
+      bm.setLatLng(s._boxLatLng);
+      ut();
+    }
+    function onUp(){
+      map.dragging.enable();
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
+}
+
+function _removeStatsPanel(s){
+  if(s.statsPopup){
+    map.removeLayer(s.statsPopup);
+    s.statsPopup = null;
+  }
+  const wrapEl = document.getElementById('stats-wrap-' + s.id);
+  if(wrapEl){
+    if(wrapEl._tailUpdater) map.off('move zoom moveend zoomend', wrapEl._tailUpdater);
+    wrapEl.remove();
+  }
+}
+
+function refreshStatsPanel(s){
+  // Panel not open — nothing to do
+  if(!s.statsPopup) return;
+  const stats = computeShapeStats(s.id);
+  // Try fast path: update cells directly if they are in the DOM
+  const tryCell = (id, val) => {
+    const el = document.getElementById(id);
+    if(el){ el.textContent = val; return true; }
+    return false;
+  };
+  const ok = tryCell('st-cnt-' + s.id, stats.count);
+  if(ok){
+    tryCell('st-hi-' + s.id, fmt$(stats.high));
+    tryCell('st-lo-' + s.id, fmt$(stats.low));
+    tryCell('st-av-' + s.id, fmt$(stats.avg));
+    tryCell('st-md-' + s.id, fmt$(stats.median));
+  } else {
+    // Leaflet may have re-rendered the icon and detached the old elements.
+    // Rebuild the entire icon HTML in place.
+    const st = stats;
+    const newHtml = `<div id="stats-panel-${s.id}" style="
+      border:2px solid #7B00D4; border-radius:6px;
+      box-shadow:0 3px 10px rgba(0,0,0,0.3);
+      min-width:190px; font-family:Arial,sans-serif;
+      user-select:none; pointer-events:auto;
+      transform:translate(-50%,-50%);
+    ">
+      <div id="stats-drag-${s.id}" style="
+        background:#7B00D4; color:white; font-size:13px; font-weight:bold;
+        padding:5px 10px; border-radius:4px 4px 0 0;
+        display:flex; justify-content:space-between; align-items:center;
+        cursor:move; white-space:nowrap; user-select:none;">
+        <span>Area ${s.displayNum}</span>
+        <span id="stats-close-${s.id}"
+          style="cursor:pointer;font-size:16px;line-height:1;margin-left:14px;opacity:0.85;"
+          onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.85">&times;</span>
+      </div>
+      <div style="padding:8px 10px; background:white; border-radius:0 0 5px 5px;">
+        <table style="font-size:12px; border-collapse:collapse; width:100%;">
+          <tr><td>Sales (&gt;$0):</td><td id="st-cnt-${s.id}" style="text-align:right;font-weight:bold;">${st.count}</td></tr>
+          <tr><td>High:</td>          <td id="st-hi-${s.id}"  style="text-align:right;">${fmt$(st.high)}</td></tr>
+          <tr><td>Low:</td>           <td id="st-lo-${s.id}"  style="text-align:right;">${fmt$(st.low)}</td></tr>
+          <tr><td>Average:</td>       <td id="st-av-${s.id}"  style="text-align:right;">${fmt$(st.avg)}</td></tr>
+          <tr><td>Median:</td>        <td id="st-md-${s.id}"  style="text-align:right;">${fmt$(st.median)}</td></tr>
+        </table>
+      </div>
+    </div>`;
+    s.statsPopup.setIcon(L.divIcon({
+      className: 'shape-label-icon',
+      iconSize:   [0, 0],
+      iconAnchor: [0, 0],
+      html: newHtml
+    }));
+    // Re-wire events after icon swap
+    setTimeout(function(){
+      const panel  = document.getElementById('stats-panel-' + s.id);
+      const handle = document.getElementById('stats-drag-'  + s.id);
+      const closeB = document.getElementById('stats-close-' + s.id);
+      if(!panel || !handle || !closeB) return;
+      L.DomEvent.on(closeB, 'click', function(e){
+        L.DomEvent.stopPropagation(e); _removeStatsPanel(s);
+      });
+      _wireStatsDrag(s, handle, closeB);
+      L.DomEvent.disableClickPropagation(panel);
+      L.DomEvent.disableScrollPropagation(panel);
+    }, 60);
+  }
+}
+
+// Alias: updateStatsPopup now calls showStatsPanel for backward compat
+function updateStatsPopup(s){ showStatsPanel(s); }
+
+// ---- Reapply all shapes after renderData ----
+function reapplyDrawnShapes(){
+  if(drawnShapes.length === 0) return;
+
+  selectedSales = {};
+  const seen = new Set();
+
+  Object.keys(markerRefs).forEach(id => {
+    const ref = markerRefs[id];
+    const ll  = ref.marker.getLatLng();
+    const s   = firstShapeContaining(ll.lat, ll.lng);
+    if(s){
+      const sale = ref.sales.find(r => String(r.id) === String(id));
+      if(sale) selectedSales[id] = sale;
+    }
+    if(!seen.has(ref.marker)){
+      seen.add(ref.marker);
+      updateMarkerStyle(ref);
+    }
+  });
+  updateSelCount();
+
+  // Refresh any open stats panels with updated numbers (don't reopen closed ones)
+  drawnShapes.forEach(s => {
+    if(s.statsPopup) refreshStatsPanel(s);
+  });
+}
+
+// ---- Delete a shape by id ----
+function deleteShape(id){
+  const idx = drawnShapes.findIndex(s => s.id === id);
+  if(idx < 0) return;
+  const s = drawnShapes[idx];
+
+  // Remove map layers and stats panel
+  drawLayer.removeLayer(s.layer);
+  if(s.labelMarker) map.removeLayer(s.labelMarker);
+  // Clean up stats panel
+  _removeStatsPanel(s);
+
+  drawnShapes.splice(idx, 1);
+
+  // Renumber remaining shapes
+  drawnShapes.forEach((sh, i) => {
+    sh.displayNum = i + 1;
+    updateLabelMarker(sh);
+  });
+
+  // Rebuild selection without deleted shape
+  reapplyDrawnShapes();
+  if(drawnShapes.length === 0){
+    selectedSales = {};
+    const seen = new Set();
+    Object.keys(markerRefs).forEach(id2 => {
+      const ref = markerRefs[id2];
+      if(!seen.has(ref.marker)){ seen.add(ref.marker); updateMarkerStyle(ref); }
+    });
+    updateSelCount();
+  }
+}
+
+// ---- New shape drawn ----
+map.on(L.Draw.Event.CREATED, function(e){
+  const layer = e.layer;
+  const ltype = e.layerType;
+  shapeCounter++;
+
+  const s = {
+    id:         shapeCounter,
+    displayNum: drawnShapes.length + 1,
+    type:       ltype === 'circle' ? 'circle' : 'polygon',
+    layer:      layer,
+    labelMarker: null,
+    statsPopup:  null
+  };
+
+  drawnShapes.push(s);
+  drawLayer.addLayer(layer);
+
+  s.labelMarker = makeLabelMarker(s);
+
+  reapplyDrawnShapes();
+  showStatsPanel(s);
+  updateSelCount();
+
+  // Stop the active draw handler so the guide line clears.
+  // Use a short delay so Leaflet's own CREATED handler finishes first.
+  // Also fire map click to force-clear any residual guide layer.
+  setTimeout(function(){
+    try {
+      const toolbar = drawControl._toolbars && drawControl._toolbars.draw;
+      if(toolbar && toolbar._activeMode){
+        toolbar._activeMode.handler.disable();
+      }
+      // Remove any lingering guide layers Leaflet Draw leaves behind
+      map.eachLayer(function(l){
+        if(l.options && l.options.className &&
+           (l.options.className.indexOf('leaflet-draw-guide') >= 0 ||
+            l.options.className.indexOf('leaflet-mouse-marker') >= 0)){
+          map.removeLayer(l);
+        }
+      });
+    } catch(ex){ /* safe to ignore */ }
+  }, 100);
+});
+
+// ---- Clear Map Selections also wipes shapes ----
+const _origClearSelected = clearSelectedSales;
+clearSelectedSales = function(){
+  _origClearSelected();
+  drawnShapes.forEach(s => {
+    drawLayer.removeLayer(s.layer);
+    if(s.labelMarker) map.removeLayer(s.labelMarker);
+    _removeStatsPanel(s);
+  });
+  drawnShapes = [];
+  shapeCounter = 0;
+  drawLayer.clearLayers();
+};
+
+// ---- Main download entry point ----
+function downloadExport(selectedOnly){
+  const fmt = document.querySelector('input[name="exportFormat"]:checked').value;
+
+  // If no shapes drawn, use simple direct export
+  if(!selectedOnly || drawnShapes.length === 0){
+    _simpleDownloadExport(selectedOnly);
+    return;
+  }
+
+  const params = buildFilterParams();
+  params.set('format', fmt);
+
+  // Build groups: [{label, ids, stats}, ...]
+  // Each visible markerRef is assigned to the FIRST shape containing it
+  const groups = drawnShapes.map(s => ({
+    label: `Area ${s.displayNum}`,
+    ids:   [],
+    stats: computeShapeStats(s.id)
+  }));
+
+  Object.keys(markerRefs).forEach(id => {
+    const ref  = markerRefs[id];
+    const ll   = ref.marker.getLatLng();
+    const s    = firstShapeContaining(ll.lat, ll.lng);
+    if(!s) return;
+    const idx  = drawnShapes.findIndex(ds => ds.id === s.id);
+    if(idx < 0) return;
+    const sale = ref.sales.find(r => String(r.id) === String(id));
+    if(sale) groups[idx].ids.push(id);
+  });
+
+  // Remove empty groups
+  const populated = groups.filter(g => g.ids.length > 0);
+  if(populated.length === 0){
+    alert('No sales selected in drawn areas.');
+    return;
+  }
+
+  const dlBtn = document.getElementById('dlSelBtn');
+  const dlStatus = document.getElementById('dlSelStatus');
+  if(dlBtn){ dlBtn.disabled = true; }
+  if(dlStatus) dlStatus.textContent = 'Preparing…';
+
+  // Build map metadata for server-side image generation
+  function buildMapMeta(){
+    const b = map.getBounds();
+    const shapes = drawnShapes.map(function(s){
+      let latlngs = [];
+      if(s.type === 'circle'){
+        const c = s.layer.getLatLng();
+        const r = s.layer.getRadius();
+        for(let i=0; i<36; i++){
+          const ang = (i / 36) * 2 * Math.PI;
+          const dlat = (r * Math.cos(ang)) / 111320;
+          const dlng = (r * Math.sin(ang)) / (111320 * Math.cos(c.lat * Math.PI/180));
+          latlngs.push([c.lat + dlat, c.lng + dlng]);
+        }
+      } else {
+        const pts = s.layer.getLatLngs()[0] || [];
+        latlngs = pts.map(function(p){ return [p.lat, p.lng]; });
+      }
+      return {
+        label:   'Area ' + s.displayNum,
+        latlngs: latlngs,
+        stats:   computeShapeStats(s.id)
+      };
+    });
+
+    // Collect all visible marker positions
+    // selected = blue filled, unselected = hollow dark
+    const selectedDots   = [];
+    const unselectedDots = [];
+    const seen = new Set();
+    Object.keys(markerRefs).forEach(function(id){
+      const ref = markerRefs[id];
+      if(seen.has(ref.marker)) return;
+      seen.add(ref.marker);
+      const ll = ref.marker.getLatLng();
+      const isSelected = ref.sales.some(function(s){ return selectedSales[s.id]; });
+      if(isSelected){
+        selectedDots.push([ll.lat, ll.lng]);
+      } else {
+        unselectedDots.push([ll.lat, ll.lng]);
+      }
+    });
+
+    return {
+      bounds: { north: b.getNorth(), south: b.getSouth(),
+                east:  b.getEast(),  west:  b.getWest() },
+      zoom:          map.getZoom(),
+      shapes:        shapes,
+      selected_dots:   selectedDots,
+      unselected_dots: unselectedDots
+    };
+  }
+
+  function sendExport(screenshotB64){
+    const body = {
+      format:      fmt,
+      filters:     Object.fromEntries(params.entries()),
+      groups:      populated.map(g => ({ label: g.label, ids: g.ids, stats: g.stats })),
+      map_meta:    buildMapMeta(),
+      screenshot:  screenshotB64 || null
+    };
+    if(dlStatus) dlStatus.textContent = 'Preparing…';
+    fetch('/export_grouped', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body)
+    })
+    .then(function(resp){
+      if(!resp.ok) return resp.json().then(e => { throw new Error(e.error || 'Export failed'); });
+      return resp.blob();
+    })
+    .then(function(blob){
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href  = url;
+      link.download = 'vt_property_transfers_grouped.' + fmt;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    })
+    .catch(function(err){ alert('Download error: ' + err.message); })
+    .finally(function(){
+      if(dlBtn){ dlBtn.disabled = false; }
+      if(dlStatus) dlStatus.textContent = '';
+      updateSelCount();
+    });
+  }
+
+  // Only capture screen if the checkbox is checked
+  const wantScreenCapture = document.getElementById('screenCaptureChk') &&
+                            document.getElementById('screenCaptureChk').checked;
+
+  if(wantScreenCapture){
+    const isFirstCapture = !(_screenStream && _screenStream.active);
+    if(isFirstCapture && dlStatus) dlStatus.textContent = 'Allow screen capture…';
+    getScreenFrame().then(function(b64){
+      sendExport(b64 || null);
+    });
+  } else {
+    sendExport(null);
+  }
+}
+
+// Helper: extract translate offset from a CSS transform string
+function _parseTx(transform){
+  const m = (transform||'').match(/translate(?:3d)?\(([^,]+),\s*([^,)]+)/);
+  return m ? { x: parseFloat(m[1])||0, y: parseFloat(m[2])||0 } : { x:0, y:0 };
+}
+
+function captureMapCanvas(){
+  return new Promise(function(resolve){
+    const mapEl   = document.getElementById('map');
+    const mapRect = mapEl.getBoundingClientRect();
+    const W = Math.round(mapRect.width);
+    const H = Math.round(mapRect.height);
+
+    const out = document.createElement('canvas');
+    out.width  = W;
+    out.height = H;
+    const ctx  = out.getContext('2d');
+
+    // White background in case tiles fail
+    ctx.fillStyle = '#f0ede8';
+    ctx.fillRect(0, 0, W, H);
+
+    // ---- Collect all tile <img> elements with their screen positions ----
+    // Re-fetch each tile URL as a blob with crossOrigin=anonymous so we
+    // can draw it to canvas without tainting it.
+    const tileJobs = [];
+    mapEl.querySelectorAll('.leaflet-tile-pane img.leaflet-tile').forEach(function(img){
+      if(!img.src) return;
+      // Compute absolute screen position of this tile
+      const r = img.getBoundingClientRect();
+      const x = Math.round(r.left - mapRect.left);
+      const y = Math.round(r.top  - mapRect.top);
+      const w = Math.round(r.width)  || 256;
+      const h = Math.round(r.height) || 256;
+      tileJobs.push({ src: img.src, x, y, w, h });
+    });
+
+    // Draw one tile: fetch as blob → objectURL → Image → drawImage
+    function drawTile(job){
+      return fetch(job.src)
+        .then(function(r){ return r.blob(); })
+        .then(function(blob){
+          const url = URL.createObjectURL(blob);
+          return new Promise(function(res){
+            const i = new Image();
+            i.onload  = function(){ ctx.drawImage(i, job.x, job.y, job.w, job.h); URL.revokeObjectURL(url); res(); };
+            i.onerror = function(){ URL.revokeObjectURL(url); res(); };
+            i.src = url;
+          });
+        })
+        .catch(function(){ return Promise.resolve(); });
+    }
+
+    // Draw all tiles in parallel, then SVG layers, then div overlays
+    Promise.all(tileJobs.map(drawTile))
+    .then(function(){
+      return drawSVGOverlay(ctx, mapEl, W, H, '.leaflet-overlay-pane');
+    })
+    .then(function(){
+      return drawSVGOverlay(ctx, mapEl, W, H, '.leaflet-marker-pane');
+    })
+    .then(function(){
+      // Draw tie-lines (SVG inside stats-wrap-* divs appended to #map)
+      return drawTieLines(ctx, mapEl);
+    })
+    .then(function(){
+      // Draw Area label pills (divIcon markers in leaflet-marker-pane)
+      drawDivMarkers(ctx, mapEl);
+      // Draw stats panels (position:absolute divs directly in #map)
+      drawStatsPanels(ctx, mapEl);
+      try{ resolve(out.toDataURL('image/png').split(',')[1]); }
+      catch(e){ resolve(null); }
+    })
+    .catch(function(){ resolve(null); });
+  });
+}
+
+function drawSVGOverlay(ctx, mapEl, W, H, paneSelector){
+  const pane = mapEl.querySelector(paneSelector);
+  if(!pane) return Promise.resolve();
+  const svgEl = pane.querySelector('svg');
+  if(!svgEl) return Promise.resolve();
+
+  // Get the pane's screen rect relative to the map container
+  const mapRect  = mapEl.getBoundingClientRect();
+  const paneRect = pane.getBoundingClientRect();
+  const paneX = Math.round(paneRect.left - mapRect.left);
+  const paneY = Math.round(paneRect.top  - mapRect.top);
+
+  // SVG's own offset inside the pane
+  const svgRect = svgEl.getBoundingClientRect();
+  const svgX = Math.round(svgRect.left - mapRect.left);
+  const svgY = Math.round(svgRect.top  - mapRect.top);
+
+  // The root <g> transform gives the coordinate offset for all paths
+  const rootG = svgEl.querySelector('g');
+  const gt = rootG ? (rootG.getAttribute('transform')||'') : '';
+  const gOff = _parseTx(gt.replace('translate(','translate3d('));
+  // gt is like "translate(x,y)" not translate3d — parse directly
+  const gm = gt.match(/translate\(([^,]+),\s*([^)]+)\)/);
+  const gx = gm ? (parseFloat(gm[1])||0) : 0;
+  const gy = gm ? (parseFloat(gm[2])||0) : 0;
+
+  // Build a clone with corrected dimensions and transform
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width',  W);
+  clone.setAttribute('height', H);
+  clone.removeAttribute('style');
+  // The paths inside rootG are in a coordinate space where (0,0) is the
+  // top-left of the SVG element. We need to shift them by svgX + gx, svgY + gy.
+  const cg = clone.querySelector('g');
+  if(cg) cg.setAttribute('transform', `translate(${svgX + gx},${svgY + gy})`);
+
+  const xml  = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+
+  return new Promise(function(resolve){
+    const img = new Image();
+    img.onload  = function(){ ctx.drawImage(img, 0, 0, W, H); URL.revokeObjectURL(url); resolve(); };
+    img.onerror = function(){ URL.revokeObjectURL(url); resolve(); };
+    img.src = url;
+  });
+}
+
+// Draw tie-lines from the stats-wrap SVG overlays
+function drawTieLines(ctx, mapEl){
+  const mapRect = mapEl.getBoundingClientRect();
+  const promises = [];
+  drawnShapes.forEach(function(s){
+    const wrap = document.getElementById('stats-wrap-' + s.id);
+    if(!wrap) return;
+    const svgEl = wrap.querySelector('svg');
+    if(!svgEl) return;
+    // Clone the SVG at its natural size, positioned at wrap's offset
+    const wrapRect = wrap.getBoundingClientRect();
+    const wx = Math.round(wrapRect.left - mapRect.left);
+    const wy = Math.round(wrapRect.top  - mapRect.top);
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute('width',  wrapRect.width  || mapRect.width);
+    clone.setAttribute('height', wrapRect.height || mapRect.height);
+    clone.removeAttribute('style');
+    const xml  = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    promises.push(new Promise(function(res){
+      const img = new Image();
+      img.onload  = function(){ ctx.drawImage(img, wx, wy); URL.revokeObjectURL(url); res(); };
+      img.onerror = function(){ URL.revokeObjectURL(url); res(); };
+      img.src = url;
+    }));
+  });
+  return Promise.all(promises);
+}
+
+// Draw Area N label pills from divIcon markers
+function drawDivMarkers(ctx, mapEl){
+  const mapRect = mapEl.getBoundingClientRect();
+  // Each shape label is a div with id shape-label-{id}
+  drawnShapes.forEach(function(s){
+    const el = document.getElementById('shape-label-' + s.id);
+    if(!el) return;
+    const r = el.getBoundingClientRect();
+    const x = r.left - mapRect.left;
+    const y = r.top  - mapRect.top;
+    const w = r.width;
+    const h = r.height;
+    // Purple pill background
+    const radius = h / 2;
+    ctx.save();
+    ctx.fillStyle   = '#7B00D4';
+    ctx.strokeStyle = '#7B00D4';
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.arcTo(x + w, y + h, x + w - radius, y + h, radius);
+    ctx.lineTo(x + radius, y + h);
+    ctx.arcTo(x, y + h, x, y + h - radius, radius);
+    ctx.lineTo(x, y + radius);
+    ctx.arcTo(x, y, x + radius, y, radius);
+    ctx.closePath();
+    ctx.fill();
+    // White text
+    ctx.fillStyle = '#ffffff';
+    ctx.font      = 'bold 14px Arial';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Area ' + s.displayNum, x + 10, y + h / 2);
+    ctx.restore();
+  });
+}
+
+// Draw stats panels (white box with purple header)
+function drawStatsPanels(ctx, mapEl){
+  const mapRect = mapEl.getBoundingClientRect();
+  drawnShapes.forEach(function(s){
+    if(!s.statsPopup) return;
+    // The box is a div inside the Leaflet marker icon
+    const boxEl = document.getElementById('stats-panel-' + s.id);
+    if(!boxEl) return;
+    const r = boxEl.getBoundingClientRect();
+    const x = Math.round(r.left - mapRect.left);
+    const y = Math.round(r.top  - mapRect.top);
+    const w = Math.round(r.width);
+    const h = Math.round(r.height);
+    const radius = 5;
+
+    ctx.save();
+
+    // Shadow
+    ctx.shadowColor   = 'rgba(0,0,0,0.25)';
+    ctx.shadowBlur    = 8;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 3;
+
+    // White body
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.arcTo(x+w, y, x+w, y+radius, radius);
+    ctx.lineTo(x+w, y+h-radius);
+    ctx.arcTo(x+w, y+h, x+w-radius, y+h, radius);
+    ctx.lineTo(x+radius, y+h);
+    ctx.arcTo(x, y+h, x, y+h-radius, radius);
+    ctx.lineTo(x, y+radius);
+    ctx.arcTo(x, y, x+radius, y, radius);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+
+    // Purple border
+    ctx.strokeStyle = '#7B00D4';
+    ctx.lineWidth   = 2;
+    ctx.stroke();
+
+    // Purple header bar height = 30px
+    const hdrH = 30;
+    ctx.fillStyle = '#7B00D4';
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.arcTo(x+w, y, x+w, y+radius, radius);
+    ctx.lineTo(x+w, y+hdrH);
+    ctx.lineTo(x, y+hdrH);
+    ctx.lineTo(x, y+radius);
+    ctx.arcTo(x, y, x+radius, y, radius);
+    ctx.closePath();
+    ctx.fill();
+
+    // Header text
+    ctx.fillStyle    = '#ffffff';
+    ctx.font         = 'bold 13px Arial';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Area ' + s.displayNum, x + 10, y + hdrH / 2);
+
+    // Stats rows — read live from the DOM
+    const rows = [
+      ['Sales (>$0):', document.getElementById('st-cnt-'+s.id)],
+      ['High:',        document.getElementById('st-hi-' +s.id)],
+      ['Low:',         document.getElementById('st-lo-' +s.id)],
+      ['Average:',     document.getElementById('st-av-' +s.id)],
+      ['Median:',      document.getElementById('st-md-' +s.id)],
+    ];
+    const rowH   = 20;
+    const startY = y + hdrH + 8;
+    ctx.font         = '12px Arial';
+    ctx.textBaseline = 'top';
+    rows.forEach(function(row, i){
+      const ry   = startY + i * rowH;
+      const val  = row[1] ? row[1].textContent : '';
+      ctx.fillStyle = '#333333';
+      ctx.fillText(row[0], x + 8, ry);
+      ctx.fillStyle    = '#000000';
+      ctx.font         = i === 0 ? 'bold 12px Arial' : '12px Arial';
+      ctx.textAlign    = 'right';
+      ctx.fillText(val, x + w - 8, ry);
+      ctx.textAlign    = 'left';
+      ctx.font         = '12px Arial';
+    });
+
+    ctx.restore();
+  });
+}
+
+// ===================================================
+// SUBJECT PROPERTY PIN
+// ===================================================
+
+const subjectPinIcon = L.divIcon({
+  className: '',
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+    <path d="M14 0 C6.27 0 0 6.27 0 14 C0 24.5 14 40 14 40 C14 40 28 24.5 28 14 C28 6.27 21.73 0 14 0 Z"
+      fill="#c0392b" stroke="#7b241c" stroke-width="1.5"/>
+    <circle cx="14" cy="14" r="6" fill="white" opacity="0.9"/>
+  </svg>`,
+  iconSize:   [28, 40],
+  iconAnchor: [14, 40],
+  popupAnchor:[0, -42]
+});
+
+let subjectPin       = null;
+let manualPinMode    = false;
+
+// ---- Tab switching ----
+function switchPinTab(tab){
+  ['addr','span','manual'].forEach(function(t){
+    document.getElementById('pinPanel' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = (t === tab) ? '' : 'none';
+    const btn = document.getElementById('pinTab' + t.charAt(0).toUpperCase() + t.slice(1));
+    btn.style.background = (t === tab) ? '#1F4E79' : '#e8edf2';
+    btn.style.color      = (t === tab) ? 'white'   : '#333';
+  });
+  // Cancel manual mode if switching away
+  if(tab !== 'manual' && manualPinMode) cancelManualPinMode();
+}
+
+// ---- Shared: drop pin on map ----
+function _dropPin(lat, lng, label){
+  if(subjectPin) map.removeLayer(subjectPin);
+  subjectPin = L.marker([lat, lng], {
+    icon: subjectPinIcon, draggable: true, zIndexOffset: 2000
+  }).addTo(map);
+  subjectPin.bindPopup(`<b>Subject Property</b><br><span style="font-size:11px">${label}</span>`, { maxWidth: 240 });
+  subjectPin.on('dragend', function(e){
+    const pos = e.target.getLatLng();
+    document.getElementById('subjectPinStatus').textContent =
+      `Pin at ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)} (dragged)`;
+  });
+  document.getElementById('subjectPinStatus').textContent = 'Pin placed — drag to adjust.';
+}
+
+// ---- Method 1: Address ----
+// Tries the address as entered, then with common VT route abbreviation substitutions
+function placeSubjectPin(){
+  const addr = document.getElementById('subjectAddrInput').value.trim();
+  if(!addr){
+    document.getElementById('subjectPinStatus').textContent = 'Please enter an address.';
+    return;
+  }
+  document.getElementById('subjectPinStatus').textContent = 'Searching...';
+
+  // Build a list of variants to try in order
+  const variants = _buildAddressVariants(addr);
+  _tryNominatimVariants(variants, 0);
+}
+
+function _buildAddressVariants(addr){
+  // Always append ", VT, USA" if not already present
+  const base = /\bVT\b|Vermont/i.test(addr) ? addr : addr + ', VT';
+  const variants = [base];
+
+  // Expand/contract common Vermont route abbreviations
+  const subs = [
+    [/\bVT\s*(Route|Rte|RT|R)\.?\s*(\d+)/gi, 'VT $2'],
+    [/\bVermont\s*(Route|Rte|RT|R)\.?\s*(\d+)/gi, 'VT $2'],
+    [/\bUS\s*(Route|Rte|RT|R)\.?\s*(\d+)/gi, 'US $2'],
+    [/\bState\s*(Route|Rte|RT|R)\.?\s*(\d+)/gi, 'VT $2'],
+  ];
+  subs.forEach(function([re, rep]){
+    const v = base.replace(re, rep);
+    if(v !== base && !variants.includes(v)) variants.push(v);
+  });
+
+  // Also try with ", Vermont" instead of ", VT"
+  const withVermont = base.replace(/,?\s*VT\b/, ', Vermont');
+  if(!variants.includes(withVermont)) variants.push(withVermont);
+
+  return variants;
+}
+
+function _tryNominatimVariants(variants, idx){
+  if(idx >= variants.length){
+    document.getElementById('subjectPinStatus').textContent =
+      'Address not found. Try the SPAN tab or Manual tab.';
+    return;
+  }
+  const q = variants[idx];
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us` +
+              `&viewbox=-73.5,44.8,-71.5,42.7&bounded=0&q=${encodeURIComponent(q)}`;
+  fetch(url, { headers: { 'Accept-Language': 'en' } })
+  .then(r => r.json())
+  .then(results => {
+    if(results && results.length > 0){
+      const lat = parseFloat(results[0].lat);
+      const lng = parseFloat(results[0].lon);
+      _dropPin(lat, lng, results[0].display_name);
+      map.setView([lat, lng], Math.max(map.getZoom(), 15));
+    } else {
+      // Try next variant
+      _tryNominatimVariants(variants, idx + 1);
+    }
+  })
+  .catch(function(){
+    _tryNominatimVariants(variants, idx + 1);
+  });
+}
+
+// ---- Method 2: SPAN lookup via VT Parcel FeatureServer ----
+function placeSubjectPinBySpan(){
+  const raw = document.getElementById('subjectSpanInput').value.trim();
+  if(!raw){ document.getElementById('subjectPinStatus').textContent = 'Please enter a SPAN.'; return; }
+
+  // Normalise: strip non-digits then reformat as NNN-NNN-NNNNN
+  const digits = raw.replace(/\D/g, '');
+  if(digits.length < 11){
+    document.getElementById('subjectPinStatus').textContent = 'SPAN must be at least 11 digits.';
+    return;
+  }
+  // Try both with and without hyphens in the query
+  const spanFmt  = `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
+  document.getElementById('subjectPinStatus').textContent = 'Looking up SPAN...';
+
+  const params = new URLSearchParams({
+    where:          `SPAN = '${spanFmt}'`,
+    outFields:      'SPAN,TNAME,E911ADDR,OWNER1',
+    returnGeometry: 'true',
+    outSR:          '4326',
+    f:              'json',
+    resultRecordCount: '1'
+  });
+  fetch(PARCEL_URL + '?' + params.toString())
+  .then(r => r.json())
+  .then(data => {
+    const feats = data.features || [];
+    if(!feats.length){
+      document.getElementById('subjectPinStatus').textContent =
+        'SPAN not found. Check the number and try again.';
+      return;
+    }
+    const feat = feats[0];
+    const attr = feat.attributes || {};
+    // Geometry is a polygon — compute centroid from first ring
+    let lat, lng;
+    if(feat.geometry && feat.geometry.rings && feat.geometry.rings[0]){
+      const ring = feat.geometry.rings[0];
+      lng = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+      lat = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+    } else if(feat.geometry && feat.geometry.x != null){
+      lng = feat.geometry.x; lat = feat.geometry.y;
+    } else {
+      document.getElementById('subjectPinStatus').textContent = 'Parcel found but has no geometry.';
+      return;
+    }
+    const label = `${attr.E911ADDR || ''} ${attr.TNAME || ''} — SPAN ${attr.SPAN || spanFmt}`.trim();
+    _dropPin(lat, lng, label);
+    map.setView([lat, lng], Math.max(map.getZoom(), 16));
+  })
+  .catch(function(){
+    document.getElementById('subjectPinStatus').textContent = 'Lookup error. Check your connection.';
+  });
+}
+
+// ---- Method 3: Manual click on map ----
+function toggleManualPinMode(){
+  if(manualPinMode){
+    cancelManualPinMode();
+  } else {
+    manualPinMode = true;
+    map.getContainer().style.cursor = 'crosshair';
+    document.getElementById('manualPinBtn').textContent = 'Cancel (click to stop)';
+    document.getElementById('manualPinBtn').style.background = '#e67e22';
+    document.getElementById('subjectPinStatus').textContent = 'Click the map to place the pin.';
+    map.once('click', function(e){
+      _dropPin(e.latlng.lat, e.latlng.lng,
+        `Manually placed at ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
+      cancelManualPinMode();
+    });
+  }
+}
+
+function cancelManualPinMode(){
+  manualPinMode = false;
+  map.getContainer().style.cursor = '';
+  const btn = document.getElementById('manualPinBtn');
+  if(btn){ btn.textContent = 'Click Map to Place Pin'; btn.style.background = '#c0392b'; }
+}
+
+// ---- Remove pin ----
+function removeSubjectPin(){
+  if(subjectPin){ map.removeLayer(subjectPin); subjectPin = null; }
+  cancelManualPinMode();
+  document.getElementById('subjectPinStatus').textContent = '';
+  document.getElementById('subjectAddrInput').value = '';
+  document.getElementById('subjectSpanInput').value = '';
+}
+
+// Enter key in address field
+document.getElementById('subjectAddrInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') placeSubjectPin();
+});
+// Enter key in SPAN field
+document.getElementById('subjectSpanInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') placeSubjectPinBySpan();
+});
+
+// ===================================================
+// TOWN CLERK AUTOCOMPLETE + VATC LINK
+// ===================================================
+
+// Complete list of Vermont municipalities (251)
+// Stored as display name → VATC URL slug
+const VT_TOWNS = [
+  "Addison","Albany","Alburg","Andover","Arlington","Athens","Averys Gore",
+  "Bakersfield","Baltimore","Barnard","Barnet","Barre City","Barre Town",
+  "Barton","Bath","Belvidere","Bennington","Benson","Berkeley","Berlin",
+  "Bethel","Bloomfield","Bolton","Bradford","Braintree","Brandon","Brattleboro",
+  "Bridgewater","Bridport","Brighton","Bristol","Brookfield","Brookline",
+  "Brownington","Brunswick","Burke","Burlington","Cabot","Calais","Cambridge",
+  "Canaan","Castleton","Cavendish","Charleston","Charlotte","Chelsea",
+  "Chester","Chittenden","Clarendon","Colchester","Concord","Corinth",
+  "Cornwall","Coventry","Craftsbury","Danby","Danville","Derby","Dorset",
+  "Dover","Dummerston","Duxbury","East Montpelier","Eden","Elmore",
+  "Enosburgh","Essex","Essex Junction","Fair Haven","Fairfax","Fairfield",
+  "Fairlee","Fayston","Ferdinand","Fletcher","Franklin","Glover","Goshen",
+  "Grafton","Granby","Grand Isle","Granville","Greensboro","Groton",
+  "Guildhall","Guilford","Halifax","Hancock","Hardwick","Hartford",
+  "Hartland","Highgate","Hinesburg","Holland","Hubbardton","Huntington",
+  "Hyde Park","Ira","Irasburg","Isle La Motte","Jamaica","Jay","Jericho",
+  "Johnson","Kirby","Landgrove","Leicester","Lemington","Lincoln","Londonderry",
+  "Lowell","Ludlow","Lunenburg","Lyndon","Maidstone","Manchester","Marlboro",
+  "Marshfield","Mendon","Middlebury","Middlesex","Middletown Springs",
+  "Milton","Monkton","Montgomery","Montpelier","Moretown","Morgan",
+  "Morristown","Moscow","Mount Holly","Mount Tabor","New Haven","Newark",
+  "Newbury","Newfane","Newport City","Newport Town","North Hero","Northfield",
+  "Norton","Norwich","Orange","Orwell","Panton","Pawlet","Peacham",
+  "Peru","Pittsfield","Pittsford","Plainfield","Plymouth","Pomfret",
+  "Poultney","Pownal","Proctor","Putney","Randolph","Reading","Readsboro",
+  "Richford","Richmond","Ripton","Rochester","Rockingham","Roxbury",
+  "Royalton","Rupert","Rutland City","Rutland Town","Ryegate","St. Albans City",
+  "St. Albans Town","St. George","St. Johnsbury","Salisbury","Sandgate",
+  "Searsburg","Shaftsbury","Sharon","Sheffield","Shelburne","Sheldon",
+  "Sherburne","Shoreham","Shrewsbury","South Burlington","South Hero",
+  "Springfield","Stamford","Stannard","Starksboro","Stockbridge","Stowe",
+  "Strafford","Stratton","Sudbury","Sunderland","Sutton","Swanton",
+  "Thetford","Tinmouth","Topsham","Townshend","Troy","Tunbridge",
+  "Underhill","Vergennes","Vernon","Vershire","Victory","Walden",
+  "Wallingford","Waltham","Wardsboro","Warren","Washington","Waterbury",
+  "Waterford","Waterville","Weathersfield","Wells","West Fairlee",
+  "West Haven","West Rutland","West Windsor","Westfield","Westford",
+  "Westminster","Westmore","Weston","Weybridge","Wheelock","Whiting",
+  "Whitingham","Williamstown","Williston","Wilmington","Windham",
+  "Windsor","Winhall","Winooski","Wolcott","Woodbury","Woodford",
+  "Woodstock","Worcester"
+];
+
+// Convert display name to VATC URL slug:
+// lowercase, drop periods, drop apostrophes, spaces → hyphens
+function townToSlug(name){
+  return name
+    .toLowerCase()
+    .replace(/\./g, '')      // drop periods (St. → st)
+    .replace(/'/g, '')       // drop apostrophes (Avery's → averys)
+    .replace(/\s+/g, '-');   // spaces to hyphens
+}
+
+let selectedTownClerk = '';  // the currently selected town display name
+
+function townClerkAutocomplete(val){
+  const box  = document.getElementById('townClerkSuggestions');
+  const trim = val.trim().toLowerCase();
+  if(!trim){ box.style.display = 'none'; return; }
+
+  const matches = VT_TOWNS.filter(t => t.toLowerCase().includes(trim));
+  if(matches.length === 0){ box.style.display = 'none'; return; }
+
+  box.innerHTML = matches.map(t =>
+    `<div onclick="selectTownClerk('${t.replace(/'/g,"\\'")}')"
+      style="padding:4px 7px; cursor:pointer; font-size:11px;"
+      onmouseover="this.style.background='#e8edf2'"
+      onmouseout="this.style.background='white'">${t}</div>`
+  ).join('');
+  box.style.display = 'block';
+}
+
+function selectTownClerk(name){
+  selectedTownClerk = name;
+  document.getElementById('townClerkInput').value = name;
+  document.getElementById('townClerkSuggestions').style.display = 'none';
+}
+
+function openTownClerkPage(){
+  const input = document.getElementById('townClerkInput').value.trim();
+  // Use whatever is typed — match against list or fall back to raw slug
+  const match = VT_TOWNS.find(t => t.toLowerCase() === input.toLowerCase()) || input;
+  if(!match){ alert('Please enter a Vermont town name.'); return; }
+  const slug = townToSlug(match);
+  window.open(`https://www.vermontattorneystitle.com/town-clerk/${slug}/`, '_blank');
+}
+
+// Close suggestions when clicking outside
+document.addEventListener('click', function(e){
+  const box = document.getElementById('townClerkSuggestions');
+  if(box && !box.contains(e.target) && e.target.id !== 'townClerkInput'){
+    box.style.display = 'none';
+  }
+});
 </script>
 
 </body>
