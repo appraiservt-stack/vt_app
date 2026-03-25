@@ -1346,7 +1346,7 @@ def export_grouped():
             import openpyxl
             from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
         except ImportError:
-            return jsonify({"error": "openpyxl not installed. Run: pip install openpyxl"}), 500
+            return jsonify({"error": "openpyxl not installed. Run: pip 	installopenpyxl"}), 500
 
         wb  = openpyxl.Workbook()
         ws  = wb.active
@@ -1429,7 +1429,7 @@ def export_grouped():
             first = next((c for c in col if hasattr(c, 'column_letter')), None)
             if not first:
                 continue
-            max_len = max((len(str(cell.value or "")) for cell in col if hasattr(cell, 'value')), default=10)
+            max_len = max((len(str(cell.value or "")) for cell in col if 			hasattr(cell, 'value')), default=10)
             ws.column_dimensions[first.column_letter].width = min(max_len + 2, 40)
 
         ws.freeze_panes = "A3"  # freeze past group label + header
@@ -1484,9 +1484,9 @@ def export_grouped():
     xlsxbuffer.seek(0)
     return Response(
         xlsxbuffer.read(),
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        mimetype="application/vnd.openxmlformats-	officedocument.spreadsheetml.sheet",
         headers={
-            "Content-Disposition": "attachment; filename=vtpropertytransfers_grouped.xlsx"
+            "Content-Disposition": "attachment; 	filename=vtpropertytransfers_grouped.xlsx"
         },
     )
 
