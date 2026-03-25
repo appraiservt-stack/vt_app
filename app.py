@@ -407,22 +407,16 @@ def apply_python_filters(record, filters):
     return True
 
 
-def fetch_features(where, geometry_params=None, max_records=2000):
-    """Fetch features from ArcGIS. geometry_params is optional bbox dict."""
-    params = {
-        "where":             where,
-        "outFields":         "*",
-        "f":                 "json",
-        "outSR":             "4326",
-        "resultRecordCount": max_records,
-    }
-    if geometry_params:
-        params.update(geometry_params)
-    else:
-        params["inSR"] = "4326"
-
+def fetch_features(where, geo_params=None, max_records=2000):
+    ...
     r = requests.get(ARCGIS_URL, params=params)
-    return r.json().get("features", [])
+    try:
+        return r.json().get("features", [])
+    except Exception:
+        # Log a short snippet so we can see what ArcGIS returned
+        print("ArcGIS error:", r.status_code, r.text[:200])
+        return []
+
 
 
 def fetch_all_features(where):
