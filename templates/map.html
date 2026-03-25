@@ -2463,11 +2463,8 @@ function deleteShape(id){
 
   drawnShapes.splice(idx, 1);
 
-  // Renumber remaining shapes
-  drawnShapes.forEach((sh, i) => {
-    sh.displayNum = i + 1;
-    updateLabelMarker(sh);
-  });
+  // Do NOT renumber remaining shapes — keep their existing display numbers
+  // so that deleting Area 1 and adding a new one reuses number 1.
 
   // Rebuild selection without deleted shape
   reapplyDrawnShapes();
@@ -2490,7 +2487,13 @@ map.on(L.Draw.Event.CREATED, function(e){
 
   const s = {
     id:         shapeCounter,
-    displayNum: drawnShapes.length + 1,
+    displayNum: (function(){
+      // Assign the lowest positive integer not currently used by any shape
+      const used = new Set(drawnShapes.map(sh => sh.displayNum));
+      let n = 1;
+      while(used.has(n)) n++;
+      return n;
+    })(),
     type:       ltype === 'circle' ? 'circle' : 'polygon',
     layer:      layer,
     labelMarker: null,
