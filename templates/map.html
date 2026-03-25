@@ -688,6 +688,7 @@ let CODES = {};
 // filterApplied tracks whether the user has clicked Apply at least once.
 // Checkbox groups are always active (all checked by default on startup).
 let filterApplied = true;  // true from the start so checkboxes apply immediately
+let _ptt172DlMode = false; // false = open inline in browser; true = force download
 
 // ---- Screen capture stream (held open for the session) ----
 // Initialised once on first download; reused for all subsequent downloads.
@@ -1722,8 +1723,18 @@ function buildSaleRow(s, dimmed){
   const style   = dimmed ? 'opacity:0.65;' : '';
   return `
   <div style="border-top:1px solid #eee; padding:3px 0; ${style}">
-    <input type="checkbox" ${checked} onclick="event.stopPropagation(); toggleSale('${s.id}', this)">
-    <b>${price}</b> &nbsp; ${dateStr}<br>
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <input type="checkbox" ${checked} onclick="event.stopPropagation(); toggleSale('${s.id}', this)">
+        <b>${price}</b> &nbsp; ${dateStr}
+      </div>
+      <a id="ptt172-link-${s.id}" href="/ptt172?id=${s.id}" target="_blank"
+         onclick="event.stopPropagation(); this.href='/ptt172?id=${s.id}'+(_ptt172DlMode?'&download=1':'');"
+         style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
+                border-radius:2px; text-decoration:none; white-space:nowrap; flex-shrink:0;">
+        PTT-172
+      </a>
+    </div>
     <span style="font-size:11px;">${addr}</span><br>
     <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
   </div>`;
@@ -1755,6 +1766,13 @@ function buildPopupHTML(p, sales, historySales){
       &#x1F5FA; View in Google Maps / Street View
     </a><br>`;
   }
+
+  // Download checkbox — controls whether PTT-172 opens inline or downloads
+  header += `<div style="margin:3px 0 4px 0; font-size:10px; display:flex; align-items:center; gap:4px;">
+    <input type="checkbox" id="ptt172-dl-chk" onchange="_ptt172DlMode=this.checked"
+           style="cursor:pointer;">
+    <label for="ptt172-dl-chk" style="cursor:pointer;">Download PTT-172 form (save to disk)</label>
+  </div>`;
 
   header += `<b>Sales — check to select for export:</b>`;
 

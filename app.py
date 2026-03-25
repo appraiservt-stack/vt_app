@@ -5,6 +5,7 @@ import csv
 import io
 import math
 import re
+import os
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -407,16 +408,22 @@ def apply_python_filters(record, filters):
     return True
 
 
-def fetch_features(where, geo_params=None, max_records=2000):
-    ...
-    r = requests.get(ARCGIS_URL, params=params)
-    try:
-        return r.json().get("features", [])
-    except Exception:
-        # Log a short snippet so we can see what ArcGIS returned
-        print("ArcGIS error:", r.status_code, r.text[:200])
-        return []
+def fetch_features(where, geometry_params=None, max_records=2000):
+    """Fetch features from ArcGIS. geometry_params is optional bbox dict."""
+    params = {
+        "where":             where,
+        "outFields":         "*",
+        "f":                 "json",
+        "outSR":             "4326",
+        "resultRecordCount": max_records,
+    }
+    if geometry_params:
+        params.update(geometry_params)
+    else:
+        params["inSR"] = "4326"
 
+    r = requests.get(ARCGIS_URL, params=params)
+    return r.json().get("features", [])
 
 
 def fetch_all_features(where):
@@ -523,8 +530,17 @@ def feature_to_record(f, filters):
         "interestUndivPercentDesc":    attr.get("intUDPdesc"),
         "interestUndivPercent":        attr.get("intUDP"),
         "interestPropertyTypeOther":   attr.get("intPrTypOt"),
+        "sellerAcquire":               attr.get("sellAq"),
+        "sellerAcquireDesc":           attr.get("sellAqDesc"),
+        "sellerAcquireOther":          attr.get("sellAqOthr"),
+        "familyMember":                attr.get("famMem"),
         "buildingConstruction1":       attr.get("blCn1"),
         "buildingConstruction1Desc":   bl_cn1_desc,
+        "buildingConstruction2":       attr.get("blCn2"),
+        "buildingConstruction2Desc":   attr.get("blCn2Desc"),
+        "buildingConstruction3":       attr.get("blCn3"),
+        "buildingConstruction3Desc":   attr.get("blCn3Desc"),
+        "buildingConstructionUnits05": attr.get("blCnUnts05"),
         "buildingConstruction20":      attr.get("blConstr20"),
         "buildingConstructionDwellingUnits06": attr.get("bCnDUs06"),
         "tenantPurchase":              attr.get("tenantPrch"),
@@ -550,7 +566,28 @@ def feature_to_record(f, filters):
         "TownParcelIDNo":              attr.get("TownParcID"),
         "TownDateOfRecord":            attr.get("TownDteRec"),
         "TownGrandListCategory":       attr.get("TownGlCat"),
+        "TownGrandListValue":          attr.get("TownGlValu"),
+        "TownGrandListYear":           attr.get("TownGlYear"),
+        "TownSpan":                    attr.get("TownSpan"),
         "TownSubdivision":             attr.get("TownSubdiv"),
+        # Tax calculation fields
+        "principalResidenceSRValue":   attr.get("prResSRVal"),
+        "specialRateTaxDue":           attr.get("spRteTxDue"),
+        "totalSpclRateDue":            attr.get("tlSpRteDue"),
+        "ValueSubjecttoGenRate":       attr.get("VlSbjGnRte"),
+        "GenRateTaxDue":               attr.get("GenRtTxDue"),
+        "TotalTaxDue":                 attr.get("TotlTaxDue"),
+        "exempt99Eligible":            attr.get("ex99Elig"),
+        "exempt99TaxDue":              attr.get("ex99TxDue"),
+        # Buyer/Seller addresses (used for PTT-172 only, not displayed in popup)
+        "sellerStreet":                attr.get("sellerStrt"),
+        "sellerCity":                  attr.get("sellerCity"),
+        "sellerState":                 attr.get("sellerSt"),
+        "sellerZip":                   attr.get("sellerZip"),
+        "buyerStreet":                 attr.get("buyerStrt"),
+        "buyerCity":                   attr.get("buyerCity"),
+        "buyerState":                  attr.get("buyerState"),
+        "buyerZip":                    attr.get("buyerZip"),
         # Export lat/lon: use resolved coords (centroid fallback if source coords are bad)
         "Latitude":                    resolve_coordinates(
                                            attr.get("Latitude"), attr.get("Longitude"),
@@ -925,6 +962,385 @@ def export():
     if fmt == "csv":
         output = io.StringIO()
         writer = csv.DictWriter(output, fieldnames=headers, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(records)
+        csv_data = output.getvalue()
+        return Response(
+            csv_data,
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment; filename=vt_property_transfers.csv"}
+        )
+    else:
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment
+        except ImportError:
+            return jsonify({"error": "openpyxl not installed. Run: pip install openpyxl"}), 500
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "VT Property Transfers"
+
+        header_fill = PatternFill("solid", fgColor="1F4E79")
+        header_font = Font(bold=True, color="FFFFFF")
+
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_idx, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center")
+
+        for row_idx, rec in enumerate(records, 2):
+            for col_idx, header in enumerate(headers, 1):
+                raw = rec.get(header, "")
+                cell = ws.cell(row=row_idx, column=col_idx)
+                if header in DATE_EXPORT_LABELS:
+                    dt = _parse_export_date(raw)
+                    if dt:
+                        cell.value = dt
+                        cell.number_format = "MM/DD/YYYY"
+                    else:
+                        cell.value = raw
+                else:
+                    cell.value = raw
+
+        for col in ws.columns:
+            max_len = max((len(str(cell.value or "")) for cell in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 40)
+
+        ws.freeze_panes = "A2"
+
+        xlsx_buffer = io.BytesIO()
+        wb.save(xlsx_buffer)
+        xlsx_buffer.seek(0)
+
+        return Response(
+            xlsx_buffer.read(),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=vt_property_transfers.xlsx"}
+        )
+
+
+# ---------------------------------------------------------------------------
+# Server-side map image generator
+# Fetches OSM tiles for the given bounds/zoom, draws polygons + stats boxes.
+# ---------------------------------------------------------------------------
+def generate_map_image(map_meta, group_records):
+    """
+    map_meta: {
+        bounds: {north, south, east, west},
+        zoom: int,
+        shapes: [{label, color, latlngs: [[lat,lng],...], stats: {...}}]
+                 (circles sent as polygon approximation from frontend)
+    }
+    Returns PNG bytes or None.
+    """
+    import math, struct, zlib
+    import urllib.request
+    try:
+        from PIL import Image, ImageDraw, ImageFont, ImageColor
+    except ImportError:
+        return None
+
+    meta           = map_meta or {}
+    bounds         = meta.get("bounds", {})
+    zoom           = int(meta.get("zoom", 14))
+    shapes         = meta.get("shapes", [])
+    selected_dots  = meta.get("selected_dots",   [])  # [[lat,lng],...]
+    unselected_dots= meta.get("unselected_dots",  [])  # [[lat,lng],...]
+
+    north = float(bounds.get("north",  44.20))
+    south = float(bounds.get("south",  44.08))
+    east  = float(bounds.get("east",  -72.55))
+    west  = float(bounds.get("west",  -72.75))
+
+    # ---- Tile math ----
+    def latlon_to_tile(lat, lon, z):
+        n = 2 ** z
+        x = int((lon + 180) / 360 * n)
+        lat_r = math.radians(lat)
+        y = int((1 - math.log(math.tan(lat_r) + 1/math.cos(lat_r)) / math.pi) / 2 * n)
+        return x, y
+
+    def tile_to_latlon(x, y, z):
+        n = 2 ** z
+        lon = x / n * 360 - 180
+        lat_r = math.atan(math.sinh(math.pi * (1 - 2 * y / n)))
+        return math.degrees(lat_r), lon
+
+    tx_min, ty_min = latlon_to_tile(north, west, zoom)
+    tx_max, ty_max = latlon_to_tile(south, east, zoom)
+    tx_min, tx_max = min(tx_min, tx_max), max(tx_min, tx_max)
+    ty_min, ty_max = min(ty_min, ty_max), max(ty_min, ty_max)
+
+    TILE_SIZE = 256
+    cols = tx_max - tx_min + 1
+    rows = ty_max - ty_min + 1
+    # Cap at reasonable size
+    if cols > 8: tx_max = tx_min + 7; cols = 8
+    if rows > 8: ty_max = ty_min + 7; rows = 8
+
+    img_w = cols * TILE_SIZE
+    img_h = rows * TILE_SIZE
+    canvas = Image.new("RGB", (img_w, img_h), (240, 240, 240))
+
+    headers = {"User-Agent": "VTPropertyTool/1.0 (appraiservt@gmail.com)"}
+    for tx in range(tx_min, tx_max + 1):
+        for ty in range(ty_min, ty_max + 1):
+            url = f"https://tile.openstreetmap.org/{zoom}/{tx}/{ty}.png"
+            try:
+                req  = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    tile_data = resp.read()
+                tile_img = Image.open(io.BytesIO(tile_data)).convert("RGB")
+                px = (tx - tx_min) * TILE_SIZE
+                py = (ty - ty_min) * TILE_SIZE
+                canvas.paste(tile_img, (px, py))
+            except Exception:
+                pass  # leave grey if tile fails
+
+    # ---- Coordinate conversion ----
+    # Top-left of canvas corresponds to tile (tx_min, ty_min)
+    origin_lat, origin_lon = tile_to_latlon(tx_min, ty_min, zoom)
+    n_tiles_lat, n_tiles_lon = tile_to_latlon(tx_min + cols, ty_min + rows, zoom)
+
+    def latlon_to_px(lat, lon):
+        # Mercator pixel position
+        n = 2 ** zoom
+        px_x = (lon + 180) / 360 * n * TILE_SIZE - tx_min * TILE_SIZE
+        lat_r = math.radians(lat)
+        py_y  = (1 - math.log(math.tan(lat_r) + 1/math.cos(lat_r)) / math.pi) / 2 * n * TILE_SIZE - ty_min * TILE_SIZE
+        return int(px_x), int(py_y)
+
+    draw = ImageDraw.Draw(canvas, "RGBA")
+
+    # Try to load a font, fall back to default
+    try:
+        fnt_bold  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
+        fnt_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",     12)
+        fnt_lbl   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 13)
+    except Exception:
+        fnt_bold  = ImageFont.load_default()
+        fnt_small = fnt_bold
+        fnt_lbl   = fnt_bold
+
+    PURPLE      = (123, 0, 212)
+    PURPLE_FILL = (123, 0, 212, 40)   # semi-transparent
+    WHITE       = (255, 255, 255)
+    DARK        = (40,  40,  40)
+    BORDER      = (123, 0, 212, 200)
+
+    # ---- Draw each shape ----
+    box_positions = {}  # shape label -> (box_x, box_y, box_w, box_h)
+    anchor_positions = {}
+
+    for i, shape in enumerate(shapes):
+        latlngs = shape.get("latlngs", [])
+        if not latlngs:
+            continue
+        label = shape.get("label", f"Area {i+1}")
+        stats = shape.get("stats", {})
+
+        pts = [latlon_to_px(ll[0], ll[1]) for ll in latlngs]
+        if not pts:
+            continue
+
+        # Polygon fill + outline
+        draw.polygon(pts, fill=(123, 0, 212, 35), outline=None)
+        for j in range(len(pts)):
+            draw.line([pts[j], pts[(j+1) % len(pts)]], fill=(60, 80, 120), width=2)
+
+        # Centroid for anchor dot
+        cx = int(sum(p[0] for p in pts) / len(pts))
+        cy = int(sum(p[1] for p in pts) / len(pts))
+        anchor_positions[label] = (cx, cy)
+        draw.ellipse([cx-5, cy-5, cx+5, cy+5], fill=PURPLE, outline=WHITE)
+
+        # Stats box position: 220px right, offset by row
+        bx = min(cx + 220, img_w - 200)
+        by = max(cy - 80 - i * 22, 10)
+        bx = max(bx, 5)
+
+        # Measure stats text
+        fmt_m = lambda v: f"${int(v):,}" if v is not None else "N/A"
+        rows_data = [
+            ("Sales (>$0):", str(stats.get("count", 0))),
+            ("High:",        fmt_m(stats.get("high"))),
+            ("Low:",         fmt_m(stats.get("low"))),
+            ("Average:",     fmt_m(stats.get("avg"))),
+            ("Median:",      fmt_m(stats.get("median"))),
+        ]
+        box_w  = 210
+        hdr_h  = 28
+        row_h  = 20
+        pad    = 8
+        box_h  = hdr_h + pad + len(rows_data) * row_h + pad
+
+        # Shadow
+        shadow_off = 3
+        draw.rounded_rectangle(
+            [bx+shadow_off, by+shadow_off, bx+box_w+shadow_off, by+box_h+shadow_off],
+            radius=6, fill=(0, 0, 0, 60)
+        )
+
+        # White body
+        draw.rounded_rectangle([bx, by, bx+box_w, by+box_h], radius=6,
+                                fill=WHITE, outline=PURPLE, width=2)
+        # Purple header
+        draw.rounded_rectangle([bx, by, bx+box_w, by+hdr_h], radius=6,
+                                fill=PURPLE)
+        # Cover bottom corners of header (make it flat on bottom)
+        draw.rectangle([bx, by+hdr_h-6, bx+box_w, by+hdr_h], fill=PURPLE)
+
+        # Header text
+        draw.text((bx+10, by+7), label, font=fnt_lbl, fill=WHITE)
+
+        # Stats rows
+        for ri, (k, v) in enumerate(rows_data):
+            ry = by + hdr_h + pad + ri * row_h
+            draw.text((bx+8,       ry), k, font=fnt_small, fill=DARK)
+            # Right-align value
+            try:
+                vw = fnt_small.getlength(v)
+            except Exception:
+                vw = len(v) * 7
+            draw.text((bx+box_w-8-vw, ry), v,
+                      font=fnt_bold if ri == 0 else fnt_small, fill=DARK)
+
+        box_positions[label] = (bx, by, box_w, box_h)
+
+    # ---- Draw tie lines (anchor dot -> box edge) ----
+    for label, (bx, by, bw, bh) in box_positions.items():
+        if label not in anchor_positions:
+            continue
+        ax, ay = anchor_positions[label]
+        # Connect to left-center of box
+        ex, ey = bx, by + bh // 2
+        # Dashed line
+        dx, dy = ex - ax, ey - ay
+        dist   = max(1, math.hypot(dx, dy))
+        dash, gap = 8, 5
+        step = dash + gap
+        d = 0
+        while d < dist:
+            t0 = d / dist
+            t1 = min((d + dash) / dist, 1.0)
+            x0, y0 = int(ax + dx*t0), int(ay + dy*t0)
+            x1, y1 = int(ax + dx*t1), int(ay + dy*t1)
+            draw.line([(x0,y0),(x1,y1)], fill=PURPLE, width=2)
+            d += step
+
+    # ---- Draw Area label pills ----
+    for label, (ax, ay) in anchor_positions.items():
+        pill_pad_x, pill_pad_y = 10, 5
+        try:
+            tw = fnt_lbl.getlength(label)
+        except Exception:
+            tw = len(label) * 8
+        pw = int(tw) + pill_pad_x * 2
+        ph = 26
+        px0 = ax - pw // 2
+        py0 = ay - 40  # above anchor
+        draw.rounded_rectangle([px0, py0, px0+pw, py0+ph],
+                                radius=ph//2, fill=PURPLE)
+        draw.text((px0+pill_pad_x, py0+5), label, font=fnt_lbl, fill=WHITE)
+
+    # ---- Draw property dots (on top of everything) ----
+    DOT_R = 5
+    BLUE  = (0, 102, 255)
+    DOT_DARK = (26, 26, 26)
+
+    for ll in unselected_dots:
+        px, py = latlon_to_px(ll[0], ll[1])
+        draw.ellipse([px-DOT_R, py-DOT_R, px+DOT_R, py+DOT_R],
+                     fill=(255, 255, 255), outline=DOT_DARK, width=2)
+
+    for ll in selected_dots:
+        px, py = latlon_to_px(ll[0], ll[1])
+        draw.ellipse([px-DOT_R, py-DOT_R, px+DOT_R, py+DOT_R],
+                     fill=BLUE, outline=BLUE)
+
+    # ---- Export to PNG bytes ----
+    out = io.BytesIO()
+    canvas.save(out, format="PNG", optimize=True)
+    out.seek(0)
+    return out.read()
+
+
+@app.route("/export_grouped", methods=["GET", "POST"])
+def export_grouped():
+    """
+    Grouped export.
+    Accepts POST with JSON body: {format, filters, groups}
+    or GET with ?groups=JSON&format=...
+    """
+    import json as _json
+
+    if request.method == "POST":
+        data = request.get_json(force=True, silent=True) or {}
+        fmt        = data.get("format", "xlsx").lower()
+        groups     = data.get("groups", [])
+        map_meta   = data.get("map_meta",   None)  # {bounds, zoom, shapes}
+        screenshot = data.get("screenshot", None)  # base64 PNG from getDisplayMedia
+        # Build a fake args-like object from the filters dict
+        filter_dict = data.get("filters", {})
+        class _FakeArgs(dict):
+            def get(self, k, default=""):
+                return super().get(k, default)
+        filters = parse_filters(_FakeArgs(filter_dict))
+    else:
+        fmt        = request.args.get("format", "xlsx").lower()
+        groups_raw = request.args.get("groups", "[]")
+        try:
+            groups = _json.loads(groups_raw)
+        except Exception:
+            return jsonify({"error": "Invalid groups parameter"}), 400
+        filters    = parse_filters(request.args)
+        map_meta   = None
+        screenshot = None
+
+    if not groups:
+        return jsonify({"error": "No groups provided"}), 400
+
+    # Fetch records for each group
+    group_records = []
+    for g in groups:
+        ids = [str(i).strip() for i in g.get("ids", []) if str(i).strip()]
+        stats = g.get("stats", {})
+        label = g.get("label", "Area")
+        if not ids:
+            group_records.append({"label": label, "records": [], "stats": stats})
+            continue
+        ids_sql  = ",".join(ids)
+        where    = f"OBJECTID IN ({ids_sql})"
+        features = fetch_features(where, max_records=len(ids) + 10)
+        recs = []
+        for f in features:
+            rec = feature_to_record(f, filters)
+            if rec is not None:
+                recs.append(format_record_for_export(rec))
+        # Sort each group by Closing Date ascending
+        closing_label = next((lbl for _, lbl in EXPORT_COLUMNS if lbl == "Closing Date"), "Closing Date")
+        def _grp_date_key(r):
+            v = r.get(closing_label) or ""
+            try: parts = v.split("/"); return f"{parts[2]}-{parts[0]}-{parts[1]}"
+            except: return v
+        recs.sort(key=_grp_date_key)
+        group_records.append({"label": label, "records": recs, "stats": stats})
+
+    headers = [label for _, label in EXPORT_COLUMNS]
+
+    def fmt_money(val):
+        if val is None:
+            return "N/A"
+        try:
+            return f"${int(val):,}"
+        except Exception:
+            return str(val)
+
+    if fmt == "csv":
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=headers, extrasaction="ignore")
         first = True
         for g in group_records:
             if not first:
@@ -933,16 +1349,12 @@ def export():
                 writer.writerow({h: "" for h in headers})
                 writer.writerow({h: "" for h in headers})
             first = False
-
             # Group header
             writer.writerow({headers[0]: f"=== {g['label']} ===", **{h: "" for h in headers[1:]}})
-
             writer.writeheader()
             writer.writerows(g["records"])
-
             # Blank row before stats
             writer.writerow({h: "" for h in headers})
-
             # Stats row
             st = g["stats"]
             writer.writerow({h: "" for h in headers})
@@ -955,24 +1367,17 @@ def export():
                 headers[5]: f"Median: {fmt_money(st.get('median'))}",
                 **{h: "" for h in headers[6:]}
             })
-
         return Response(
             output.getvalue(),
             mimetype="text/csv",
-            headers={
-                "Content-Disposition": "attachment; filename=vt_property_transfers_grouped.csv"
-            },
+            headers={"Content-Disposition": "attachment; filename=vt_property_transfers_grouped.csv"}
         )
-
-    
-
-
     else:
         try:
             import openpyxl
             from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
         except ImportError:
-            return jsonify({"error": "openpyxl not installed. Run: pip 	installopenpyxl"}), 500
+            return jsonify({"error": "openpyxl not installed. Run: pip install openpyxl"}), 500
 
         wb  = openpyxl.Workbook()
         ws  = wb.active
@@ -1055,7 +1460,7 @@ def export():
             first = next((c for c in col if hasattr(c, 'column_letter')), None)
             if not first:
                 continue
-            max_len = max((len(str(cell.value or "")) for cell in col if 			hasattr(cell, 'value')), default=10)
+            max_len = max((len(str(cell.value or "")) for cell in col if hasattr(cell, 'value')), default=10)
             ws.column_dimensions[first.column_letter].width = min(max_len + 2, 40)
 
         ws.freeze_panes = "A3"  # freeze past group label + header
@@ -1100,28 +1505,10 @@ def export():
             except Exception:
                 pass  # non-fatal
 
-    # ... you’ve just finished writing all rows & formatting on ws ...
-
-   
-
-    # ---- Existing code that saves and returns workbook ----
-    xlsxbuffer = io.BytesIO()
-    wb.save(xlsxbuffer)
-    xlsxbuffer.seek(0)
-    return Response(
-        xlsxbuffer.read(),
-        mimetype="application/vnd.openxmlformats-	officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": "attachment; 	filename=vtpropertytransfers_grouped.xlsx"
-        },
-    )
-
-
-
-    xlsx_buf = io.BytesIO()
-    wb.save(xlsx_buf)
-    xlsx_buf.seek(0)
-    return Response(
+        xlsx_buf = io.BytesIO()
+        wb.save(xlsx_buf)
+        xlsx_buf.seek(0)
+        return Response(
             xlsx_buf.read(),
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Content-Disposition": "attachment; filename=vt_property_transfers_grouped.xlsx"}
@@ -1172,6 +1559,341 @@ def history():
             })
 
     return jsonify({"data": results})
+
+
+@app.route("/ptt172")
+def ptt172():  # noqa: C901
+    """Pre-filled PTT-172 PDF. Opens inline in browser by default.
+    ?id=OBJECTID  &download=1 to force file download.
+    """
+    import io as _io
+    from datetime import datetime as _dt, timezone as _tz
+    try:
+        from pypdf import PdfReader, PdfWriter
+        from pypdf.generic import NameObject
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.units import inch
+        from pypdf import PdfReader as _PR2
+    except ImportError as _ie:
+        return jsonify({"error": f"Missing library: {_ie}"}), 500
+
+    rec_id   = request.args.get("id", "")
+    download = request.args.get("download", "0") == "1"
+    if not rec_id:
+        return jsonify({"error": "Missing id parameter"}), 400
+
+    where    = f"OBJECTID = {rec_id}"
+    features = fetch_features(where, max_records=1)
+    if not features:
+        return jsonify({"error": "Record not found"}), 404
+
+    empty_f = {k: "" for k in [
+        "counties","towns","date_from","date_to","price_low","price_high",
+        "land_low","land_high","street","interest","building","seller_use",
+        "buyer_use","ptt_exemption","grand_list","seller_entity","seller_last",
+        "seller_first","buyer_entity","buyer_last","buyer_first","span",
+        "dev_prev_conv","buyer_adjoining","enrolled_current_use","foreclosed",
+    ]}
+    rec = feature_to_record(features[0], empty_f)
+    if not rec:
+        return jsonify({"error": "Could not parse record"}), 500
+
+    # ---- Helpers ----
+    def fmtd(epoch_ms):
+        if not epoch_ms: return ""
+        try: return _dt.fromtimestamp(int(epoch_ms)/1000, tz=_tz.utc).strftime("%m/%d/%Y")
+        except: return ""
+
+    def fmtm(v):
+        if v is None or v == "": return ""
+        try: return f"{int(float(v)):,}"
+        except: return str(v)
+
+    def fmtm2(v):
+        """Format for J-block PDF fields: plain number, 2 decimal places, NO commas.
+        PDF form fields with numeric format masks reject comma-formatted strings (show 1.#R)."""
+        if v is None or v == "": return ""
+        try: return f"{float(v):.2f}"
+        except: return str(v)
+
+    def boolval(v):
+        if v is None: return None
+        s = str(v).strip().upper()
+        if s in ("TRUE","YES","1"): return "Yes"
+        if s in ("FALSE","NO","0"): return "No"
+        return None
+
+    def time_held(acq_ms, close_ms):
+        if not acq_ms or not close_ms: return "",""
+        try:
+            d1 = _dt.fromtimestamp(int(acq_ms)/1000, tz=_tz.utc)
+            d2 = _dt.fromtimestamp(int(close_ms)/1000, tz=_tz.utc)
+            mt = (d2.year-d1.year)*12 + (d2.month-d1.month)
+            if d2.day < d1.day: mt -= 1
+            return str(mt//12), str(mt%12)
+        except: return "",""
+
+    def fmt_span(raw):
+        if not raw: return ""
+        s = str(raw).replace("-","").zfill(11)
+        return f"{s[0:3]}-{s[3:6]}-{s[6:11]}" if len(s)>=11 else s
+
+    def bc_code(val):
+        if val is None: return ""
+        try: return str(int(float(str(val)))).zfill(2)
+        except: return str(val)
+
+    def strip_prefix(s):
+        if not s: return ""
+        return re.sub(r'^\d{2}\.\s*','',str(s)).strip()
+
+    # ---- Derived values ----
+    years_held, months_held = time_held(rec.get("dateSellerAcquired"), rec.get("closingDate"))
+
+    fin_map = {"Conventional/Bank":"Bank","Owner Financing":"Owner","Other":"Other"}
+    fin_val = fin_map.get(str(rec.get("financing") or ""), None)
+
+    land_size = rec.get("landSize")
+    no_land   = (not land_size or float(land_size) == 0) if land_size is not None else True
+
+    # ---- AcroForm text fields ----
+    fields = {
+        # A — Seller
+        "A-EntityName":      rec.get("sellerEntityName") or "",
+        "A-LastName":        rec.get("sellerLastName")   or "",
+        "A-FirstName":       rec.get("sellerFirstName")  or "",
+        # B — Buyer
+        "B-EntityName":      rec.get("buyerEntityName")  or "",
+        "B-EntityName-COPY": rec.get("buyerEntityName")  or "",
+        "B-LastName":        rec.get("buyerLastName")    or "",
+        "B-LastName-COPY":   rec.get("buyerLastName")    or "",
+        "B-FirstName":       rec.get("buyerFirstName")   or "",
+        "B-FirstName-COPY":  rec.get("buyerFirstName")   or "",
+        # C — Property
+        "C-PropertyAddress":      rec.get("propertyLocationStreet") or "",
+        "C-PropertyAddress-COPY": rec.get("propertyLocationStreet") or "",
+        "C-PropertyCity":         rec.get("propertyLocationCity")   or "",
+        "C-PropertyCity-COPY":    rec.get("propertyLocationCity")   or "",
+        "C-LandSize":             str(land_size) if land_size else "",
+        "C-SPAN":                 fmt_span(rec.get("span")),
+        # D — Dates
+        "D-YearAcquired":      fmtd(rec.get("dateSellerAcquired")),
+        "D-DateOfClosing":     fmtd(rec.get("closingDate")),
+        "D-DateOfClosing-COPY":fmtd(rec.get("closingDate")),
+        "D-TimeHeld-Years":    years_held,
+        "D-TimeHeld-Months":   months_held,
+        # E — Exemptions
+        "E1": str(rec.get("propertyTaxExemption") or ""),
+        "E2": str(rec.get("familyMember")          or ""),
+        "E3": str(rec.get("LGTExemption")          or ""),
+        # F — Transfer
+        "F1":  bc_code(rec.get("sellerAcquire")),
+        "F1a": strip_prefix(rec.get("sellerAcquireOther")),
+        "F2":  bc_code(rec.get("interestPropertyType")),
+        "F2a": str(rec.get("interestUndivPercent") or ""),
+        "F2b": strip_prefix(rec.get("interestPropertyTypeOther")),
+        "F3-1": bc_code(rec.get("buildingConstruction1")),
+        "F3-2": bc_code(rec.get("buildingConstruction2")),
+        "F3-3": bc_code(rec.get("buildingConstruction3")),
+        "F3a":  str(rec.get("buildingConstructionUnits05") or ""),
+        "F3b":  str(rec.get("buildingConstructionDwellingUnits06") or ""),
+        "F3c":  str(rec.get("buildingConstruction20") or ""),
+        "F5c":  "",
+        # H — Use
+        "H1":  bc_code(rec.get("sellerUseOfProperty")),
+        "H1a": str(rec.get("sellerUseOfPropertyExplain") or ""),
+        "H2":  bc_code(rec.get("buyerUseOfProperty")),
+        "H2a": str(rec.get("buyerUseOfPropertyExplain") or ""),
+        # I — Withholding: leave blank
+        "I2": "", "I2a": "",
+        # J — Tax: J8/J9/J10/J14/J15 drawn via ReportLab overlay (Comb+JS fields
+        # reject formatted strings from update_page_form_field_values — show 1.#R).
+        # Leave them out of this dict entirely; overlay handles them on page 3.
+        "J1":"","J2":"","J3":"","J4":"","J5":"","J6":"","J7":"",
+        "J11":"","J12":"","J13":"",
+        "WebKey": "",
+    }
+
+    # ---- Load and fill PDF ----
+    pdf_path = os.path.join(os.path.dirname(__file__), "PTT-172-2023.pdf")
+    if not os.path.exists(pdf_path):
+        return jsonify({"error": "PTT-172-2023.pdf not found in app directory"}), 500
+
+    reader = PdfReader(pdf_path)
+    writer = PdfWriter()
+    writer.append(reader)
+
+    # Only update text (/Tx) fields — never pass button fields to this method
+    # or it writes the value as visible text instead of checking the box.
+    reader2 = PdfReader(pdf_path)
+    btn_field_names = set()
+    for name, f in (reader2.get_fields() or {}).items():
+        if f.get('/FT') == '/Btn':
+            btn_field_names.add(name)
+    text_fields = {k: v for k, v in fields.items() if k not in btn_field_names}
+
+    for pg in writer.pages:
+        writer.update_page_form_field_values(pg, text_fields)
+
+    # ---- Radio / checkbox buttons ----
+    bool_fields = {
+        "F4": boolval(rec.get("tenantPurchase")),
+        "F6": None,
+        "G1": boolval(rec.get("enrolledCurrentUse")),
+        "G2": boolval(rec.get("currentUseEnrollmentContinue")),
+        "H3": boolval(rec.get("rentedBefore")),
+        "H4": boolval(rec.get("rentedAfter")),
+        "H5": boolval(rec.get("developmentPrevConv")),
+        "H6": boolval(rec.get("buyerAdjoiningProperty")),
+        "H7": None,
+        "I1": None,
+    }
+
+    def set_radio(wr, field_name, chosen):
+        """Set a radio/checkbox field by updating both widget /AS and parent /V."""
+        if not chosen: return
+        for page in wr.pages:
+            if "/Annots" not in page: continue
+            for aref in page["/Annots"]:
+                annot = aref.get_object()
+                parent_ref = annot.get("/Parent")
+                if not parent_ref: continue
+                p = parent_ref.get_object()
+                if p.get("/T") == field_name:
+                    ap = annot.get("/AP", {})
+                    if hasattr(ap, 'get'):
+                        n = ap.get("/N", {})
+                        if hasattr(n, 'keys') and f"/{chosen}" in n:
+                            # Update widget appearance state
+                            aref.get_object().update(
+                                {NameObject("/AS"): NameObject(f"/{chosen}")}
+                            )
+                            # Also update parent field value so it saves correctly
+                            p.update(
+                                {NameObject("/V"): NameObject(f"/{chosen}")}
+                            )
+
+    for fn, val in bool_fields.items():
+        set_radio(writer, fn, val)
+    if fin_val:
+        set_radio(writer, "F5", fin_val)
+
+    # ---- C-DidNotInvolveLand checkbox ----
+    if no_land:
+        for page in writer.pages:
+            if "/Annots" not in page: continue
+            for aref in page["/Annots"]:
+                annot = aref.get_object()
+                if annot.get("/T") == "C-DidNotInvolveLand":
+                    annot.update({NameObject("/AS"): NameObject("/Yes"),
+                                  NameObject("/V"):  NameObject("/Yes")})
+
+    # ---- Page 3 J-block overlay (J8/J9/J10/J14/J15 — bypass Comb field JS) ----
+    # These fields have /Ff=Comb + /AA JavaScript that conflict with pypdf string writes.
+    # Draw values directly as right-aligned text inside the field boxes instead.
+    # Field box positions (from pdfplumber, converted to ReportLab bottom-origin):
+    #   J8,J9,J10,J11,J12,J13: x0=272 x1=407  (right edge x=405)
+    #   J14,J15:                x0=435 x1=571  (right edge x=569)
+    # Y positions (RL bottom-origin = 792 - pdfplumber_bottom):
+    #   J8:  RL_y=304   J9: RL_y=276   J10: RL_y=247
+    #   J14: RL_y=134   J15: RL_y=98
+    j_overlay_buf = _io.BytesIO()
+    jc = rl_canvas.Canvas(j_overlay_buf, pagesize=letter)
+    jc.setFont("Helvetica", 9)
+
+    def draw_j(text, right_x, y):
+        """Draw right-aligned text at the given right edge x and baseline y."""
+        if text:
+            jc.drawRightString(right_x, y, str(text))
+
+    j8_val  = fmtm2(rec.get("ValuePaidOrTransferred"))
+    j9_val  = fmtm2(rec.get("PersonalPropValuePaidOrTrans")) or "0.00"
+    j10_val = fmtm2(rec.get("RealPropValuePaidOrTrans"))
+    j14_val = fmtm2(rec.get("GenRateTaxDue"))
+    j15_val = fmtm2(rec.get("TotalTaxDue"))
+
+    draw_j(j8_val,  405, 306)
+    draw_j(j9_val,  405, 278)
+    draw_j(j10_val, 405, 249)
+    draw_j(j14_val, 569, 136)
+    draw_j(j15_val, 569, 100)
+
+    jc.save()
+    j_overlay_buf.seek(0)
+    j_overlay_reader = _PR2(j_overlay_buf)
+    writer.pages[2].merge_page(j_overlay_reader.pages[0])
+
+    # ---- Page 4 town clerk overlay (not fillable fields — draw as text) ----
+    gl_cat_map = {
+        "1":"01","01":"01","2":"02","02":"02","3":"03","03":"03",
+        "4":"04","04":"04","5":"05","05":"05","6":"06","06":"06",
+        "7":"07","07":"07","8":"08","08":"08","9":"09","09":"09",
+        "10":"10","11":"11","12":"12","13":"13","14":"14","15":"15",
+    }
+    gl_cat_raw = str(rec.get("TownGrandListCategory") or "")
+    gl_cat = gl_cat_map.get(gl_cat_raw, gl_cat_raw)
+    subdiv = str(rec.get("TownSubdivision") or "").strip().upper() in ("TRUE","YES","1")
+
+    # Build an overlay page with ReportLab then merge onto page 4
+    overlay_buf = _io.BytesIO()
+    c = rl_canvas.Canvas(overlay_buf, pagesize=letter)
+    W, H = letter   # 612 x 792 pt
+    c.setFont("Helvetica", 9)
+
+    # Page 4 coordinates (points from bottom-left, 612x792 page).
+    # The town clerk table is in the middle of page 4 (below preparer section).
+    # Positions measured from the rendered PDF image:
+    #   Row 1 (Book / Page / GL Year):    y ~ 430
+    #   Row 2 (City / Parcel / Date):      y ~ 398
+    #   Row 3 (GL Value / Category / SPAN):y ~ 366
+    #   Subdivision checkbox (c Subdivision): y ~ 305, x ~ 272
+    def draw(x, y, text):
+        if text:
+            c.drawString(x, y, str(text))
+
+    # Row 1 — Book Number / Page Number / Grand List Year
+    draw(72,  400, rec.get("TownBookNumber")    or "")
+    draw(275, 400, rec.get("TownPageNumber")    or "")
+    draw(435, 400, rec.get("TownGrandListYear") or "")
+    # Row 2 — City or Town / Parcel ID / Date of Record
+    draw(72,  375, rec.get("TownCityorTown")    or "")
+    draw(275, 375, rec.get("TownParcelIDNo")    or "")
+    draw(435, 375, fmtd(rec.get("TownDateOfRecord")))
+    # Row 3 — Grand List Value / Grand List Category / SPAN
+    draw(72,  350, fmtm(rec.get("TownGrandListValue")))
+    draw(275, 350, gl_cat)
+    draw(435, 350, fmt_span(rec.get("TownSpan")))
+
+    # Subdivision checkbox — the 'c Subdivision' box is the middle of 3 checkboxes.
+    # Confirmed coordinates via pdfplumber: checkbox x0=261, y0=300.9 (ReportLab bottom-origin).
+    # drawString at x=261, y=303 places the X cleanly inside the 14pt box.
+    if subdiv:
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(261, 303, "X")
+        c.setFont("Helvetica", 9)
+
+    c.save()
+    overlay_buf.seek(0)
+
+    overlay_reader = _PR2(overlay_buf)
+    page4 = writer.pages[3]
+    page4.merge_page(overlay_reader.pages[0])
+
+    # ---- Produce final PDF bytes ----
+    buf = _io.BytesIO()
+    writer.write(buf)
+    buf.seek(0)
+    pdf_bytes = buf.read()
+
+    addr  = (rec.get("propertyLocationStreet") or "").replace(" ","_")[:30]
+    close = fmtd(rec.get("closingDate")).replace("/","-")
+    fname = f"PTT-172_{addr}_{close}.pdf"
+
+    # Default: open inline in browser. If ?download=1 force download.
+    disposition = f"attachment; filename={fname}" if download else f"inline; filename={fname}"
+    return Response(pdf_bytes, mimetype="application/pdf",
+                    headers={"Content-Disposition": disposition})
 
 
 if __name__ == "__main__":
