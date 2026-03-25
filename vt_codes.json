@@ -1,0 +1,1919 @@
+{
+  "counties": {
+    "01": "Addison",
+    "02": "Bennington",
+    "03": "Caledonia",
+    "04": "Chittenden",
+    "05": "Essex",
+    "06": "Franklin",
+    "07": "Grand Isle",
+    "08": "Lamoille",
+    "09": "Orange",
+    "10": "Orleans",
+    "11": "Rutland",
+    "12": "Washington",
+    "13": "Windham",
+    "14": "Windsor"
+  },
+  "town_to_county": {
+    "Addison": "01",
+    "Albany": "10",
+    "Alburgh": "07",
+    "Andover": "14",
+    "Arlington": "02",
+    "Athens": "13",
+    "Averill": "05",
+    "Averys Gore": "05",
+    "Bakersfield": "06",
+    "Baltimore": "14",
+    "Barnard": "14",
+    "Barnet": "03",
+    "Barre City": "12",
+    "Barre Town": "12",
+    "Barton": "10",
+    "Belvidere": "08",
+    "Bennington": "02",
+    "Benson": "11",
+    "Berkshire": "06",
+    "Berlin": "12",
+    "Bethel": "14",
+    "Bloomfield": "05",
+    "Bolton": "04",
+    "Bradford": "09",
+    "Braintree": "09",
+    "Brandon": "11",
+    "Brattleboro": "13",
+    "Bridgewater": "14",
+    "Bridport": "01",
+    "Brighton": "05",
+    "Bristol": "01",
+    "Brookfield": "09",
+    "Brookline": "13",
+    "Brownington": "10",
+    "Brunswick": "05",
+    "Buels Gore": "04",
+    "Burke": "03",
+    "Burlington": "04",
+    "Cabot": "12",
+    "Calais": "12",
+    "Cambridge": "08",
+    "Canaan": "05",
+    "Castleton": "11",
+    "Cavendish": "14",
+    "Charleston": "10",
+    "Charlotte": "04",
+    "Chelsea": "09",
+    "Chester": "14",
+    "Chittenden": "11",
+    "Clarendon": "11",
+    "Colchester": "04",
+    "Concord": "05",
+    "Corinth": "09",
+    "Cornwall": "01",
+    "Coventry": "10",
+    "Craftsbury": "10",
+    "Danby": "11",
+    "Danville": "03",
+    "Derby": "10",
+    "Dorset": "02",
+    "Dover": "13",
+    "Dummerston": "13",
+    "Duxbury": "12",
+    "East Haven": "05",
+    "East Montpelier": "12",
+    "Eden": "08",
+    "Elmore": "08",
+    "Enosburgh": "06",
+    "Essex County Unified UTG": "05",
+    "Essex Junction": "04",
+    "Essex Town": "04",
+    "Fair Haven": "11",
+    "Fairfax": "06",
+    "Fairfield": "06",
+    "Fairlee": "09",
+    "Fayston": "12",
+    "Ferdinand": "05",
+    "Ferrisburgh": "01",
+    "Fletcher": "06",
+    "Franklin": "06",
+    "Georgia": "06",
+    "Glastenbury": "02",
+    "Glover": "10",
+    "Goshen": "01",
+    "Grafton": "13",
+    "Granby": "05",
+    "Grand Isle": "07",
+    "Granville": "01",
+    "Greensboro": "10",
+    "Groton": "03",
+    "Guildhall": "05",
+    "Guilford": "13",
+    "Halifax": "13",
+    "Hancock": "01",
+    "Hardwick": "03",
+    "Hartford": "14",
+    "Hartland": "14",
+    "Highgate": "06",
+    "Hinesburg": "04",
+    "Holland": "10",
+    "Hubbardton": "11",
+    "Huntington": "04",
+    "Hyde Park": "08",
+    "Ira": "11",
+    "Irasburg": "10",
+    "Isle La Motte": "07",
+    "Jamaica": "13",
+    "Jay": "10",
+    "Jericho": "04",
+    "Johnson": "08",
+    "Killington": "11",
+    "Kirby": "03",
+    "Landgrove": "02",
+    "Leicester": "01",
+    "Lemington": "05",
+    "Lewis": "05",
+    "Lincoln": "01",
+    "Londonderry": "13",
+    "Lowell": "10",
+    "Ludlow": "14",
+    "Lunenburg": "05",
+    "Lyndon": "03",
+    "Maidstone": "05",
+    "Manchester": "02",
+    "Marlboro": "13",
+    "Marshfield": "12",
+    "Mendon": "11",
+    "Middlebury": "01",
+    "Middlesex": "12",
+    "Middletown Springs": "11",
+    "Milton": "04",
+    "Monkton": "01",
+    "Montgomery": "06",
+    "Montpelier": "12",
+    "Moretown": "12",
+    "Morgan": "10",
+    "Morristown": "08",
+    "Mount Holly": "11",
+    "Mount Tabor": "11",
+    "New Haven": "01",
+    "Newark": "03",
+    "Newbury": "09",
+    "Newfane": "13",
+    "Newport City": "10",
+    "Newport Town": "10",
+    "North Bennington": "02",
+    "North Hero": "07",
+    "Northfield": "12",
+    "Norton": "05",
+    "Norwich": "14",
+    "Orange": "09",
+    "Orleans ID": "10",
+    "Orwell": "01",
+    "Panton": "01",
+    "Pawlet": "11",
+    "Peacham": "03",
+    "Peru": "02",
+    "Pittsfield": "11",
+    "Pittsford": "11",
+    "Plainfield": "12",
+    "Plymouth": "14",
+    "Pomfret": "14",
+    "Poultney": "11",
+    "Pownal": "02",
+    "Proctor": "11",
+    "Putney": "13",
+    "Randolph": "09",
+    "Reading": "14",
+    "Readsboro": "02",
+    "Richford": "06",
+    "Richmond": "04",
+    "Ripton": "01",
+    "Rochester": "14",
+    "Rockingham": "13",
+    "Roxbury": "12",
+    "Royalton": "14",
+    "Rupert": "02",
+    "Rutland City": "11",
+    "Rutland Town": "11",
+    "Ryegate": "03",
+    "Salisbury": "01",
+    "Sandgate": "02",
+    "Searsburg": "02",
+    "Shaftsbury": "02",
+    "Shaftsbury ID": "02",
+    "Sharon": "14",
+    "Sheffield": "03",
+    "Shelburne": "04",
+    "Sheldon": "06",
+    "Shoreham": "01",
+    "Shrewsbury": "11",
+    "Somerset": "13",
+    "South Burlington": "04",
+    "South Hero": "07",
+    "Springfield": "14",
+    "St. Albans City": "06",
+    "St. Albans Town": "06",
+    "St. George": "04",
+    "St. Johnsbury": "03",
+    "Stamford": "02",
+    "Stannard": "03",
+    "Starksboro": "01",
+    "Stockbridge": "14",
+    "Stowe": "08",
+    "Strafford": "09",
+    "Stratton": "13",
+    "Sudbury": "11",
+    "Sunderland": "02",
+    "Sutton": "03",
+    "Swanton": "06",
+    "Thetford": "09",
+    "Tinmouth": "11",
+    "Topsham": "09",
+    "Townshend": "13",
+    "Troy": "10",
+    "Tunbridge": "09",
+    "Underhill": "04",
+    "Vergennes": "01",
+    "Vernon": "13",
+    "Vershire": "09",
+    "Victory": "05",
+    "Waitsfield": "12",
+    "Walden": "03",
+    "Wallingford": "11",
+    "Waltham": "01",
+    "Wardsboro": "13",
+    "Warner's Grant": "05",
+    "Warners Grant": "05",
+    "Warren": "12",
+    "Warren Gore": "05",
+    "Warren's Gore": "05",
+    "Washington": "09",
+    "Waterbury": "12",
+    "Waterford": "03",
+    "Waterville": "08",
+    "Weathersfield": "14",
+    "Wells": "11",
+    "Wells River": "09",
+    "West Fairlee": "09",
+    "West Haven": "11",
+    "West Rutland": "11",
+    "West Windsor": "14",
+    "Westfield": "10",
+    "Westford": "04",
+    "Westminster": "13",
+    "Westmore": "10",
+    "Weston": "13",
+    "Weybridge": "01",
+    "Wheelock": "03",
+    "Whiting": "11",
+    "Whitingham": "13",
+    "Williamstown": "09",
+    "Williston": "04",
+    "Wilmington": "13",
+    "Windham": "13",
+    "Windsor": "14",
+    "Winhall": "02",
+    "Winooski": "04",
+    "Wolcott": "08",
+    "Woodbury": "12",
+    "Woodford": "02",
+    "Woodstock": "14",
+    "Worcester": "12"
+  },
+  "school_to_town": {
+    "1": "Addison",
+    "2": "Albany",
+    "3": "Alburgh",
+    "4": "Andover",
+    "5": "Arlington",
+    "6": "Athens",
+    "7": "Bakersfield",
+    "8": "Baltimore",
+    "9": "Barnard",
+    "10": "Barnet",
+    "11": "Barre City",
+    "12": "Barre Town",
+    "13": "Barton",
+    "14": "Belvidere",
+    "15": "Bennington",
+    "16": "Benson",
+    "17": "Berkshire",
+    "18": "Berlin",
+    "19": "Bethel",
+    "20": "Bloomfield",
+    "21": "Bolton",
+    "22": "Bradford",
+    "23": "Braintree",
+    "24": "Brandon",
+    "25": "Brattleboro",
+    "26": "Bridgewater",
+    "27": "Bridport",
+    "28": "Brighton",
+    "29": "Bristol",
+    "30": "Brookfield",
+    "31": "Brookline",
+    "32": "Brownington",
+    "33": "Brunswick",
+    "34": "Burke",
+    "35": "Burlington",
+    "36": "Cabot",
+    "37": "Calais",
+    "38": "Cambridge",
+    "39": "Canaan",
+    "40": "Castleton",
+    "41": "Cavendish",
+    "42": "Charleston",
+    "43": "Charlotte",
+    "44": "Chelsea",
+    "45": "Chester",
+    "46": "Chittenden",
+    "47": "Clarendon",
+    "48": "Colchester",
+    "49": "Concord",
+    "50": "Corinth",
+    "51": "Cornwall",
+    "52": "Coventry",
+    "53": "Craftsbury",
+    "54": "Danby",
+    "55": "Danville",
+    "56": "Derby",
+    "57": "Dorset",
+    "58": "Dover",
+    "59": "Dummerston",
+    "60": "Duxbury",
+    "61": "East Haven",
+    "62": "East Montpelier",
+    "63": "Eden",
+    "64": "Elmore",
+    "65": "Enosburgh",
+    "66": "Essex Junction",
+    "67": "Essex Town",
+    "68": "Fairfax",
+    "69": "Fairfield",
+    "70": "Fair Haven",
+    "71": "Fairlee",
+    "72": "Fayston",
+    "73": "Ferrisburgh",
+    "74": "Fletcher",
+    "75": "Franklin",
+    "76": "Georgia",
+    "77": "Glover",
+    "78": "Goshen",
+    "79": "Grafton",
+    "80": "Granby",
+    "81": "Grand Isle",
+    "82": "Granville",
+    "83": "Greensboro",
+    "84": "Groton",
+    "85": "Guildhall",
+    "86": "Guilford",
+    "87": "Halifax",
+    "88": "Hancock",
+    "89": "Hardwick",
+    "90": "Hartford",
+    "91": "Hartland",
+    "92": "Highgate",
+    "93": "Hinesburg",
+    "94": "Holland",
+    "95": "Hubbardton",
+    "96": "Huntington",
+    "97": "Hyde Park",
+    "98": "Ira",
+    "99": "Irasburg",
+    "100": "Isle La Motte",
+    "101": "Jamaica",
+    "102": "Jay",
+    "103": "Jericho",
+    "104": "Johnson",
+    "105": "Kirby",
+    "106": "Landgrove",
+    "107": "Leicester",
+    "108": "Lemington",
+    "109": "Lincoln",
+    "110": "Londonderry",
+    "111": "Lowell",
+    "112": "Ludlow",
+    "113": "Lunenburg",
+    "114": "Lyndon",
+    "115": "Maidstone",
+    "116": "Manchester",
+    "117": "Marlboro",
+    "118": "Marshfield",
+    "119": "Mendon",
+    "120": "Middlebury",
+    "121": "Middlesex",
+    "122": "Middletown Springs",
+    "123": "Milton",
+    "124": "Monkton",
+    "125": "Montgomery",
+    "126": "Montpelier",
+    "127": "Moretown",
+    "128": "Morgan",
+    "129": "Morristown",
+    "130": "Mount Holly",
+    "131": "Mount Tabor",
+    "132": "Newark",
+    "133": "Newbury",
+    "134": "Newfane",
+    "135": "New Haven",
+    "136": "Newport City",
+    "137": "Newport Town",
+    "138": "North Bennington",
+    "139": "Northfield",
+    "140": "North Hero",
+    "141": "Norton",
+    "142": "Norwich",
+    "143": "Orange",
+    "144": "Orleans ID",
+    "145": "Orwell",
+    "146": "Panton",
+    "147": "Pawlet",
+    "148": "Peacham",
+    "149": "Peru",
+    "150": "Pittsfield",
+    "151": "Pittsford",
+    "152": "Plainfield",
+    "153": "Plymouth",
+    "154": "Pomfret",
+    "155": "Poultney",
+    "156": "Pownal",
+    "157": "Proctor",
+    "158": "Putney",
+    "159": "Randolph",
+    "160": "Reading",
+    "161": "Readsboro",
+    "162": "Richford",
+    "163": "Richmond",
+    "164": "Ripton",
+    "165": "Rochester",
+    "166": "Rockingham",
+    "167": "Roxbury",
+    "168": "Royalton",
+    "169": "Rupert",
+    "170": "Rutland City",
+    "171": "Rutland Town",
+    "172": "Ryegate",
+    "173": "St. Albans City",
+    "174": "St. Albans Town",
+    "175": "St. George",
+    "176": "St. Johnsbury",
+    "177": "Salisbury",
+    "178": "Sandgate",
+    "179": "Searsburg",
+    "180": "Shaftsbury",
+    "181": "Sharon",
+    "182": "Sheffield",
+    "183": "Shelburne",
+    "184": "Sheldon",
+    "185": "Killington",
+    "186": "Shoreham",
+    "187": "Shrewsbury",
+    "188": "South Burlington",
+    "189": "South Hero",
+    "190": "Springfield",
+    "191": "Stamford",
+    "192": "Stannard",
+    "193": "Starksboro",
+    "194": "Stockbridge",
+    "195": "Stowe",
+    "196": "Strafford",
+    "197": "Stratton",
+    "198": "Sudbury",
+    "199": "Sunderland",
+    "200": "Sutton",
+    "201": "Swanton",
+    "202": "Thetford",
+    "203": "Tinmouth",
+    "204": "Topsham",
+    "205": "Townshend",
+    "206": "Troy",
+    "207": "Tunbridge",
+    "209": "Underhill",
+    "210": "Vergennes",
+    "211": "Vernon",
+    "212": "Vershire",
+    "213": "Victory",
+    "214": "Waitsfield",
+    "215": "Walden",
+    "216": "Wallingford",
+    "217": "Waltham",
+    "218": "Wardsboro",
+    "219": "Warren",
+    "220": "Washington",
+    "221": "Waterbury",
+    "222": "Waterford",
+    "223": "Waterville",
+    "224": "Weathersfield",
+    "225": "Wells",
+    "226": "Wells River",
+    "227": "West Fairlee",
+    "228": "Westfield",
+    "229": "Westford",
+    "230": "West Haven",
+    "231": "Westminster",
+    "232": "Westmore",
+    "233": "Weston",
+    "234": "West Rutland",
+    "235": "West Windsor",
+    "236": "Weybridge",
+    "237": "Wheelock",
+    "238": "Whiting",
+    "239": "Whitingham",
+    "240": "Williamstown",
+    "241": "Williston",
+    "242": "Wilmington",
+    "243": "Windham",
+    "244": "Windsor",
+    "245": "Winhall",
+    "246": "Winooski",
+    "247": "Wolcott",
+    "248": "Woodbury",
+    "249": "Woodford",
+    "250": "Woodstock",
+    "251": "Worcester",
+    "252": "Buels Gore",
+    "254": "Shaftsbury ID",
+    "255": "Averill",
+    "256": "Averys Gore",
+    "257": "Ferdinand",
+    "258": "Glastenbury",
+    "259": "Lewis",
+    "260": "Somerset",
+    "261": "Warners Grant",
+    "262": "Warren Gore"
+  },
+  "ptt_exemptions": {
+    "0": "No exemption",
+    "1": "Transfers recorded prior to Jan. 1, 1968",
+    "2": "Transfers to the United States, State of Vermont, or their instrumentalities",
+    "3": "Transfers directly to the obligee to secure a debt or other obligation",
+    "4": "Transfers confirming or correcting a transfer previously recorded",
+    "5": "Transfers between husband/wife, parent/child, grandparent/grandchild without consideration",
+    "6": "Transfers to effectuate a change of identity or form of ownership with no change in beneficial ownership",
+    "7": "Transfers releasing property as security when debt has been fully satisfied",
+    "8": "Transfers of partition",
+    "9": "Transfers pursuant to corporate mergers or consolidations",
+    "10": "Transfers by subsidiary corporation to its parent for no consideration",
+    "11": "Transfers to a corporation at time of formation under IRC \u00a7351",
+    "12": "Transfers to or by Vermont Industrial Development Authority or non-profit local development corporation",
+    "13": "Transfers to IRC \u00a7501(c)(3) organization to preserve farmland or open-space land (tax deferred)",
+    "14": "Transfers to IRC \u00a7501(c)(3) organization meeting public support test to preserve farmland or open space",
+    "15": "Transfers to a partnership or LLC at time of formation under IRC",
+    "16": "Transfers by partnership/LLC to partner/member in connection with bona fide dissolution",
+    "17": "Transfers of a utility line easement to a public utility or municipality for $500 or less",
+    "18": "Transfers between obligor and primary obligee in foreclosure or conveyance in lieu of foreclosure",
+    "19": "Court-ordered transfer to spouse in divorce",
+    "20": "Transfers to a limited equity cooperative or \u00a7501(c)(3) for low/moderate income housing",
+    "21": "Transfers of leasehold or fee interests to low income individuals by \u00a7501(c)(3) housing organizations",
+    "22": "Recording of deed when a previously taxed instrument evidenced the same transfer",
+    "23": "Transfers to \u00a7501(c)(3) organizations for low-income housing, public TV, or food clearinghouse",
+    "24": "Leases of land for less than 50 years including extensions",
+    "25": "Transfers of abandoned blighted dwellings acquired by municipality through condemnation or tax sale",
+    "26": "New Energy Star mobile homes certified as Zero Ready Home by US Dept. of Energy",
+    "99": "Principal residence funded by Vermont Housing/Conservation Trust Fund, VHFA, or USDA Rural Development"
+  },
+  "interest_types": {
+    "1": "Fee Simple",
+    "2": "Life Estate",
+    "3": "Easement or ROW",
+    "4": "Lease",
+    "5": "Timeshare",
+    "6": "Undivided 1/2 Interest",
+    "7": "Specified % Interest",
+    "8": "Other"
+  },
+  "building_types": {
+    "1": "None",
+    "2": "Single Family Dwelling",
+    "3": "Seasonal Dwelling",
+    "4": "Mobile Home",
+    "5": "Condominium",
+    "6": "Multi Family",
+    "7": "Farm Buildings",
+    "8": "Residential New Construction",
+    "9": "Office Buildings",
+    "10": "Store",
+    "11": "Restaurant",
+    "12": "Gas Station/Garage",
+    "13": "Auto Sales",
+    "14": "Factory",
+    "15": "Hotel/Motel",
+    "16": "School/Dorm",
+    "17": "Parking Area",
+    "18": "Cell Tower",
+    "19": "Church/Religious",
+    "20": "Other"
+  },
+  "use_of_property": {
+    "1": "Domicile/Principal Residence",
+    "2": "Non-Principal Residence: Fit for year-round",
+    "3": "Non-Principal Residence: NOT fit for year-round habitation",
+    "4": "Non-Principal Residence: Long-term rental",
+    "5": "Commercial",
+    "6": "Government Use",
+    "7": "Industrial",
+    "8": "Open Land",
+    "9": "Timberland",
+    "10": "Operating Farm",
+    "11": "Other"
+  },
+  "grand_list_categories": {
+    "1": "Residential <6 Acres",
+    "2": "Residential >6 Acres",
+    "3": "Mobile Home/Un",
+    "4": "Mobile Home/La",
+    "5": "Seasonal <6 Acres",
+    "6": "Seasonal >6 Acres",
+    "7": "Commercial",
+    "8": "Commercial Apt",
+    "9": "Industrial",
+    "10": "Utilities Elec",
+    "11": "Utilities Other",
+    "12": "Farm",
+    "13": "Other",
+    "14": "Woodland",
+    "15": "Miscellaneous"
+  },
+  "town_centroids": {
+    "CANAAN": {
+      "lat": 44.977731,
+      "lon": -71.578872,
+      "county": "05"
+    },
+    "FRANKLIN": {
+      "lat": 44.976344,
+      "lon": -72.897902,
+      "county": "06"
+    },
+    "BERKSHIRE": {
+      "lat": 44.970036,
+      "lon": -72.758034,
+      "county": "06"
+    },
+    "HIGHGATE": {
+      "lat": 44.965601,
+      "lon": -73.056321,
+      "county": "06"
+    },
+    "RICHFORD": {
+      "lat": 44.969064,
+      "lon": -72.618342,
+      "county": "06"
+    },
+    "ALBURGH": {
+      "lat": 44.952758,
+      "lon": -73.283613,
+      "county": "07"
+    },
+    "NORTON": {
+      "lat": 44.979516,
+      "lon": -71.814454,
+      "county": "05"
+    },
+    "AVERILL": {
+      "lat": 44.942916,
+      "lon": -71.682392,
+      "county": "05"
+    },
+    "HOLLAND": {
+      "lat": 44.969846,
+      "lon": -71.982722,
+      "county": "10"
+    },
+    "JAY": {
+      "lat": 44.967068,
+      "lon": -72.483905,
+      "county": "10"
+    },
+    "TROY": {
+      "lat": 44.938726,
+      "lon": -72.382533,
+      "county": "10"
+    },
+    "LEMINGTON": {
+      "lat": 44.890683,
+      "lon": -71.58314,
+      "county": "05"
+    },
+    "ISLE LA MOTTE": {
+      "lat": 44.865243,
+      "lon": -73.341896,
+      "county": "07"
+    },
+    "AVERY'S GORE": {
+      "lat": 44.910985,
+      "lon": -71.817641,
+      "county": "05"
+    },
+    "WARREN'S GORE": {
+      "lat": 44.912292,
+      "lon": -71.87361,
+      "county": "05"
+    },
+    "WARNER'S GRANT": {
+      "lat": 44.920954,
+      "lon": -71.906297,
+      "county": "05"
+    },
+    "SHELDON": {
+      "lat": 44.898904,
+      "lon": -72.920219,
+      "county": "06"
+    },
+    "MORGAN": {
+      "lat": 44.896514,
+      "lon": -71.96897,
+      "county": "10"
+    },
+    "LEWIS": {
+      "lat": 44.866178,
+      "lon": -71.748598,
+      "county": "05"
+    },
+    "SWANTON": {
+      "lat": 44.908011,
+      "lon": -73.124933,
+      "county": "06"
+    },
+    "NORTH HERO": {
+      "lat": 44.837996,
+      "lon": -73.264452,
+      "county": "07"
+    },
+    "ENOSBURGH": {
+      "lat": 44.880548,
+      "lon": -72.747816,
+      "county": "06"
+    },
+    "WESTFIELD": {
+      "lat": 44.880397,
+      "lon": -72.473058,
+      "county": "10"
+    },
+    "CHARLESTON": {
+      "lat": 44.85053,
+      "lon": -72.020564,
+      "county": "10"
+    },
+    "SAINT ALBANS TOWN": {
+      "lat": 44.810496,
+      "lon": -73.145729,
+      "county": "06"
+    },
+    "BROWNINGTON": {
+      "lat": 44.83121,
+      "lon": -72.124797,
+      "county": "10"
+    },
+    "FAIRFIELD": {
+      "lat": 44.808247,
+      "lon": -72.932318,
+      "county": "06"
+    },
+    "BLOOMFIELD": {
+      "lat": 44.812157,
+      "lon": -71.644744,
+      "county": "05"
+    },
+    "BRIGHTON": {
+      "lat": 44.802669,
+      "lon": -71.869554,
+      "county": "05"
+    },
+    "IRASBURG": {
+      "lat": 44.814026,
+      "lon": -72.283228,
+      "county": "10"
+    },
+    "LOWELL": {
+      "lat": 44.791799,
+      "lon": -72.456848,
+      "county": "10"
+    },
+    "BAKERSFIELD": {
+      "lat": 44.793733,
+      "lon": -72.784467,
+      "county": "06"
+    },
+    "SAINT ALBANS CITY": {
+      "lat": 44.811906,
+      "lon": -73.084864,
+      "county": "06"
+    },
+    "WESTMORE": {
+      "lat": 44.760161,
+      "lon": -72.02697,
+      "county": "10"
+    },
+    "FERDINAND": {
+      "lat": 44.727485,
+      "lon": -71.756349,
+      "county": "05"
+    },
+    "BRUNSWICK": {
+      "lat": 44.732731,
+      "lon": -71.662549,
+      "county": "05"
+    },
+    "BELVIDERE": {
+      "lat": 44.761567,
+      "lon": -72.680517,
+      "county": "08"
+    },
+    "GEORGIA": {
+      "lat": 44.728171,
+      "lon": -73.127682,
+      "county": "06"
+    },
+    "ALBANY": {
+      "lat": 44.733697,
+      "lon": -72.337971,
+      "county": "10"
+    },
+    "GRAND ISLE": {
+      "lat": 44.720427,
+      "lon": -73.299392,
+      "county": "07"
+    },
+    "WATERVILLE": {
+      "lat": 44.71636,
+      "lon": -72.754587,
+      "county": "08"
+    },
+    "FAIRFAX": {
+      "lat": 44.69981,
+      "lon": -73.00767,
+      "county": "06"
+    },
+    "NEWARK": {
+      "lat": 44.70798,
+      "lon": -71.924409,
+      "county": "03"
+    },
+    "FLETCHER": {
+      "lat": 44.710867,
+      "lon": -72.899987,
+      "county": "06"
+    },
+    "BARTON": {
+      "lat": 44.758492,
+      "lon": -72.166109,
+      "county": "10"
+    },
+    "SUTTON": {
+      "lat": 44.663462,
+      "lon": -72.039001,
+      "county": "03"
+    },
+    "GLOVER": {
+      "lat": 44.68424,
+      "lon": -72.230623,
+      "county": "10"
+    },
+    "MILTON": {
+      "lat": 44.642965,
+      "lon": -73.153491,
+      "county": "04"
+    },
+    "EAST HAVEN": {
+      "lat": 44.655415,
+      "lon": -71.822746,
+      "county": "05"
+    },
+    "CRAFTSBURY": {
+      "lat": 44.65349,
+      "lon": -72.396341,
+      "county": "10"
+    },
+    "CAMBRIDGE": {
+      "lat": 44.627782,
+      "lon": -72.818842,
+      "county": "08"
+    },
+    "SHEFFIELD": {
+      "lat": 44.642786,
+      "lon": -72.127518,
+      "county": "03"
+    },
+    "SOUTH HERO": {
+      "lat": 44.631305,
+      "lon": -73.314459,
+      "county": "07"
+    },
+    "GRANBY": {
+      "lat": 44.602355,
+      "lon": -71.720652,
+      "county": "05"
+    },
+    "GREENSBORO": {
+      "lat": 44.603862,
+      "lon": -72.288671,
+      "county": "10"
+    },
+    "BURKE": {
+      "lat": 44.614588,
+      "lon": -71.928833,
+      "county": "03"
+    },
+    "WESTFORD": {
+      "lat": 44.60077,
+      "lon": -73.004305,
+      "county": "04"
+    },
+    "JOHNSON": {
+      "lat": 44.647955,
+      "lon": -72.685049,
+      "county": "08"
+    },
+    "WOLCOTT": {
+      "lat": 44.57298,
+      "lon": -72.454641,
+      "county": "08"
+    },
+    "UNDERHILL": {
+      "lat": 44.538253,
+      "lon": -72.886122,
+      "county": "04"
+    },
+    "WHEELOCK": {
+      "lat": 44.568248,
+      "lon": -72.140579,
+      "county": "03"
+    },
+    "GUILDHALL": {
+      "lat": 44.547933,
+      "lon": -71.628865,
+      "county": "05"
+    },
+    "VICTORY": {
+      "lat": 44.546751,
+      "lon": -71.819695,
+      "county": "05"
+    },
+    "HYDE PARK": {
+      "lat": 44.624633,
+      "lon": -72.56467,
+      "county": "08"
+    },
+    "MORRISTOWN": {
+      "lat": 44.548236,
+      "lon": -72.637705,
+      "county": "08"
+    },
+    "HARDWICK": {
+      "lat": 44.5236,
+      "lon": -72.347982,
+      "county": "03"
+    },
+    "STANNARD": {
+      "lat": 44.536946,
+      "lon": -72.202552,
+      "county": "03"
+    },
+    "KIRBY": {
+      "lat": 44.503595,
+      "lon": -71.91506,
+      "county": "03"
+    },
+    "STOWE": {
+      "lat": 44.481419,
+      "lon": -72.721758,
+      "county": "08"
+    },
+    "ELMORE": {
+      "lat": 44.491548,
+      "lon": -72.514153,
+      "county": "08"
+    },
+    "LYNDON": {
+      "lat": 44.545159,
+      "lon": -72.007563,
+      "county": "03"
+    },
+    "WALDEN": {
+      "lat": 44.481287,
+      "lon": -72.236354,
+      "county": "03"
+    },
+    "LUNENBURG": {
+      "lat": 44.476752,
+      "lon": -71.711289,
+      "county": "05"
+    },
+    "JERICHO": {
+      "lat": 44.476362,
+      "lon": -72.962968,
+      "county": "04"
+    },
+    "SAINT JOHNSBURY": {
+      "lat": 44.45545,
+      "lon": -72.011522,
+      "county": "03"
+    },
+    "CONCORD": {
+      "lat": 44.43156,
+      "lon": -71.833726,
+      "county": "05"
+    },
+    "WOODBURY": {
+      "lat": 44.444585,
+      "lon": -72.4075,
+      "county": "12"
+    },
+    "WORCESTER": {
+      "lat": 44.411849,
+      "lon": -72.574039,
+      "county": "12"
+    },
+    "BOLTON": {
+      "lat": 44.399745,
+      "lon": -72.876592,
+      "county": "04"
+    },
+    "WATERFORD": {
+      "lat": 44.379135,
+      "lon": -71.94032,
+      "county": "03"
+    },
+    "CALAIS": {
+      "lat": 44.364944,
+      "lon": -72.465925,
+      "county": "12"
+    },
+    "SAINT GEORGE": {
+      "lat": 44.38083,
+      "lon": -73.120294,
+      "county": "04"
+    },
+    "BARNET": {
+      "lat": 44.319774,
+      "lon": -72.078964,
+      "county": "03"
+    },
+    "MIDDLESEX": {
+      "lat": 44.326983,
+      "lon": -72.630559,
+      "county": "12"
+    },
+    "PEACHAM": {
+      "lat": 44.333161,
+      "lon": -72.206607,
+      "county": "03"
+    },
+    "DUXBURY": {
+      "lat": 44.305638,
+      "lon": -72.823968,
+      "county": "12"
+    },
+    "CHARLOTTE": {
+      "lat": 44.308945,
+      "lon": -73.235966,
+      "county": "04"
+    },
+    "HUNTINGTON": {
+      "lat": 44.299945,
+      "lon": -72.952919,
+      "county": "04"
+    },
+    "WATERBURY": {
+      "lat": 44.385132,
+      "lon": -72.745621,
+      "county": "12"
+    },
+    "MARSHFIELD": {
+      "lat": 44.315689,
+      "lon": -72.360975,
+      "county": "12"
+    },
+    "EAST MONTPELIER": {
+      "lat": 44.289339,
+      "lon": -72.507459,
+      "county": "12"
+    },
+    "MORETOWN": {
+      "lat": 44.256555,
+      "lon": -72.714771,
+      "county": "12"
+    },
+    "MONTPELIER": {
+      "lat": 44.265943,
+      "lon": -72.571725,
+      "county": "12"
+    },
+    "STARKSBORO": {
+      "lat": 44.228611,
+      "lon": -73.015787,
+      "county": "01"
+    },
+    "GROTON": {
+      "lat": 44.234256,
+      "lon": -72.262247,
+      "county": "03"
+    },
+    "PLAINFIELD": {
+      "lat": 44.24407,
+      "lon": -72.407904,
+      "county": "12"
+    },
+    "MONKTON": {
+      "lat": 44.227587,
+      "lon": -73.132301,
+      "county": "01"
+    },
+    "FAYSTON": {
+      "lat": 44.213086,
+      "lon": -72.8751,
+      "county": "12"
+    },
+    "BERLIN": {
+      "lat": 44.209783,
+      "lon": -72.604117,
+      "county": "12"
+    },
+    "FERRISBURGH": {
+      "lat": 44.206355,
+      "lon": -73.277228,
+      "county": "01"
+    },
+    "BARRE TOWN": {
+      "lat": 44.185856,
+      "lon": -72.481874,
+      "county": "12"
+    },
+    "BUELS GORE": {
+      "lat": 44.205088,
+      "lon": -72.946726,
+      "county": "04"
+    },
+    "ORANGE": {
+      "lat": 44.155943,
+      "lon": -72.3747,
+      "county": "09"
+    },
+    "BARRE CITY": {
+      "lat": 44.199755,
+      "lon": -72.508476,
+      "county": "12"
+    },
+    "BRISTOL": {
+      "lat": 44.124336,
+      "lon": -73.070576,
+      "county": "01"
+    },
+    "TOPSHAM": {
+      "lat": 44.133706,
+      "lon": -72.249774,
+      "county": "09"
+    },
+    "VERGENNES": {
+      "lat": 44.166398,
+      "lon": -73.255649,
+      "county": "01"
+    },
+    "NEW HAVEN": {
+      "lat": 44.104119,
+      "lon": -73.16404,
+      "county": "01"
+    },
+    "PANTON": {
+      "lat": 44.136768,
+      "lon": -73.336595,
+      "county": "01"
+    },
+    "WALTHAM": {
+      "lat": 44.131333,
+      "lon": -73.234527,
+      "county": "01"
+    },
+    "LINCOLN": {
+      "lat": 44.095004,
+      "lon": -72.973273,
+      "county": "01"
+    },
+    "WASHINGTON": {
+      "lat": 44.071139,
+      "lon": -72.422254,
+      "county": "09"
+    },
+    "ADDISON": {
+      "lat": 44.071473,
+      "lon": -73.344814,
+      "county": "01"
+    },
+    "CORINTH": {
+      "lat": 44.037556,
+      "lon": -72.29,
+      "county": "09"
+    },
+    "WEYBRIDGE": {
+      "lat": 44.046586,
+      "lon": -73.226909,
+      "county": "01"
+    },
+    "CHELSEA": {
+      "lat": 43.993847,
+      "lon": -72.456641,
+      "county": "09"
+    },
+    "MIDDLEBURY": {
+      "lat": 44.004379,
+      "lon": -73.121879,
+      "county": "01"
+    },
+    "RIPTON": {
+      "lat": 43.988414,
+      "lon": -72.990867,
+      "county": "01"
+    },
+    "BRIDPORT": {
+      "lat": 43.983186,
+      "lon": -73.333165,
+      "county": "01"
+    },
+    "CORNWALL": {
+      "lat": 43.960039,
+      "lon": -73.21624,
+      "county": "01"
+    },
+    "VERSHIRE": {
+      "lat": 43.956278,
+      "lon": -72.324534,
+      "county": "09"
+    },
+    "WEST FAIRLEE": {
+      "lat": 43.939584,
+      "lon": -72.22694,
+      "county": "09"
+    },
+    "FAIRLEE": {
+      "lat": 43.925542,
+      "lon": -72.163102,
+      "county": "09"
+    },
+    "HANCOCK": {
+      "lat": 43.920049,
+      "lon": -72.910509,
+      "county": "01"
+    },
+    "TUNBRIDGE": {
+      "lat": 43.901925,
+      "lon": -72.484992,
+      "county": "09"
+    },
+    "SALISBURY": {
+      "lat": 43.923032,
+      "lon": -73.111205,
+      "county": "01"
+    },
+    "ROCHESTER": {
+      "lat": 43.875528,
+      "lon": -72.829241,
+      "county": "14"
+    },
+    "SHOREHAM": {
+      "lat": 43.894545,
+      "lon": -73.313656,
+      "county": "01"
+    },
+    "STRAFFORD": {
+      "lat": 43.869348,
+      "lon": -72.366651,
+      "county": "09"
+    },
+    "BETHEL": {
+      "lat": 43.8505,
+      "lon": -72.673013,
+      "county": "14"
+    },
+    "THETFORD": {
+      "lat": 43.835604,
+      "lon": -72.248545,
+      "county": "09"
+    },
+    "ROYALTON": {
+      "lat": 43.814516,
+      "lon": -72.55217,
+      "county": "14"
+    },
+    "ORWELL": {
+      "lat": 43.80626,
+      "lon": -73.293171,
+      "county": "01"
+    },
+    "PITTSFIELD": {
+      "lat": 43.793174,
+      "lon": -72.828682,
+      "county": "11"
+    },
+    "SHARON": {
+      "lat": 43.782804,
+      "lon": -72.436185,
+      "county": "14"
+    },
+    "STOCKBRIDGE": {
+      "lat": 43.757015,
+      "lon": -72.743579,
+      "county": "14"
+    },
+    "NORWICH": {
+      "lat": 43.752116,
+      "lon": -72.31884,
+      "county": "14"
+    },
+    "BARNARD": {
+      "lat": 43.729103,
+      "lon": -72.624384,
+      "county": "14"
+    },
+    "BENSON": {
+      "lat": 43.712549,
+      "lon": -73.307403,
+      "county": "11"
+    },
+    "HARTFORD": {
+      "lat": 43.664401,
+      "lon": -72.38655,
+      "county": "14"
+    },
+    "KILLINGTON": {
+      "lat": 43.654363,
+      "lon": -72.788731,
+      "county": "11"
+    },
+    "BRIDGEWATER": {
+      "lat": 43.625183,
+      "lon": -72.666552,
+      "county": "14"
+    },
+    "WEST HAVEN": {
+      "lat": 43.634898,
+      "lon": -73.368756,
+      "county": "11"
+    },
+    "FAIR HAVEN": {
+      "lat": 43.617182,
+      "lon": -73.266618,
+      "county": "11"
+    },
+    "HARTLAND": {
+      "lat": 43.574009,
+      "lon": -72.435438,
+      "county": "14"
+    },
+    "PLYMOUTH": {
+      "lat": 43.522539,
+      "lon": -72.717059,
+      "county": "14"
+    },
+    "SHREWSBURY": {
+      "lat": 43.529552,
+      "lon": -72.856153,
+      "county": "11"
+    },
+    "READING": {
+      "lat": 43.497837,
+      "lon": -72.593903,
+      "county": "14"
+    },
+    "WINDSOR": {
+      "lat": 43.476933,
+      "lon": -72.420892,
+      "county": "14"
+    },
+    "WALLINGFORD": {
+      "lat": 43.440307,
+      "lon": -72.945177,
+      "county": "11"
+    },
+    "MOUNT HOLLY": {
+      "lat": 43.428275,
+      "lon": -72.803742,
+      "county": "11"
+    },
+    "PAWLET": {
+      "lat": 43.358998,
+      "lon": -73.187356,
+      "county": "11"
+    },
+    "DANBY": {
+      "lat": 43.353873,
+      "lon": -73.058559,
+      "county": "11"
+    },
+    "MOUNT TABOR": {
+      "lat": 43.349456,
+      "lon": -72.928238,
+      "county": "11"
+    },
+    "WESTON": {
+      "lat": 43.315349,
+      "lon": -72.806547,
+      "county": "14"
+    },
+    "ANDOVER": {
+      "lat": 43.286268,
+      "lon": -72.722932,
+      "county": "14"
+    },
+    "SPRINGFIELD": {
+      "lat": 43.290752,
+      "lon": -72.481001,
+      "county": "14"
+    },
+    "RUPERT": {
+      "lat": 43.263485,
+      "lon": -73.19045,
+      "county": "02"
+    },
+    "DORSET": {
+      "lat": 43.258798,
+      "lon": -73.051471,
+      "county": "02"
+    },
+    "PERU": {
+      "lat": 43.255063,
+      "lon": -72.920652,
+      "county": "02"
+    },
+    "LANDGROVE": {
+      "lat": 43.263614,
+      "lon": -72.846424,
+      "county": "02"
+    },
+    "LONDONDERRY": {
+      "lat": 43.203584,
+      "lon": -72.803542,
+      "county": "13"
+    },
+    "GRAFTON": {
+      "lat": 43.184142,
+      "lon": -72.618703,
+      "county": "13"
+    },
+    "WINDHAM": {
+      "lat": 43.174783,
+      "lon": -72.718569,
+      "county": "13"
+    },
+    "SANDGATE": {
+      "lat": 43.168212,
+      "lon": -73.197358,
+      "county": "02"
+    },
+    "WINHALL": {
+      "lat": 43.162127,
+      "lon": -72.934978,
+      "county": "02"
+    },
+    "MANCHESTER": {
+      "lat": 43.165647,
+      "lon": -73.068527,
+      "county": "02"
+    },
+    "JAMAICA": {
+      "lat": 43.100864,
+      "lon": -72.799134,
+      "county": "13"
+    },
+    "TOWNSHEND": {
+      "lat": 43.071054,
+      "lon": -72.669193,
+      "county": "13"
+    },
+    "WESTMINSTER": {
+      "lat": 43.074505,
+      "lon": -72.510272,
+      "county": "13"
+    },
+    "ARLINGTON": {
+      "lat": 43.074583,
+      "lon": -73.202106,
+      "county": "02"
+    },
+    "SUNDERLAND": {
+      "lat": 43.070894,
+      "lon": -73.068979,
+      "county": "02"
+    },
+    "STRATTON": {
+      "lat": 43.063679,
+      "lon": -72.932697,
+      "county": "13"
+    },
+    "BROOKLINE": {
+      "lat": 43.018169,
+      "lon": -72.610243,
+      "county": "13"
+    },
+    "WARDSBORO": {
+      "lat": 43.020923,
+      "lon": -72.809762,
+      "county": "13"
+    },
+    "SHAFTSBURY": {
+      "lat": 42.980378,
+      "lon": -73.207957,
+      "county": "02"
+    },
+    "GLASTENBURY": {
+      "lat": 42.977647,
+      "lon": -73.074769,
+      "county": "02"
+    },
+    "SOMERSET": {
+      "lat": 42.975702,
+      "lon": -72.963288,
+      "county": "13"
+    },
+    "PUTNEY": {
+      "lat": 42.994598,
+      "lon": -72.53049,
+      "county": "13"
+    },
+    "NEWFANE": {
+      "lat": 42.969932,
+      "lon": -72.700604,
+      "county": "13"
+    },
+    "DOVER": {
+      "lat": 42.957801,
+      "lon": -72.843076,
+      "county": "13"
+    },
+    "DUMMERSTON": {
+      "lat": 42.930447,
+      "lon": -72.591953,
+      "county": "13"
+    },
+    "BENNINGTON": {
+      "lat": 42.885368,
+      "lon": -73.213399,
+      "county": "02"
+    },
+    "WOODFORD": {
+      "lat": 42.882839,
+      "lon": -73.080004,
+      "county": "02"
+    },
+    "SEARSBURG": {
+      "lat": 42.893288,
+      "lon": -72.967338,
+      "county": "02"
+    },
+    "WILMINGTON": {
+      "lat": 42.876803,
+      "lon": -72.862957,
+      "county": "13"
+    },
+    "MARLBORO": {
+      "lat": 42.875564,
+      "lon": -72.739235,
+      "county": "13"
+    },
+    "BRATTLEBORO": {
+      "lat": 42.861882,
+      "lon": -72.614366,
+      "county": "13"
+    },
+    "READSBORO": {
+      "lat": 42.798658,
+      "lon": -72.972029,
+      "county": "02"
+    },
+    "POWNAL": {
+      "lat": 42.791883,
+      "lon": -73.212029,
+      "county": "02"
+    },
+    "STAMFORD": {
+      "lat": 42.787973,
+      "lon": -73.078435,
+      "county": "02"
+    },
+    "WHITINGHAM": {
+      "lat": 42.783068,
+      "lon": -72.866834,
+      "county": "13"
+    },
+    "HALIFAX": {
+      "lat": 42.781423,
+      "lon": -72.744113,
+      "county": "13"
+    },
+    "GUILFORD": {
+      "lat": 42.778752,
+      "lon": -72.623555,
+      "county": "13"
+    },
+    "VERNON": {
+      "lat": 42.762258,
+      "lon": -72.525927,
+      "county": "13"
+    },
+    "MONTGOMERY": {
+      "lat": 44.859983,
+      "lon": -72.604181,
+      "county": "06"
+    },
+    "EDEN": {
+      "lat": 44.714653,
+      "lon": -72.539489,
+      "county": "08"
+    },
+    "MAIDSTONE": {
+      "lat": 44.64096,
+      "lon": -71.616869,
+      "county": "05"
+    },
+    "COLCHESTER": {
+      "lat": 44.554748,
+      "lon": -73.219479,
+      "county": "04"
+    },
+    "DANVILLE": {
+      "lat": 44.431969,
+      "lon": -72.126204,
+      "county": "03"
+    },
+    "WINOOSKI": {
+      "lat": 44.494931,
+      "lon": -73.184469,
+      "county": "04"
+    },
+    "CABOT": {
+      "lat": 44.401556,
+      "lon": -72.296203,
+      "county": "12"
+    },
+    "SHELBURNE": {
+      "lat": 44.388751,
+      "lon": -73.242297,
+      "county": "04"
+    },
+    "RICHMOND": {
+      "lat": 44.394226,
+      "lon": -72.993194,
+      "county": "04"
+    },
+    "HINESBURG": {
+      "lat": 44.324366,
+      "lon": -73.0902,
+      "county": "04"
+    },
+    "POMFRET": {
+      "lat": 43.697133,
+      "lon": -72.506521,
+      "county": "14"
+    },
+    "WOODSTOCK": {
+      "lat": 43.597306,
+      "lon": -72.552469,
+      "county": "14"
+    },
+    "RUTLAND CITY": {
+      "lat": 43.609217,
+      "lon": -72.978217,
+      "county": "11"
+    },
+    "BURLINGTON": {
+      "lat": 44.487352,
+      "lon": -73.23123,
+      "county": "04"
+    },
+    "BRAINTREE": {
+      "lat": 43.969455,
+      "lon": -72.720048,
+      "county": "09"
+    },
+    "RANDOLPH": {
+      "lat": 43.937356,
+      "lon": -72.606435,
+      "county": "09"
+    },
+    "ESSEX": {
+      "lat": 44.523474,
+      "lon": -73.059144,
+      "county": "04"
+    },
+    "RYEGATE": {
+      "lat": 44.222159,
+      "lon": -72.114757,
+      "county": "03"
+    },
+    "NEWBURY": {
+      "lat": 44.109634,
+      "lon": -72.119873,
+      "county": "09"
+    },
+    "SOUTH BURLINGTON": {
+      "lat": 44.460038,
+      "lon": -73.220038,
+      "county": "04"
+    },
+    "WILLISTON": {
+      "lat": 44.434588,
+      "lon": -73.088795,
+      "county": "04"
+    },
+    "WILLIAMSTOWN": {
+      "lat": 44.10945,
+      "lon": -72.541359,
+      "county": "09"
+    },
+    "BROOKFIELD": {
+      "lat": 44.028714,
+      "lon": -72.592037,
+      "county": "09"
+    },
+    "BRADFORD": {
+      "lat": 44.010982,
+      "lon": -72.158134,
+      "county": "09"
+    },
+    "POULTNEY": {
+      "lat": 43.532644,
+      "lon": -73.192022,
+      "county": "11"
+    },
+    "TINMOUTH": {
+      "lat": 43.444784,
+      "lon": -73.05766,
+      "county": "11"
+    },
+    "WELLS": {
+      "lat": 43.432743,
+      "lon": -73.188857,
+      "county": "11"
+    },
+    "MIDDLETOWN SPRINGS": {
+      "lat": 43.48475,
+      "lon": -73.126639,
+      "county": "11"
+    },
+    "WEST WINDSOR": {
+      "lat": 43.484552,
+      "lon": -72.491743,
+      "county": "14"
+    },
+    "CHESTER": {
+      "lat": 43.28883,
+      "lon": -72.617045,
+      "county": "14"
+    },
+    "CAVENDISH": {
+      "lat": 43.405121,
+      "lon": -72.604189,
+      "county": "14"
+    },
+    "BALTIMORE": {
+      "lat": 43.359774,
+      "lon": -72.565602,
+      "county": "14"
+    },
+    "WEATHERSFIELD": {
+      "lat": 43.388433,
+      "lon": -72.471599,
+      "county": "14"
+    },
+    "NEWPORT TOWN": {
+      "lat": 44.935918,
+      "lon": -72.303975,
+      "county": "10"
+    },
+    "DERBY": {
+      "lat": 44.951127,
+      "lon": -72.136566,
+      "county": "10"
+    },
+    "COVENTRY": {
+      "lat": 44.885119,
+      "lon": -72.234812,
+      "county": "10"
+    },
+    "NEWPORT CITY": {
+      "lat": 44.937233,
+      "lon": -72.208936,
+      "county": "10"
+    },
+    "NORTHFIELD": {
+      "lat": 44.146266,
+      "lon": -72.685039,
+      "county": "12"
+    },
+    "WAITSFIELD": {
+      "lat": 44.1814,
+      "lon": -72.796268,
+      "county": "12"
+    },
+    "ROCKINGHAM": {
+      "lat": 43.181457,
+      "lon": -72.501399,
+      "county": "13"
+    },
+    "ATHENS": {
+      "lat": 43.114454,
+      "lon": -72.593094,
+      "county": "13"
+    },
+    "GRANVILLE": {
+      "lat": 44.005909,
+      "lon": -72.839783,
+      "county": "01"
+    },
+    "ROXBURY": {
+      "lat": 44.070044,
+      "lon": -72.726493,
+      "county": "12"
+    },
+    "WARREN": {
+      "lat": 44.110585,
+      "lon": -72.859811,
+      "county": "12"
+    },
+    "GOSHEN": {
+      "lat": 43.865599,
+      "lon": -73.004768,
+      "county": "01"
+    },
+    "WHITING": {
+      "lat": 43.871983,
+      "lon": -73.199825,
+      "county": "01"
+    },
+    "LEICESTER": {
+      "lat": 43.868904,
+      "lon": -73.097393,
+      "county": "01"
+    },
+    "CHITTENDEN": {
+      "lat": 43.760496,
+      "lon": -72.920892,
+      "county": "11"
+    },
+    "SUDBURY": {
+      "lat": 43.791262,
+      "lon": -73.179903,
+      "county": "11"
+    },
+    "HUBBARDTON": {
+      "lat": 43.71291,
+      "lon": -73.175957,
+      "county": "11"
+    },
+    "CASTLETON": {
+      "lat": 43.6328,
+      "lon": -73.174139,
+      "county": "11"
+    },
+    "IRA": {
+      "lat": 43.55386,
+      "lon": -73.081682,
+      "county": "11"
+    },
+    "BRANDON": {
+      "lat": 43.799664,
+      "lon": -73.080189,
+      "county": "11"
+    },
+    "PITTSFORD": {
+      "lat": 43.710047,
+      "lon": -73.043777,
+      "county": "11"
+    },
+    "WEST RUTLAND": {
+      "lat": 43.613777,
+      "lon": -73.06153,
+      "county": "11"
+    },
+    "PROCTOR": {
+      "lat": 43.651759,
+      "lon": -73.036619,
+      "county": "11"
+    },
+    "RUTLAND TOWN": {
+      "lat": 43.624037,
+      "lon": -72.978007,
+      "county": "11"
+    },
+    "MENDON": {
+      "lat": 43.626126,
+      "lon": -72.87886,
+      "county": "11"
+    },
+    "CLARENDON": {
+      "lat": 43.530502,
+      "lon": -72.985376,
+      "county": "11"
+    },
+    "LUDLOW": {
+      "lat": 43.395243,
+      "lon": -72.704381,
+      "county": "14"
+    },
+    "ESSEX JUNCTION": {
+      "lat": 44.490048,
+      "lon": -73.114466,
+      "county": "04"
+    }
+  }
+}
