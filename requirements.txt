@@ -2,3 +2,5 @@ Flask
 gunicorn
 requests
 openpyxl
+pypdf
+reportlab
