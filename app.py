@@ -1476,29 +1476,7 @@ def export_grouped():
 
     # ... you’ve just finished writing all rows & formatting on ws ...
 
-    # ---- Add MAP and SCREEN CAPTURE sheets before saving ----
-    from openpyxl.drawing.image import Image as XLImage
-    import base64
-
-    # Map sheet from generated PNG
-    map_png = generatemapimage(mapmeta, grouprecords)
-    if map_png:
-        map_sheet = wb.create_sheet(title="Map")
-        map_stream = io.BytesIO(map_png)
-        map_img = XLImage(map_stream)
-        map_sheet.add_image(map_img, "A1")
-
-    # Screen Capture sheet from base64 PNG sent by frontend
-    if screenshot:
-        try:
-            sc_bytes = base64.b64decode(screenshot.split(",")[-1])
-            sc_sheet = wb.create_sheet(title="Screen Capture")
-            sc_stream = io.BytesIO(sc_bytes)
-            sc_img = XLImage(sc_stream)
-            sc_sheet.add_image(sc_img, "A1")
-        except Exception:
-            # Fail gracefully; keep workbook without screenshot
-            pass
+   
 
     # ---- Existing code that saves and returns workbook ----
     xlsxbuffer = io.BytesIO()
