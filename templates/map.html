@@ -2133,42 +2133,36 @@ function shapeTopEdge(s){
 }
 
 function makeLabelMarker(s){
-  // Teardrop pushpin: SVG body + number + small × delete button.
-  // Pin tip points downward and anchors to the map point.
-  // Draggable so user can reposition it anywhere.
-  const pinW = 36, pinH = 48;
+  // Teardrop pin: all content in one SVG so z-order is correct.
+  // Number sits inside the round head; × is a red circle top-right.
+  // The whole pin is a draggable Leaflet marker.
+  const pinW = 40, pinH = 52;
   const icon = L.divIcon({
     className: 'shape-label-icon',
     iconSize:   [pinW, pinH],
-    iconAnchor: [pinW/2, pinH],   // tip of pin anchors to map point
-    html: `
-      <div id="shape-label-${s.id}" style="position:relative; width:${pinW}px; height:${pinH}px; cursor:grab;">
-        <!-- Teardrop SVG -->
-        <svg width="${pinW}" height="${pinH}" viewBox="0 0 36 48"
-             style="position:absolute;top:0;left:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.45));">
-          <path d="M18 2 C9 2 2 9 2 18 C2 30 18 46 18 46 C18 46 34 30 34 18 C34 9 27 2 18 2 Z"
-                fill="#7B00D4" stroke="#5a009a" stroke-width="1.2"/>
-        </svg>
-        <!-- Area number centered in the round part -->
-        <span style="position:absolute; top:8px; left:0; width:${pinW}px;
-                     text-align:center; color:#fff; font-size:13px;
-                     font-weight:bold; line-height:1; pointer-events:none;
-                     font-family:sans-serif;">${s.displayNum}</span>
-        <!-- × delete button at top-right of pin head -->
-        <span id="shape-del-${s.id}"
-          style="position:absolute; top:0px; right:-2px;
-                 width:14px; height:14px; border-radius:50%;
-                 background:#cc0000; color:#fff;
-                 font-size:11px; line-height:14px; text-align:center;
-                 cursor:pointer; pointer-events:auto;
-                 font-family:sans-serif; font-weight:bold;
-                 box-shadow:0 1px 3px rgba(0,0,0,0.5);"
-          onmouseover="this.style.background='#ff2222'"
-          onmouseout="this.style.background='#cc0000'">&times;</span>
-      </div>`
+    iconAnchor: [pinW/2, pinH],  // tip anchors to map point
+    html: `<svg id="shape-label-${s.id}" width="${pinW}" height="${pinH}"
+                viewBox="0 0 40 52" xmlns="http://www.w3.org/2000/svg"
+                style="overflow:visible; cursor:grab;
+                       filter:drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
+      <!-- Teardrop body -->
+      <path d="M20 2 C10 2 2 10 2 20 C2 33 20 50 20 50 C20 50 38 33 38 20 C38 10 30 2 20 2 Z"
+            fill="#7B00D4" stroke="#5a009a" stroke-width="1.5"/>
+      <!-- Area number -->
+      <text x="20" y="24" text-anchor="middle" dominant-baseline="middle"
+            font-family="Arial,sans-serif" font-size="14" font-weight="bold"
+            fill="#ffffff" pointer-events="none">${s.displayNum}</text>
+      <!-- × delete circle (top-right) -->
+      <circle id="shape-del-bg-${s.id}" cx="33" cy="7" r="7"
+              fill="#cc0000" stroke="#fff" stroke-width="1"
+              style="cursor:pointer;"/>
+      <text id="shape-del-${s.id}" x="33" y="7"
+            text-anchor="middle" dominant-baseline="middle"
+            font-family="Arial,sans-serif" font-size="10" font-weight="bold"
+            fill="#ffffff" style="cursor:pointer;">&times;</text>
+    </svg>`
   });
 
-  // Draggable marker — starts at top edge of shape
   const startLL = s.pinLatLng || shapeTopEdge(s);
   const m = L.marker(startLL, {
     icon,
@@ -2177,25 +2171,37 @@ function makeLabelMarker(s){
     zIndexOffset: 1500
   }).addTo(map);
 
-  // Save pin position when dragged so it survives label refreshes
-  m.on('dragend', function(){
-    s.pinLatLng = m.getLatLng();
-  });
-  // Prevent map drag while dragging pin
-  m.on('dragstart', function(){ map.dragging.disable(); });
-  m.on('dragend',   function(){ map.dragging.enable();  });
+  // Save pin position when dragged
+  m.on('dragend', function(){ s.pinLatLng = m.getLatLng(); });
 
   setTimeout(() => {
-    const del = document.getElementById(`shape-del-${s.id}`);
-    if(del) del.addEventListener('click', function(e){
-      e.stopPropagation();
-      e.preventDefault();
-      deleteShape(s.id);
+    // × delete — use mousedown so it fires before Leaflet drag intercepts
+    [`shape-del-${s.id}`, `shape-del-bg-${s.id}`].forEach(elId => {
+      const el = document.getElementById(elId);
+      if(!el) return;
+      el.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+      el.addEventListener('click', function(e){
+        e.stopPropagation();
+        e.preventDefault();
+        deleteShape(s.id);
+      });
+      el.addEventListener('mouseover', function(){
+        const bg = document.getElementById(`shape-del-bg-${s.id}`);
+        if(bg) bg.setAttribute('fill','#ff2222');
+      });
+      el.addEventListener('mouseout', function(){
+        const bg = document.getElementById(`shape-del-bg-${s.id}`);
+        if(bg) bg.setAttribute('fill','#cc0000');
+      });
     });
-    // Click pin body (not ×) → toggle stats panel
-    const lbl = document.getElementById(`shape-label-${s.id}`);
-    if(lbl) lbl.addEventListener('click', function(e){
-      if(e.target && e.target.id === `shape-del-${s.id}`) return;
+
+    // Click pin body → toggle stats panel
+    const svg = document.getElementById(`shape-label-${s.id}`);
+    if(svg) svg.addEventListener('click', function(e){
+      if(e.target && (
+        e.target.id === `shape-del-${s.id}` ||
+        e.target.id === `shape-del-bg-${s.id}`
+      )) return;
       e.stopPropagation();
       const sh = drawnShapes.find(x => x.id === s.id);
       if(sh){
