@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subscribe — VT Property Sales</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1a3a5c 0%, #2d6a4f 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+  }
+  .logo h1 { font-size: 22px; color: #1a3a5c; font-weight: 700; margin-bottom: 6px; }
+  .logo p  { font-size: 13px; color: #666; }
+  .price-box {
+    background: #f7f9fc;
+    border: 2px solid #1a3a5c;
+    border-radius: 10px;
+    padding: 24px;
+    margin: 28px 0;
+  }
+  .price-box .amount {
+    font-size: 42px;
+    font-weight: 700;
+    color: #1a3a5c;
+  }
+  .price-box .amount span {
+    font-size: 18px;
+    font-weight: 400;
+    color: #666;
+  }
+  .price-box .desc {
+    font-size: 13px;
+    color: #555;
+    margin-top: 8px;
+  }
+  .features {
+    text-align: left;
+    margin: 0 0 24px 0;
+    padding: 0;
+    list-style: none;
+  }
+  .features li {
+    font-size: 14px;
+    color: #333;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+  }
+  .features li:before { content: "✓ "; color: #2d6a4f; font-weight: 700; }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: #1a3a5c;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #16304d; }
+  .secure { font-size: 11px; color: #888; margin-top: 12px; }
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+  .alert-warning { background: #fff8e1; color: #856404; border: 1px solid #ffd966; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <h1>🏔 VT Property Sales</h1>
+    <p>Vermont Property Transfer Tool</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="price-box">
+    <div class="amount">$19<span>.95/mo</span></div>
+    <div class="desc">Full access · Cancel anytime</div>
+  </div>
+
+  <ul class="features">
+    <li>Unlimited property sales searches</li>
+    <li>Draw areas &amp; export to Excel</li>
+    <li>PTT-172 form generation</li>
+    <li>FEMA flood zone overlay</li>
+    <li>Town &amp; county boundary layers</li>
+    <li>VT Parcel grand list data</li>
+  </ul>
+
+  <form method="POST" action="/create-checkout-session">
+    <input type="hidden" name="email" value="{{ email }}">
+    <button type="submit" class="btn">Subscribe with Stripe →</button>
+  </form>
+
+  <div class="secure">
+    🔒 Secure payment via Stripe · Google Pay &amp; Apple Pay accepted
+  </div>
+</div>
+</body>
+</html>

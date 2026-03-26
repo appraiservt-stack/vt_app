@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin — VT Property Sales</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; }
+  .topbar { background: #1a3a5c; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar a { color: #fff; text-decoration: none; font-size: 14px; }
+  .container { max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+  h2 { font-size: 20px; color: #1a3a5c; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  th { background: #1a3a5c; color: #fff; padding: 12px 14px; text-align: left; font-size: 13px; }
+  td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #eee; color: #333; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f9fc; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge-active   { background: #e8f8f0; color: #2d6a4f; }
+  .badge-trial    { background: #e8f0fe; color: #1a3a5c; }
+  .badge-cancelled{ background: #fde8e8; color: #c0392b; }
+  .badge-past_due { background: #fff8e1; color: #856404; }
+  .summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat { background: #fff; border-radius: 8px; padding: 16px 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex: 1; min-width: 140px; }
+  .stat .num { font-size: 28px; font-weight: 700; color: #1a3a5c; }
+  .stat .lbl { font-size: 12px; color: #888; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <strong>🏔 VT Property Sales — Admin</strong>
+  <a href="/logout">Sign Out</a>
+</div>
+<div class="container">
+  <h2>User Management</h2>
+
+  {% set active_count   = users | selectattr('subscription_status','eq','active')   | list | length %}
+  {% set trial_count    = users | selectattr('subscription_status','eq','trial')    | list | length %}
+  {% set cancelled_count= users | selectattr('subscription_status','eq','cancelled')| list | length %}
+
+  <div class="summary">
+    <div class="stat"><div class="num">{{ users | length }}</div><div class="lbl">Total Users</div></div>
+    <div class="stat"><div class="num">{{ active_count }}</div><div class="lbl">Active Subscribers</div></div>
+    <div class="stat"><div class="num">{{ trial_count }}</div><div class="lbl">In Trial</div></div>
+    <div class="stat"><div class="num">{{ cancelled_count }}</div><div class="lbl">Cancelled</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Signed Up</th>
+        <th>Trial Ends</th>
+        <th>Stripe Customer</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.email }}</td>
+        <td><span class="badge badge-{{ u.subscription_status }}">{{ u.subscription_status | title }}</span></td>
+        <td>{{ u.created_at[:10] }}</td>
+        <td>{{ u.trial_ends_at[:10] if u.trial_ends_at else '—' }}</td>
+        <td style="font-size:11px;color:#888;">{{ u.stripe_customer_id or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+</body>
+</html>

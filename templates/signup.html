@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up — VT Property Sales</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1a3a5c 0%, #2d6a4f 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 420px;
+  }
+  .logo { text-align: center; margin-bottom: 24px; }
+  .logo h1 { font-size: 22px; color: #1a3a5c; font-weight: 700; }
+  .logo p  { font-size: 13px; color: #666; margin-top: 4px; }
+  .trial-badge {
+    background: #e8f8f0;
+    border: 1.5px solid #2d6a4f;
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 13px;
+    color: #2d6a4f;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    margin-top: 16px;
+  }
+  input[type=email], input[type=password] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+  input:focus { outline: none; border-color: #1a3a5c; }
+  .hint { font-size: 11px; color: #888; margin-top: 3px; }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 24px;
+    background: #2d6a4f;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: #245a41; }
+  .links { text-align: center; margin-top: 16px; font-size: 13px; color: #555; }
+  .links a { color: #1a3a5c; text-decoration: none; font-weight: 600; }
+  .links a:hover { text-decoration: underline; }
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 14px; }
+  .alert-error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+  .alert-success { background: #e8f8f0; color: #1e7e4a; border: 1px solid #b7dfc9; }
+  .terms { font-size: 11px; color: #888; text-align: center; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <h1>🏔 VT Property Sales</h1>
+    <p>Vermont Property Transfer Tool</p>
+  </div>
+
+  <div class="trial-badge">
+    ✓ 14-day free trial &nbsp;·&nbsp; No credit card required &nbsp;·&nbsp; $19.95/mo after
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST" action="/signup">
+    <label for="email">Email Address <span style="color:#c0392b;">*</span></label>
+    <input type="email" id="email" name="email" required
+           placeholder="you@example.com" autocomplete="email">
+    <div class="hint">This will be your login username.</div>
+
+    <label for="password">Password <span style="color:#c0392b;">*</span></label>
+    <input type="password" id="password" name="password" required
+           placeholder="••••••••" autocomplete="new-password">
+    <div class="hint">Minimum 8 characters.</div>
+
+    <label for="confirm">Confirm Password <span style="color:#c0392b;">*</span></label>
+    <input type="password" id="confirm" name="confirm" required
+           placeholder="••••••••" autocomplete="new-password">
+
+    <button type="submit" class="btn">Start Free Trial</button>
+  </form>
+
+  <div class="terms">
+    By signing up you agree to our Terms of Service.
+    Your trial is free for 14 days — subscribe anytime to continue.
+  </div>
+  <div class="links" style="margin-top:14px;">
+    Already have an account? <a href="/login">Sign in</a>
+  </div>
+</div>
+</body>
+</html>

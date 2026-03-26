@@ -4,3 +4,4 @@ requests
 openpyxl
 pypdf
 reportlab
+stripe

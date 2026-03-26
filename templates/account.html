@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Account — VT Property Sales</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; min-height: 100vh; }
+  .topbar {
+    background: #1a3a5c;
+    color: #fff;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .topbar a { color: #fff; text-decoration: none; font-size: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .container { max-width: 560px; margin: 40px auto; padding: 0 16px; }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.09);
+    padding: 30px;
+    margin-bottom: 20px;
+  }
+  .card h2 { font-size: 17px; color: #1a3a5c; margin-bottom: 18px; font-weight: 700; }
+  .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+  .row:last-child { border-bottom: none; }
+  .row .label { color: #666; }
+  .row .value { font-weight: 600; color: #222; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .badge-active  { background: #e8f8f0; color: #2d6a4f; }
+  .badge-trial   { background: #e8f0fe; color: #1a3a5c; }
+  .badge-expired { background: #fde8e8; color: #c0392b; }
+  .badge-past_due { background: #fff8e1; color: #856404; }
+  .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .btn-primary { background: #1a3a5c; color: #fff; }
+  .btn-primary:hover { background: #16304d; }
+  .btn-danger { background: #c0392b; color: #fff; }
+  .btn-danger:hover { background: #a93226; }
+  .btn-outline { background: transparent; border: 1.5px solid #1a3a5c; color: #1a3a5c; }
+  .btn-outline:hover { background: #f0f4f8; }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+  .alert-success { background: #e8f8f0; color: #1e7e4a; border: 1px solid #b7dfc9; }
+  .alert-info    { background: #e8f0fe; color: #1a3a5c; border: 1px solid #b3c6f5; }
+  .alert-error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+  .trial-bar {
+    background: #e8f0fe;
+    border: 1px solid #b3c6f5;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #1a3a5c;
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <strong>🏔 VT Property Sales</strong>
+  <div style="display:flex;gap:20px;">
+    <a href="/">← Back to Map</a>
+    <a href="/logout">Sign Out</a>
+  </div>
+</div>
+
+<div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if user.subscription_status == 'trial' and trial_days > 0 %}
+  <div class="trial-bar">
+    ⏳ Your free trial ends in <strong>{{ trial_days }} day{{ 's' if trial_days != 1 else '' }}</strong>.
+    <a href="/subscribe" style="color:#1a3a5c;font-weight:700;">Subscribe now →</a>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Account Details</h2>
+    <div class="row">
+      <span class="label">Email</span>
+      <span class="value">{{ user.email }}</span>
+    </div>
+    <div class="row">
+      <span class="label">Member since</span>
+      <span class="value">{{ user.created_at[:10] }}</span>
+    </div>
+    <div class="row">
+      <span class="label">Status</span>
+      <span class="value">
+        <span class="badge badge-{{ user.subscription_status }}">
+          {{ user.subscription_status | title }}
+        </span>
+      </span>
+    </div>
+    {% if user.subscription_status == 'trial' %}
+    <div class="row">
+      <span class="label">Trial ends</span>
+      <span class="value">{{ user.trial_ends_at[:10] }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Subscription</h2>
+    {% if user.subscription_status == 'active' %}
+      <p style="font-size:14px;color:#333;margin-bottom:16px;">
+        You have an active subscription at <strong>$19.95/month</strong>.
+      </p>
+      <div class="actions">
+        <form method="POST" action="/cancel-subscription"
+              onsubmit="return confirm('Cancel your subscription? You will keep access until the end of the billing period.')">
+          <button type="submit" class="btn btn-danger">Cancel Subscription</button>
+        </form>
+      </div>
+    {% elif user.subscription_status == 'trial' %}
+      <p style="font-size:14px;color:#333;margin-bottom:16px;">
+        You are on a free trial. Subscribe to keep full access after your trial ends.
+      </p>
+      <div class="actions">
+        <a href="/subscribe" class="btn btn-primary">Subscribe — $19.95/mo</a>
+      </div>
+    {% else %}
+      <p style="font-size:14px;color:#c0392b;margin-bottom:16px;">
+        Your subscription is inactive. Resubscribe to regain access.
+      </p>
+      <div class="actions">
+        <a href="/subscribe" class="btn btn-primary">Resubscribe — $19.95/mo</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>
