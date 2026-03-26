@@ -922,11 +922,25 @@ def data():
         }
         features = fetch_features(where, geo_params, max_records=2000)
 
+    # Build a set of requested county codes for post-fetch validation.
+    # The countyCode field on the PTT-172 form is self-reported and often wrong
+    # (e.g. Pownal filed as Washington County). TOWNNAME is assigned by VCGI
+    # from actual GPS coordinates and is reliable. Drop any record whose
+    # TOWNNAME resolves to a different county than what was requested.
+    requested_counties = set(filters["counties"].split(",")) if filters["counties"] else set()
+
     results = []
     for f in features:
         rec = feature_to_record(f, filters)
-        if rec is not None:
-            results.append({
+        if rec is None:
+            continue
+        # County cross-check: if a county filter is active, verify TOWNNAME
+        if requested_counties:
+            town_name = (f.get("attributes", {}).get("TOWNNAME") or "").strip().title()
+            actual_county = TOWN_TO_COUNTY.get(town_name)
+            if actual_county and actual_county not in requested_counties:
+                continue   # Bad countyCode on the form — silently drop
+        results.append({
                 "id":               rec["id"],
                 "address":          rec["address"],
                 "city":             rec["city"],
