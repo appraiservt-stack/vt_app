@@ -25,6 +25,29 @@
   .logo { text-align: center; margin-bottom: 28px; }
   .logo h1 { font-size: 22px; color: #1a3a5c; font-weight: 700; }
   .logo p  { font-size: 13px; color: #666; margin-top: 4px; }
+  .field-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    margin-bottom: 5px;
+  }
+  .field-label span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+  }
+  .show-pw-btn {
+    font-size: 12px;
+    color: #1a3a5c;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0;
+    text-decoration: underline;
+  }
+  .show-pw-btn:hover { color: #16304d; }
   label {
     display: block;
     font-size: 13px;
@@ -42,22 +65,6 @@
     transition: border-color 0.2s;
   }
   input:focus { outline: none; border-color: #1a3a5c; }
-  .pw-wrap { position: relative; }
-  .pw-wrap input { padding-right: 40px; }
-  .pw-toggle {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 16px;
-    color: #888;
-    user-select: none;
-    background: none;
-    border: none;
-    padding: 0;
-  }
-  .pw-toggle:hover { color: #1a3a5c; }
   .btn {
     display: block;
     width: 100%;
@@ -93,10 +100,10 @@
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
-      {% if category != 'info' or 'reset link' not in message %}
+      {% if 'reset link' not in message %}
         <div class="alert alert-{{ category }}">{{ message }}</div>
       {% else %}
-        <div class="alert alert-success">Check your email for a password reset link.</div>
+        <div class="alert alert-success">If that email is registered, a reset link has been sent.</div>
       {% endif %}
     {% endfor %}
   {% endwith %}
@@ -106,13 +113,12 @@
     <input type="email" id="email" name="email" required
            placeholder="you@example.com" autocomplete="email">
 
-    <label for="password">Password</label>
-    <div class="pw-wrap">
-      <input type="password" id="password" name="password" required
-             placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
-             autocomplete="current-password">
-      <button type="button" class="pw-toggle" onclick="togglePw()" title="Show/hide password">&#128065;</button>
+    <div class="field-label">
+      <span>Password</span>
+      <button type="button" class="show-pw-btn" id="toggleBtn" onclick="togglePw()">Show password</button>
     </div>
+    <input type="password" id="password" name="password" required
+           placeholder="••••••••" autocomplete="current-password">
 
     <button type="submit" class="btn">Sign In</button>
   </form>
@@ -128,14 +134,14 @@
 
 <script>
 function togglePw() {
-  const input = document.getElementById('password');
-  const btn   = document.querySelector('.pw-toggle');
+  var input = document.getElementById('password');
+  var btn   = document.getElementById('toggleBtn');
   if (input.type === 'password') {
     input.type = 'text';
-    btn.textContent = '\uD83D\uDE48'; // see-no-evil = hide
+    btn.textContent = 'Hide password';
   } else {
     input.type = 'password';
-    btn.textContent = '\uD83D\uDC41'; // eye = show
+    btn.textContent = 'Show password';
   }
 }
 </script>
