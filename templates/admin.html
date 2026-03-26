@@ -20,6 +20,11 @@
   .badge-trial    { background: #e8f0fe; color: #1a3a5c; }
   .badge-cancelled{ background: #fde8e8; color: #c0392b; }
   .badge-past_due { background: #fff8e1; color: #856404; }
+  .btn-sm { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+  .btn-green  { background: #2d6a4f; color: #fff; }
+  .btn-blue   { background: #1a3a5c; color: #fff; }
+  .btn-green:hover { background: #235540; }
+  .btn-blue:hover  { background: #16304d; }
   .summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
   .stat { background: #fff; border-radius: 8px; padding: 16px 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex: 1; min-width: 140px; }
   .stat .num { font-size: 28px; font-weight: 700; color: #1a3a5c; }
@@ -53,6 +58,7 @@
         <th>Signed Up</th>
         <th>Trial Ends</th>
         <th>Stripe Customer</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -63,6 +69,17 @@
         <td>{{ u.created_at[:10] }}</td>
         <td>{{ u.trial_ends_at[:10] if u.trial_ends_at else '—' }}</td>
         <td style="font-size:11px;color:#888;">{{ u.stripe_customer_id or '—' }}</td>
+        <td>
+          <form method="POST" action="/admin/reset-trial" style="display:inline;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" class="btn-sm btn-blue">Reset Trial</button>
+          </form>
+          &nbsp;
+          <form method="POST" action="/admin/mark-active" style="display:inline;">
+            <input type="hidden" name="user_id" value="{{ u.id }}">
+            <button type="submit" class="btn-sm btn-green">Mark Active</button>
+          </form>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

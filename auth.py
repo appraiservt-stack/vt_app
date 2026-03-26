@@ -365,6 +365,32 @@ def cancel_subscription():
             flash(f"Error cancelling: {str(e)}", "error")
     return redirect(url_for("auth.account"))
 
+# ── Admin actions ────────────────────────────────────────────────────────────
+@auth_bp.route("/admin/reset-trial", methods=["POST"])
+def admin_reset_trial():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return redirect(url_for("auth.login"))
+    user_id = request.form.get("user_id")
+    trial_end = (datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)).isoformat()
+    db_execute(_q("""
+        UPDATE users SET subscription_status = 'trial', trial_ends_at = ?
+        WHERE id = ?
+    """), (trial_end, user_id))
+    flash("Trial reset successfully.", "success")
+    return redirect(url_for("auth.admin"))
+
+@auth_bp.route("/admin/mark-active", methods=["POST"])
+def admin_mark_active():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return redirect(url_for("auth.login"))
+    user_id = request.form.get("user_id")
+    db_execute(_q("""
+        UPDATE users SET subscription_status = 'active'
+        WHERE id = ?
+    """), (user_id,))
+    flash("User marked as active.", "success")
+    return redirect(url_for("auth.admin"))
+
 # ── Password reset ────────────────────────────────────────────────────────────
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
