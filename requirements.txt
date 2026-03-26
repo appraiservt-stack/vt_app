@@ -5,3 +5,5 @@ openpyxl
 pypdf
 reportlab
 stripe
+psycopg2-binary
+
