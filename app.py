@@ -14,9 +14,8 @@ app = Flask(__name__)
 # Secret key for session encryption — set FLASK_SECRET_KEY env var in Railway
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "vt-prop-dev-secret-change-in-prod")
 from datetime import timedelta
-# Session ends when browser closes (SESSION_COOKIE_SAMESITE and SECURE still set)
-# We do NOT set PERMANENT_SESSION_LIFETIME or session.permanent=True
-# so the cookie is a session cookie that dies when the browser closes.
+# Session expires after 8 hours of inactivity.
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = True
 

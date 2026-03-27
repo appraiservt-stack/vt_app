@@ -192,6 +192,10 @@ def login():
         if not user or not check_password(user["password_hash"], password):
             flash("Invalid email or password.", "error")
             return render_template("login.html", remembered_email=email)
+        # Account created but Stripe card step was never completed
+        if user["subscription_status"] == "pending_payment":
+            flash("Please complete your payment setup to activate your account.", "warning")
+            return redirect(url_for("auth.subscribe", email=email))
         if not user_has_access(user):
             flash("Your trial has expired. Please subscribe to continue.", "warning")
             return redirect(url_for("auth.subscribe", email=email))
@@ -312,6 +316,7 @@ def signup_success():
 
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if user:
+            session.permanent = True
             session["user_id"]    = user["id"]
             session["user_email"] = user["email"]
             resp = make_response(redirect(url_for("index")))
