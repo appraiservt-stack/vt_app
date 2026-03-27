@@ -154,9 +154,9 @@ def check_password(stored: str, provided: str) -> bool:
 # ── Access check ──────────────────────────────────────────────────────────────
 def user_has_access(user) -> bool:
     status = user["subscription_status"]
-    if status == "active":
+    if status in ("active", "trialing"):
         return True
-    if status == "trial":
+    if status == "trial":  # legacy no-card trial
         try:
             trial_end = datetime.fromisoformat(user["trial_ends_at"])
             if trial_end.tzinfo is None:
@@ -175,6 +175,9 @@ def days_left_in_trial(user) -> int:
         return max(0, delta.days)
     except Exception:
         return 0
+
+def is_in_trial(user) -> bool:
+    return user["subscription_status"] in ("trial", "trialing")
 
 # ── Blueprint ─────────────────────────────────────────────────────────────────
 auth_bp = Blueprint("auth", __name__)
@@ -209,8 +212,14 @@ def login():
 # ── Signup ────────────────────────────────────────────────────────────────────
 @auth_bp.route("/signup", methods=["GET", "POST"])
 def signup():
+    """
+    Step 1 of 2: collect email + password, create account in DB with
+    status='pending_payment', then redirect to Stripe Checkout.
+    Stripe collects the card with a 14-day free trial — no charge until day 15.
+    On success, webhook (or /subscribe/success) sets status to 'trialing'.
+    """
     if request.method == "POST":
-        email   = request.form.get("email", "").strip().lower()
+        email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         confirm  = request.form.get("confirm", "")
 
@@ -224,32 +233,100 @@ def signup():
             flash("Passwords do not match.", "error")
             return render_template("signup.html")
 
+        # Check for existing account
+        existing = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
+        if existing:
+            flash("An account with that email already exists. Please log in.", "error")
+            return render_template("signup.html")
+
+        # Create account with pending_payment status
         trial_end = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)
         try:
             db_execute(_q("""
                 INSERT INTO users
                 (email, password_hash, created_at, trial_ends_at, subscription_status)
-                VALUES (?, ?, ?, ?, 'trial')
+                VALUES (?, ?, ?, ?, 'pending_payment')
             """), (email, hash_password(password),
                    datetime.now(timezone.utc).isoformat(),
                    trial_end.isoformat()))
         except Exception as e:
-            if "unique" in str(e).lower() or "duplicate" in str(e).lower():
-                flash("An account with that email already exists.", "error")
-            else:
-                flash(f"Error creating account: {str(e)}", "error")
+            flash(f"Error creating account: {str(e)}", "error")
             return render_template("signup.html")
 
-        user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
-        session.permanent = True
-        session["user_id"]    = user["id"]
-        session["user_email"] = user["email"]
-        flash(f"Welcome! You have a {TRIAL_DAYS}-day free trial.", "success")
-        resp = make_response(redirect(url_for("index")))
-        resp.set_cookie("remembered_email", email,
-                        max_age=60*60*24*365, httponly=False, samesite="Lax")
-        return resp
+        # Store email in session for the checkout flow
+        session["pending_email"] = email
+
+        # Create Stripe customer and checkout session with 14-day trial
+        try:
+            customer = stripe.Customer.create(email=email)
+            db_execute(_q(
+                "UPDATE users SET stripe_customer_id = ? WHERE email = ?"
+            ), (customer.id, email))
+
+            charge_date = (datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)).strftime("%B %d, %Y")
+
+            checkout = stripe.checkout.Session.create(
+                customer=customer.id,
+                payment_method_types=["card"],
+                line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+                mode="subscription",
+                subscription_data={"trial_period_days": TRIAL_DAYS},
+                success_url=request.host_url + "signup/success?session_id={CHECKOUT_SESSION_ID}",
+                cancel_url=request.host_url + "signup?cancelled=1",
+            )
+            return redirect(checkout.url, code=303)
+        except Exception as e:
+            # If Stripe fails, delete the pending account and show error
+            db_execute(_q("DELETE FROM users WHERE email = ?"), (email,))
+            flash(f"Payment setup error: {str(e)}", "error")
+            return render_template("signup.html")
+
+    cancelled = request.args.get("cancelled")
+    if cancelled:
+        # User cancelled Stripe checkout — clean up pending account
+        pending = session.pop("pending_email", None)
+        if pending:
+            db_execute(_q(
+                "DELETE FROM users WHERE email = ? AND subscription_status = 'pending_payment'"
+            ), (pending,))
+        flash("Signup cancelled. No account was created and your card was not charged.", "info")
+
     return render_template("signup.html")
+
+
+@auth_bp.route("/signup/success")
+def signup_success():
+    """Stripe redirects here after card is collected for the free trial."""
+    session_id = request.args.get("session_id")
+    try:
+        checkout        = stripe.checkout.Session.retrieve(session_id)
+        customer_id     = checkout.customer
+        subscription_id = checkout.subscription
+        email           = checkout.customer_details.email
+
+        db_execute(_q("""
+            UPDATE users SET
+                subscription_status    = 'trialing',
+                stripe_customer_id     = ?,
+                stripe_subscription_id = ?
+            WHERE email = ?
+        """), (customer_id, subscription_id, email))
+
+        user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
+        if user:
+            session.permanent = True
+            session["user_id"]    = user["id"]
+            session["user_email"] = user["email"]
+            resp = make_response(redirect(url_for("index")))
+            resp.set_cookie("remembered_email", email,
+                            max_age=60*60*24*365, httponly=False, samesite="Lax")
+            return resp
+
+        flash("Account created! Welcome to VT Property Sales.", "success")
+        return redirect(url_for("auth.login"))
+    except Exception as e:
+        flash(f"Could not confirm signup: {str(e)}", "error")
+        return redirect(url_for("auth.signup"))
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 @auth_bp.route("/logout")
@@ -337,8 +414,19 @@ def stripe_webhook():
         ), (sub["id"],))
 
     elif event["type"] == "customer.subscription.updated":
-        sub    = event["data"]["object"]
-        status = "active" if sub["status"] == "active" else "cancelled"
+        sub = event["data"]["object"]
+        stripe_status = sub["status"]
+        # Map Stripe statuses to our DB statuses
+        if stripe_status == "active":
+            status = "active"
+        elif stripe_status == "trialing":
+            status = "trialing"
+        elif stripe_status in ("canceled", "unpaid", "incomplete_expired"):
+            status = "cancelled"
+        elif stripe_status == "past_due":
+            status = "past_due"
+        else:
+            status = stripe_status
         db_execute(_q(
             "UPDATE users SET subscription_status = ? WHERE stripe_subscription_id = ?"
         ), (status, sub["id"]))

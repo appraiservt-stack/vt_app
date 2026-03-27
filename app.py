@@ -30,7 +30,12 @@ def login_required(f):
         if "user_id" not in session:
             return redirect(url_for("auth.login"))
         user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
-        if not user or not user_has_access(user):
+        if not user:
+            # Account deleted or session stale — go to login
+            session.clear()
+            return redirect(url_for("auth.login"))
+        if not user_has_access(user):
+            # Trial expired or cancelled — go to subscribe
             return redirect(url_for("auth.subscribe",
                                     email=session.get("user_email", "")))
         return f(*args, **kwargs)
@@ -859,7 +864,7 @@ def index():
 
 def home():
     user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
-    trial_days = days_left_in_trial(user) if user["subscription_status"] == "trial" else 0
+    trial_days = days_left_in_trial(user) if user["subscription_status"] in ("trial", "trialing") else 0
     return render_template("map.html",
                            user_email=user["email"],
                            subscription_status=user["subscription_status"],
@@ -1947,4 +1952,3 @@ def ptt172():  # noqa: C901
 
 if __name__ == "__main__":
     app.run(debug=True)
- 

@@ -90,10 +90,12 @@
     {% endfor %}
   {% endwith %}
 
-  {% if user.subscription_status == 'trial' and trial_days > 0 %}
+  {% if user.subscription_status in ('trial', 'trialing') and trial_days > 0 %}
   <div class="trial-bar">
-    ⏳ Your free trial ends in <strong>{{ trial_days }} day{{ 's' if trial_days != 1 else '' }}</strong>.
-    <a href="/subscribe" style="color:#1a3a5c;font-weight:700;">Subscribe now →</a>
+    &#9200; Your free trial ends in <strong>{{ trial_days }} day{{ 's' if trial_days != 1 else '' }}</strong>.
+    {% if user.subscription_status == 'trial' %}
+      <a href="/subscribe" style="color:#1a3a5c;font-weight:700;">Subscribe now &rarr;</a>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -115,10 +117,14 @@
         </span>
       </span>
     </div>
-    {% if user.subscription_status == 'trial' %}
+    {% if user.subscription_status in ('trial', 'trialing') %}
     <div class="row">
       <span class="label">Trial ends</span>
       <span class="value">{{ user.trial_ends_at[:10] }}</span>
+    </div>
+    <div class="row">
+      <span class="label">Days remaining</span>
+      <span class="value" style="color:#2d6a4f;font-weight:700;">{{ trial_days }} day{{ 's' if trial_days != 1 else '' }}</span>
     </div>
     {% endif %}
   </div>
@@ -133,6 +139,20 @@
         <form method="POST" action="/cancel-subscription"
               onsubmit="return confirm('Cancel your subscription? You will keep access until the end of the billing period.')">
           <button type="submit" class="btn btn-danger">Cancel Subscription</button>
+        </form>
+      </div>
+    {% elif user.subscription_status == 'trialing' %}
+      <!-- Card-required trial — prominent cancel option -->
+      <div style="background:#fff8e1;border:2px solid #f0c040;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:700;color:#856404;margin-bottom:6px;">&#9200; Free Trial Active</div>
+        <div style="font-size:13px;color:#555;">
+          Your card will be charged <strong>$19.95</strong> on <strong>{{ user.trial_ends_at[:10] }}</strong> unless you cancel before then.
+        </div>
+      </div>
+      <div class="actions">
+        <form method="POST" action="/cancel-subscription"
+              onsubmit="return confirm('Cancel your free trial? Your card will NOT be charged and your access ends on ' + '{{ user.trial_ends_at[:10] }}' + '.')">
+          <button type="submit" class="btn btn-danger">Cancel Free Trial — No Charge</button>
         </form>
       </div>
     {% elif user.subscription_status == 'trial' %}

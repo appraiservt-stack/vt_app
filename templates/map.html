@@ -175,6 +175,21 @@
 
   <!-- ==================== SIDEBAR ==================== -->
   <div id="sidebar">
+    <!-- User account bar -->
+    <div style="display:flex; justify-content:space-between; align-items:center;
+                background:#1a3a5c; color:#fff; padding:5px 8px; border-radius:4px;
+                margin-bottom:6px; font-size:11px;">
+      <span>{{ user_email }}</span>
+      <span style="display:flex; gap:10px;">
+        {% if subscription_status in ('trial', 'trialing') and trial_days > 0 %}
+          <span style="background:#ffd700; color:#333; padding:1px 7px; border-radius:8px;
+                       font-weight:700;">Trial: {{ trial_days }}d left</span>
+          <a href="/subscribe" style="color:#90caf9; text-decoration:none; font-weight:700;">Subscribe</a>
+        {% endif %}
+        <a href="/account" style="color:#90caf9; text-decoration:none;">Account</a>
+        <a href="/logout" style="color:#90caf9; text-decoration:none;">Sign Out</a>
+      </span>
+    </div>
     <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
       <h3 style="margin:0;">VT Property Transfer Tool</h3>
       <button id="searchTipsBtn" onclick="toggleSearchTips(event)"
