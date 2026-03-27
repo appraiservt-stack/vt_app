@@ -13,6 +13,10 @@ from functools import wraps
 app = Flask(__name__)
 # Secret key for session encryption — set FLASK_SECRET_KEY env var in Railway
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "vt-prop-dev-secret-change-in-prod")
+from datetime import timedelta
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=24)
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = True
 
 # ── Auth blueprint ────────────────────────────────────────────────────────────
 from auth import auth_bp, init_db, get_db, user_has_access, days_left_in_trial

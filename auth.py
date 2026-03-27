@@ -16,7 +16,7 @@ from pathlib import Path
 import stripe
 from flask import (
     Blueprint, render_template, request, redirect,
-    url_for, session, flash, jsonify
+    url_for, session, flash, jsonify, make_response
 )
 
 # ── Stripe config ─────────────────────────────────────────────────────────────
@@ -188,14 +188,23 @@ def login():
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if not user or not check_password(user["password_hash"], password):
             flash("Invalid email or password.", "error")
-            return render_template("login.html")
+            return render_template("login.html", remembered_email=email)
         if not user_has_access(user):
             flash("Your trial has expired. Please subscribe to continue.", "warning")
             return redirect(url_for("auth.subscribe", email=email))
+        # Mark session as permanent so it lasts 24 hours
+        session.permanent = True
         session["user_id"]    = user["id"]
         session["user_email"] = user["email"]
-        return redirect(url_for("index"))
-    return render_template("login.html")
+        # Set a long-lived cookie to remember the email for next login
+        resp = make_response(redirect(url_for("index")))
+        resp.set_cookie("remembered_email", email,
+                        max_age=60*60*24*365,  # 1 year
+                        httponly=False, samesite="Lax")
+        return resp
+    # Pre-fill email from cookie if available
+    remembered_email = request.cookies.get("remembered_email", "")
+    return render_template("login.html", remembered_email=remembered_email)
 
 # ── Signup ────────────────────────────────────────────────────────────────────
 @auth_bp.route("/signup", methods=["GET", "POST"])
@@ -232,10 +241,14 @@ def signup():
             return render_template("signup.html")
 
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
+        session.permanent = True
         session["user_id"]    = user["id"]
         session["user_email"] = user["email"]
         flash(f"Welcome! You have a {TRIAL_DAYS}-day free trial.", "success")
-        return redirect(url_for("index"))
+        resp = make_response(redirect(url_for("index")))
+        resp.set_cookie("remembered_email", email,
+                        max_age=60*60*24*365, httponly=False, samesite="Lax")
+        return resp
     return render_template("signup.html")
 
 # ── Logout ────────────────────────────────────────────────────────────────────
@@ -364,32 +377,6 @@ def cancel_subscription():
         except Exception as e:
             flash(f"Error cancelling: {str(e)}", "error")
     return redirect(url_for("auth.account"))
-
-# ── Admin actions ────────────────────────────────────────────────────────────
-@auth_bp.route("/admin/reset-trial", methods=["POST"])
-def admin_reset_trial():
-    if session.get("user_email") != ADMIN_EMAIL:
-        return redirect(url_for("auth.login"))
-    user_id = request.form.get("user_id")
-    trial_end = (datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)).isoformat()
-    db_execute(_q("""
-        UPDATE users SET subscription_status = 'trial', trial_ends_at = ?
-        WHERE id = ?
-    """), (trial_end, user_id))
-    flash("Trial reset successfully.", "success")
-    return redirect(url_for("auth.admin"))
-
-@auth_bp.route("/admin/mark-active", methods=["POST"])
-def admin_mark_active():
-    if session.get("user_email") != ADMIN_EMAIL:
-        return redirect(url_for("auth.login"))
-    user_id = request.form.get("user_id")
-    db_execute(_q("""
-        UPDATE users SET subscription_status = 'active'
-        WHERE id = ?
-    """), (user_id,))
-    flash("User marked as active.", "success")
-    return redirect(url_for("auth.admin"))
 
 # ── Password reset ────────────────────────────────────────────────────────────
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
