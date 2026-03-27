@@ -195,8 +195,6 @@ def login():
         if not user_has_access(user):
             flash("Your trial has expired. Please subscribe to continue.", "warning")
             return redirect(url_for("auth.subscribe", email=email))
-        # Mark session as permanent so it lasts 24 hours
-        session.permanent = True
         session["user_id"]    = user["id"]
         session["user_email"] = user["email"]
         # Set a long-lived cookie to remember the email for next login
@@ -314,7 +312,6 @@ def signup_success():
 
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if user:
-            session.permanent = True
             session["user_id"]    = user["id"]
             session["user_email"] = user["email"]
             resp = make_response(redirect(url_for("index")))

@@ -178,18 +178,26 @@
     <!-- User account bar -->
     <div style="display:flex; justify-content:space-between; align-items:center;
                 background:#1a3a5c; color:#fff; padding:5px 8px; border-radius:4px;
-                margin-bottom:6px; font-size:11px;">
+                margin-bottom:4px; font-size:11px;">
       <span>{{ user_email }}</span>
       <span style="display:flex; gap:10px;">
-        {% if subscription_status in ('trial', 'trialing') and trial_days > 0 %}
-          <span style="background:#ffd700; color:#333; padding:1px 7px; border-radius:8px;
-                       font-weight:700;">Trial: {{ trial_days }}d left</span>
-          <a href="/subscribe" style="color:#90caf9; text-decoration:none; font-weight:700;">Subscribe</a>
-        {% endif %}
         <a href="/account" style="color:#90caf9; text-decoration:none;">Account</a>
         <a href="/logout" style="color:#90caf9; text-decoration:none;">Sign Out</a>
       </span>
     </div>
+    <!-- Trial countdown banner -->
+    {% if subscription_status in ('trial', 'trialing') and trial_days > 0 %}
+    <div style="background:#fff3cd; border:1.5px solid #ffc107; border-radius:6px;
+                padding:6px 10px; margin-bottom:6px; display:flex;
+                justify-content:space-between; align-items:center; font-size:12px;">
+      <span style="color:#856404; font-weight:700;">
+        &#9200; Free trial: <strong>{{ trial_days }} day{{ 's' if trial_days != 1 else '' }} remaining</strong>
+      </span>
+      <a href="/account" style="background:#1a3a5c; color:#fff; padding:3px 10px;
+                               border-radius:4px; text-decoration:none; font-size:11px;
+                               font-weight:700; white-space:nowrap;">Subscribe Now</a>
+    </div>
+    {% endif %}
     <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
       <h3 style="margin:0;">VT Property Transfer Tool</h3>
       <button id="searchTipsBtn" onclick="toggleSearchTips(event)"
