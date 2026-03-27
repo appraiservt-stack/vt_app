@@ -19,7 +19,7 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = True
 
 # ── Auth blueprint ────────────────────────────────────────────────────────────
-from auth import auth_bp, init_db, get_db, user_has_access, days_left_in_trial
+from auth import auth_bp, init_db, db_fetchone, user_has_access, days_left_in_trial, _q
 app.register_blueprint(auth_bp)
 init_db()   # create users table if it doesn't exist
 
@@ -29,10 +29,7 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("auth.login"))
-        with get_db() as conn:
-            user = conn.execute(
-                "SELECT * FROM users WHERE id = ?", (session["user_id"],)
-            ).fetchone()
+        user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
         if not user or not user_has_access(user):
             return redirect(url_for("auth.subscribe",
                                     email=session.get("user_email", "")))
@@ -861,10 +858,7 @@ def index():
     return home()
 
 def home():
-    with get_db() as conn:
-        user = conn.execute(
-            "SELECT * FROM users WHERE id = ?", (session["user_id"],)
-        ).fetchone()
+    user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
     trial_days = days_left_in_trial(user) if user["subscription_status"] == "trial" else 0
     return render_template("map.html",
                            user_email=user["email"],
