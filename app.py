@@ -2079,126 +2079,176 @@ def ptt172():  # noqa: C901
     page4 = writer.pages[3]
     page4.merge_page(overlay_reader.pages[0])
 
-    # ---- Page 5: Code Reference Notes page ----
+    # ---- Page 5: Full Code Reference (mirrors sidebar exactly) ----
     notes_buf = _io.BytesIO()
     nc = rl_canvas.Canvas(notes_buf, pagesize=letter)
-    NW, NH = letter  # 612 x 792
+    NW, NH = letter
 
-    # Helper: look up code description
-    def code_desc(table_name, code_val):
-        if code_val is None or code_val == "": return None
-        try:
-            key = str(int(float(str(code_val))))
-        except Exception:
-            key = str(code_val)
-        return VT_CODES.get(table_name, {}).get(key)
+    def _cd(table, val):
+        """Look up code description from VT_CODES."""
+        if val is None or str(val).strip() == "": return ""
+        try: key = str(int(float(str(val))))
+        except: key = str(val)
+        return VT_CODES.get(table, {}).get(key, "")
 
-    # Build list of (section, line, code, description) tuples
-    notes_rows = []
-    def add_row(section, line, code_val, table_name, override_desc=None):
-        if code_val is None or str(code_val).strip() == "": return
-        desc = override_desc or code_desc(table_name, code_val)
-        try:
-            code_str = str(int(float(str(code_val)))).zfill(2)
-        except Exception:
-            code_str = str(code_val)
-        notes_rows.append((section, line, code_str, desc or ""))
+    def _cs(val):
+        """Format code as zero-padded 2-digit string."""
+        if val is None or str(val).strip() == "": return ""
+        try: return str(int(float(str(val)))).zfill(2)
+        except: return str(val)
 
-    add_row("E", "E1 – PTT Exemption",       rec.get("propertyTaxExemption"),  "ptt_exemptions")
-    add_row("E", "E2 – Family Member",        rec.get("familyMember"),           "family_member_codes")
-    add_row("E", "E3 – Land Gains Exemption", rec.get("LGTExemption"),           "land_gains_exemptions")
-    add_row("F", "F1 – How Acquired",         rec.get("sellerAcquire"),          "how_acquired_codes")
-    add_row("F", "F2 – Interest Type",        rec.get("interestPropertyType"),   "interest_types")
-    add_row("F", "F3 – Building Type (1)",    rec.get("buildingConstruction1"),  "building_types")
-    add_row("F", "F3 – Building Type (2)",    rec.get("buildingConstruction2"),  "building_types")
-    add_row("F", "F3 – Building Type (3)",    rec.get("buildingConstruction3"),  "building_types")
-    add_row("H", "H1 – Seller Use",           rec.get("sellerUseOfProperty"),    "use_of_property")
-    add_row("H", "H2 – Buyer Use",            rec.get("buyerUseOfProperty"),     "use_of_property")
-    add_row("I", "I2 – Withholding Exemption",rec.get("REWExemption") or rec.get("I2"), "withholding_exemption_codes")
+    def _yn(val):
+        """Format boolean as Yes/No."""
+        if val is True or str(val).upper() in ("TRUE","YES","1"): return "Yes"
+        return "No"
 
-    if notes_rows:  # only add page if there's something to show
-        from reportlab.platypus import Paragraph
-        from reportlab.lib.styles import getSampleStyleSheet
-        from reportlab.lib import colors as rl_colors
+    # ---- Header ----
+    nc.setFillColorRGB(0.122, 0.306, 0.475)  # #1F4E79
+    nc.rect(36, NH-68, NW-72, 32, fill=1, stroke=0)
+    nc.setFillColorRGB(1,1,1)
+    nc.setFont("Helvetica-Bold", 13)
+    nc.drawString(44, NH-52, "PTT-172 Code Reference")
+    nc.setFont("Helvetica", 8)
+    prop_addr = ((rec.get("propertyLocationStreet") or "") + ", " +
+                 (rec.get("propertyLocationCity") or "")).strip(", ")
+    nc.drawString(44, NH-63, f"{prop_addr}  |  Closing: {fmtd(rec.get('closingDate'))}")
+    nc.setFillColorRGB(0,0,0)
 
-        nc.setTitle("PTT-172 Code Reference")
+    # ---- Drawing helpers ----
+    y = NH - 90
+    MARGIN_L, MARGIN_R = 36, NW - 36
+    COL_LINE, COL_CODE, COL_DESC = 44, 90, 120
 
-        # Header
-        nc.setFillColorRGB(0.1, 0.31, 0.49)  # #1a4f7d
-        nc.rect(36, NH-72, NW-72, 36, fill=1, stroke=0)
-        nc.setFillColorRGB(1, 1, 1)
-        nc.setFont("Helvetica-Bold", 13)
-        nc.drawString(44, NH-58, "PTT-172 Code Reference")
-        nc.setFont("Helvetica", 9)
-        prop_addr = (rec.get("propertyLocationStreet") or "") + ", " + (rec.get("propertyLocationCity") or "")
-        nc.drawString(44, NH-68, prop_addr.strip(", "))
-        nc.setFillColorRGB(0, 0, 0)
+    def section_hdr(title):
+        nonlocal y
+        if y < NH - 90:  y -= 4
+        nc.setFillColorRGB(0.88, 0.93, 0.97)
+        nc.rect(MARGIN_L, y-2, NW-72, 13, fill=1, stroke=0)
+        nc.setFont("Helvetica-Bold", 8)
+        nc.setFillColorRGB(0.122, 0.306, 0.475)
+        nc.drawString(COL_LINE, y+2, title)
+        nc.setFillColorRGB(0,0,0)
+        y -= 16
 
-        nc.setFont("Helvetica", 8)
-        nc.setFillColorRGB(0.4, 0.4, 0.4)
-        nc.drawString(44, NH-88, "Hover over code chips in the VT Property Sales popup to see these descriptions.")
-        nc.setFillColorRGB(0, 0, 0)
+    def draw_row(line, code_str, desc, plain=False):
+        """Draw one data row. plain=True skips the code box."""
+        nonlocal y
+        check_y()
+        nc.setFont("Helvetica-Bold", 7.5)
+        nc.drawString(COL_LINE, y, line)
+        nc.setFont("Helvetica", 7.5)
+        if plain:
+            nc.drawString(COL_CODE, y, str(desc))
+        else:
+            if code_str:
+                # Blue chip box
+                nc.setFillColorRGB(0.91, 0.94, 0.99)
+                nc.setStrokeColorRGB(0.70, 0.78, 0.96)
+                cw = nc.stringWidth(code_str, "Helvetica-Bold", 7.5) + 8
+                nc.roundRect(COL_CODE, y-1, cw, 10, 2, fill=1, stroke=1)
+                nc.setFillColorRGB(0.1, 0.23, 0.36)
+                nc.setFont("Helvetica-Bold", 7.5)
+                nc.drawString(COL_CODE+4, y, code_str)
+                nc.setFillColorRGB(0,0,0)
+                nc.setFont("Helvetica", 7.5)
+                # Wrap description
+                _wrap_text(nc, desc, COL_DESC + cw + 4, y, MARGIN_R - COL_DESC - cw - 4)
+            else:
+                _wrap_text(nc, desc, COL_CODE, y, MARGIN_R - COL_CODE)
+        y -= 13
 
-        y = NH - 110
-        current_section = None
-        for (section, line, code_str, desc) in notes_rows:
-            if not code_str or code_str == "00" and "Exemption" in line and not desc:
-                pass  # still show 00 None entries
-            # Section header
-            if section != current_section:
-                if current_section is not None:
-                    y -= 6
-                nc.setFillColorRGB(0.88, 0.93, 0.97)
-                nc.rect(36, y-2, NW-72, 14, fill=1, stroke=0)
-                nc.setFont("Helvetica-Bold", 9)
-                nc.setFillColorRGB(0.1, 0.31, 0.49)
-                nc.drawString(40, y+2, f"Section {section}")
-                nc.setFillColorRGB(0, 0, 0)
-                y -= 18
-                current_section = section
+    def _wrap_text(canvas, text, x, start_y, max_w):
+        nonlocal y
+        if not text: return
+        words = text.split()
+        lines_out, cur = [], ""
+        for w in words:
+            test = (cur + " " + w).strip()
+            if canvas.stringWidth(test, "Helvetica", 7.5) <= max_w:
+                cur = test
+            else:
+                if cur: lines_out.append(cur)
+                cur = w
+        if cur: lines_out.append(cur)
+        for i, ln in enumerate(lines_out):
+            canvas.drawString(x, start_y - i*10, ln)
+        if len(lines_out) > 1:
+            y -= (len(lines_out)-1) * 10
 
-            # Row
-            nc.setFont("Helvetica-Bold", 8)
-            nc.drawString(44, y, line)
-            nc.setFont("Helvetica", 8)
-            nc.drawString(180, y, f"{code_str}")
+    def check_y():
+        nonlocal y
+        if y < 55:
+            nc.setFont("Helvetica", 7)
+            nc.setFillColorRGB(0.5,0.5,0.5)
+            nc.drawString(44, 36, "PTT-172 Code Reference (continued) — VT Property Sales")
+            nc.setFillColorRGB(0,0,0)
+            nc.showPage()
+            y = NH - 40
 
-            # Wrap long descriptions
-            if desc:
-                max_w = NW - 220  # available width for description
-                words = desc.split()
-                lines_desc = []
-                cur = ""
-                for w in words:
-                    test = (cur + " " + w).strip()
-                    if nc.stringWidth(test, "Helvetica", 8) < max_w:
-                        cur = test
-                    else:
-                        lines_desc.append(cur)
-                        cur = w
-                if cur:
-                    lines_desc.append(cur)
-                for i, dl in enumerate(lines_desc):
-                    nc.drawString(200, y - i*10, dl)
-                y -= (len(lines_desc) - 1) * 10
-            y -= 14
+    # ---- Section E ----
+    section_hdr("Section E — Exemptions")
+    draw_row("E1", _cs(rec.get("propertyTaxExemption")),
+             _cd("ptt_exemptions", rec.get("propertyTaxExemption")) or "No exemption")
+    fm = rec.get("familyMember")
+    if fm and str(fm).strip() not in ("","0","0.0"):
+        draw_row("E2", _cs(fm),
+                 _cd("family_member_codes", fm) or rec.get("familyMemberDesc",""))
+    draw_row("E3", _cs(rec.get("LGTExemption")),
+             _cd("land_gains_exemptions", rec.get("LGTExemption")) or "None or no land")
 
-            if y < 60:  # new page if needed
-                nc.showPage()
-                y = NH - 60
-                nc.setFont("Helvetica", 8)
+    # ---- Section F ----
+    section_hdr("Section F — Transfer Information")
+    draw_row("F1", _cs(rec.get("sellerAcquire")),
+             _cd("how_acquired_codes", rec.get("sellerAcquire")) or rec.get("sellerAcquireDesc",""))
+    draw_row("F2", _cs(rec.get("interestPropertyType")),
+             _cd("interest_types", rec.get("interestPropertyType")) or rec.get("interestUndivPercentDesc",""))
+    for bk, bdk, lbl in [
+        ("buildingConstruction1","buildingConstruction1Desc","F3"),
+        ("buildingConstruction2","buildingConstruction2Desc","F3-2"),
+        ("buildingConstruction3","buildingConstruction3Desc","F3-3"),
+    ]:
+        bv = rec.get(bk)
+        if bv:
+            draw_row(lbl, _cs(bv),
+                     _cd("building_types", bv) or rec.get(bdk,""))
+    draw_row("F4", "", f"Tenant prior to transfer: {_yn(rec.get('tenantPurchase'))}", plain=True)
+    draw_row("F5", "", f"Financing: {rec.get('financing') or '—'}", plain=True)
 
-        # Footer
-        nc.setFont("Helvetica", 7)
-        nc.setFillColorRGB(0.5, 0.5, 0.5)
-        nc.drawString(44, 36, "PTT-172 Code Reference — VT Property Sales | Source: Form PTT-172 Instructions Rev. 11/25")
-        nc.setFillColorRGB(0, 0, 0)
+    # ---- Section G ----
+    section_hdr("Section G — Current Use")
+    draw_row("G1", "", f"Enrolled in Current Use: {_yn(rec.get('enrolledCurrentUse'))}", plain=True)
+    draw_row("G2", "", f"Continue enrollment: {_yn(rec.get('currentUseEnrollmentContinue'))}", plain=True)
 
-        nc.save()
-        notes_buf.seek(0)
-        notes_reader = _PR2(notes_buf)
-        for pg in notes_reader.pages:
-            writer.add_page(pg)
+    # ---- Section H ----
+    section_hdr("Section H — Use of Property")
+    draw_row("H1", _cs(rec.get("sellerUseOfProperty")),
+             _cd("use_of_property", rec.get("sellerUseOfProperty")) or rec.get("sellerUseOfPropertyDesc",""))
+    draw_row("H2", _cs(rec.get("buyerUseOfProperty")),
+             _cd("use_of_property", rec.get("buyerUseOfProperty")) or rec.get("buyerUseOfPropertyDesc",""))
+    draw_row("H3", "", f"Rented before transfer: {_yn(rec.get('rentedBefore'))}", plain=True)
+    draw_row("H4", "", f"Rented after transfer: {_yn(rec.get('rentedAfter'))}", plain=True)
+    draw_row("H5", "", f"Development rights conveyed separately: {_yn(rec.get('developmentPrevConv'))}", plain=True)
+    draw_row("H6", "", f"Buyer holds adjoining property: {_yn(rec.get('buyerAdjoiningProperty'))}", plain=True)
+
+    # ---- Section J ----
+    section_hdr("Section J — Tax Calculation")
+    draw_row("J8",  "", f"Value Paid or Transferred:  ${fmtm2(rec.get('ValuePaidOrTransferred'))}", plain=True)
+    draw_row("J9",  "", f"Personal Property Value:     ${fmtm2(rec.get('PersonalPropValuePaidOrTrans')) or '0.00'}", plain=True)
+    draw_row("J10", "", f"Real Property Value:         ${fmtm2(rec.get('RealPropValuePaidOrTrans'))}", plain=True)
+    draw_row("J14", "", f"General Rate Tax Due:        ${fmtm2(rec.get('GenRateTaxDue'))}", plain=True)
+    draw_row("J15", "", f"Total Tax Due:               ${fmtm2(rec.get('TotalTaxDue'))}", plain=True)
+
+    # ---- Footer ----
+    nc.setFont("Helvetica", 7)
+    nc.setFillColorRGB(0.5,0.5,0.5)
+    nc.drawString(44, 36, "PTT-172 Code Reference — VT Property Sales | Source: Form PTT-172 Instructions Rev. 11/25")
+    nc.setFillColorRGB(0,0,0)
+
+    nc.save()
+    notes_buf.seek(0)
+    notes_reader = _PR2(notes_buf)
+    for pg in notes_reader.pages:
+        writer.add_page(pg)
 
     # ---- Produce final PDF bytes ----
     buf = _io.BytesIO()

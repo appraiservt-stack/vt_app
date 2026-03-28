@@ -83,33 +83,14 @@
   .code-row:last-child { border-bottom: none; }
   .code-line { flex: 0 0 30px; font-weight: 700; color: #1F4E79; font-size: 11px; padding-top: 1px; }
 
-  /* ── Code chip with tooltip ── */
+  /* ── Code chip (no tooltip — description shown inline) ── */
   .code-chip {
     display: inline-block; flex-shrink: 0;
     background: #e8f0fe; color: #1a3a5c;
     border: 1px solid #b3c6f5; border-radius: 3px;
     padding: 1px 7px; font-size: 12px; font-weight: 700;
-    cursor: help; position: relative; white-space: nowrap;
+    white-space: nowrap;
   }
-  .code-chip::after {
-    content: attr(data-tip);
-    display: none; position: absolute;
-    bottom: 130%; right: 0;
-    background: #1a3a5c; color: #fff;
-    padding: 7px 10px; border-radius: 5px;
-    font-size: 11px; font-weight: normal;
-    white-space: normal; width: 240px;
-    z-index: 9999; box-shadow: 0 3px 12px rgba(0,0,0,0.3);
-    line-height: 1.5; pointer-events: none;
-  }
-  .code-chip::before {
-    content: ''; display: none; position: absolute;
-    bottom: 120%; right: 12px;
-    border: 6px solid transparent;
-    border-top-color: #1a3a5c; z-index: 9999;
-  }
-  .code-chip:hover::after,
-  .code-chip:hover::before { display: block; }
 
   .code-desc { font-size: 11px; color: #444; line-height: 1.4; }
   .check-yes { color: #2d6a4f; font-weight: 600; font-size: 12px; }
