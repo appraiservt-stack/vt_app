@@ -158,7 +158,10 @@ def user_has_access(user) -> bool:
         return True
     if status == "trial":  # legacy no-card trial
         try:
-            trial_end = datetime.fromisoformat(user["trial_ends_at"])
+            val = user["trial_ends_at"]
+            if val is None:
+                return False
+            trial_end = val if not isinstance(val, str) else datetime.fromisoformat(val)
             if trial_end.tzinfo is None:
                 trial_end = trial_end.replace(tzinfo=timezone.utc)
             return datetime.now(timezone.utc) < trial_end
@@ -168,11 +171,17 @@ def user_has_access(user) -> bool:
 
 def days_left_in_trial(user) -> int:
     try:
-        trial_end = datetime.fromisoformat(user["trial_ends_at"])
+        val = user["trial_ends_at"]
+        if val is None:
+            return 0
+        # psycopg2 returns datetime objects; SQLite returns strings
+        if isinstance(val, str):
+            trial_end = datetime.fromisoformat(val)
+        else:
+            trial_end = val  # already a datetime object from psycopg2
         if trial_end.tzinfo is None:
             trial_end = trial_end.replace(tzinfo=timezone.utc)
         delta = trial_end - datetime.now(timezone.utc)
-        # Use total_seconds to avoid delta.days returning 0 when < 24hrs remain
         total_seconds = delta.total_seconds()
         if total_seconds <= 0:
             return 0
