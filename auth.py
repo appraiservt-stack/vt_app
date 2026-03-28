@@ -172,7 +172,12 @@ def days_left_in_trial(user) -> int:
         if trial_end.tzinfo is None:
             trial_end = trial_end.replace(tzinfo=timezone.utc)
         delta = trial_end - datetime.now(timezone.utc)
-        return max(0, delta.days)
+        # Use total_seconds to avoid delta.days returning 0 when < 24hrs remain
+        total_seconds = delta.total_seconds()
+        if total_seconds <= 0:
+            return 0
+        import math
+        return math.ceil(total_seconds / 86400)
     except Exception:
         return 0
 
@@ -450,8 +455,38 @@ def account():
     if not user:
         session.clear()
         return redirect(url_for("auth.login"))
-    trial_days = days_left_in_trial(user) if user["subscription_status"] == "trial" else 0
+    trial_days = days_left_in_trial(user) if user["subscription_status"] in ("trial", "trialing") else 0
     return render_template("account.html", user=user, trial_days=trial_days)
+
+@auth_bp.route("/create-checkout-session-upgrade")
+def create_checkout_session_upgrade():
+    """Let a trialing user skip the remainder of their trial and go active now."""
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
+    if not user:
+        return redirect(url_for("auth.login"))
+    email = user["email"]
+    try:
+        customer_id = user["stripe_customer_id"]
+        if not customer_id:
+            customer = stripe.Customer.create(email=email)
+            customer_id = customer.id
+            db_execute(_q(
+                "UPDATE users SET stripe_customer_id = ? WHERE email = ?"
+            ), (customer_id, email))
+        checkout = stripe.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=["card"],
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            mode="subscription",
+            success_url=request.host_url + "subscribe/success?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=request.host_url + "account",
+        )
+        return redirect(checkout.url, code=303)
+    except Exception as e:
+        flash(f"Error: {str(e)}", "error")
+        return redirect(url_for("auth.account"))
 
 @auth_bp.route("/cancel-subscription", methods=["POST"])
 def cancel_subscription():

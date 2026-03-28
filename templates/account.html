@@ -151,9 +151,11 @@
       </div>
       <div class="actions">
         <form method="POST" action="/cancel-subscription"
-              onsubmit="return confirm('Cancel your free trial? Your card will NOT be charged and your access ends on ' + '{{ user.trial_ends_at[:10] }}' + '.')">
+              onsubmit="return confirm('Cancel your free trial? Your card will NOT be charged and your access ends on {{ user.trial_ends_at[:10] }}.')">
           <button type="submit" class="btn btn-danger">Cancel Free Trial — No Charge</button>
         </form>
+        <a href="/create-checkout-session-upgrade" class="btn btn-primary"
+           style="display:inline-block; text-align:center;">Subscribe Now — Skip Trial</a>
       </div>
     {% elif user.subscription_status == 'trial' %}
       <p style="font-size:14px;color:#333;margin-bottom:16px;">
