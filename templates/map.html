@@ -840,7 +840,19 @@ function getParcelStyle(){
   return { color: '#1a7a1a', weight: 2, fillOpacity: 0 };
 }
 
-let parcelLayer  = L.geoJSON(null, { style: getParcelStyle() });
+// Custom pane for parcels — sits below marker pane so clicks reach markers.
+if(!map.getPane('parcelPane')){
+  const pp = map.createPane('parcelPane');
+  pp.style.zIndex = 360;  // above femaPane(350), below overlayPane(400)
+  pp.style.pointerEvents = 'none';
+}
+
+let parcelLayer  = L.geoJSON(null, {
+  style: getParcelStyle(),
+  pane: 'parcelPane',
+  interactive: false,          // don't intercept clicks — let them reach markers
+  bubblingMouseEvents: true
+});
 let parcelsOn    = false;   // controlled by the overlay checkbox
 let parcelXhr    = null;    // cancel in-flight request on new move
 
@@ -993,17 +1005,21 @@ function getFemaStyle(props){
   return FEMA_ZONE_STYLE['DEFAULT'];
 }
 
+// Create a custom pane below the marker pane so FEMA polygons
+// never intercept clicks meant for sale markers.
+if(!map.getPane('femaPane')){
+  const fp = map.createPane('femaPane');
+  fp.style.zIndex = 350;   // overlay pane=400, marker pane=600
+  fp.style.pointerEvents = 'none';  // pass all clicks through
+}
+
 let femaGeoLayer = L.geoJSON(null, {
   style: f => getFemaStyle(f.properties),
-  onEachFeature: function(feature, layer){
-    const p    = feature.properties;
-    const zone = (p.FLD_ZONE || '').toUpperCase();
-    const sub  = (p.ZONE_SUBTY || '').toUpperCase();
-    // Suppress tooltip for Zone X minimal hazard
-    if(zone === 'X' && (sub === 'AREA OF MINIMAL FLOOD HAZARD' || !sub)) return;
-    const subLabel = p.ZONE_SUBTY ? ` (${p.ZONE_SUBTY})` : '';
-    layer.bindTooltip(`Zone ${p.FLD_ZONE}${subLabel}`, { sticky: true, opacity: 0.85 });
-  }
+  pane: 'femaPane',
+  interactive: false,         // don't intercept clicks
+  bubblingMouseEvents: true
+  // Tooltips removed since interactive:false prevents hover events.
+  // Zone info is visible from the color legend.
 });
 
 let femaOn  = false;
