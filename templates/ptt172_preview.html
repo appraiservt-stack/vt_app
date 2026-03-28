@@ -6,92 +6,128 @@
 <title>PTT-172 Preview</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; background: #f4f6f9; color: #222; font-size: 13px; }
+  html, body { height: 100%; overflow: hidden; font-family: Arial, sans-serif; font-size: 13px; background: #2c2c2c; }
 
+  /* ── Top bar ── */
   .topbar {
-    background: #1F4E79; color: #fff; padding: 10px 20px;
-    display: flex; justify-content: space-between; align-items: center;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    position: fixed; top: 0; left: 0; right: 0; height: 46px;
+    background: #1F4E79; color: #fff; z-index: 200;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.35);
   }
-  .topbar-title { font-size: 16px; font-weight: 700; }
-  .topbar-sub { font-size: 11px; color: #cce0ff; margin-top: 2px; }
+  .topbar-left { display: flex; flex-direction: column; }
+  .topbar-title { font-size: 15px; font-weight: 700; line-height: 1.2; }
+  .topbar-sub   { font-size: 10px; color: #cce0ff; }
   .btn-dl {
-    background: #fff; color: #1F4E79; font-weight: 700; font-size: 13px;
-    padding: 8px 18px; border: none; border-radius: 5px; cursor: pointer;
-    text-decoration: none; display: inline-block;
+    background: #fff; color: #1F4E79; font-weight: 700; font-size: 12px;
+    padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer;
+    text-decoration: none; white-space: nowrap;
     box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    transition: background 0.15s;
   }
   .btn-dl:hover { background: #e8f0fe; }
 
-  .container { max-width: 860px; margin: 24px auto; padding: 0 16px 40px; }
+  /* ── Main layout ── */
+  .main {
+    position: fixed; top: 46px; left: 0; right: 0; bottom: 0;
+    display: flex;
+  }
 
-  .section {
-    background: #fff; border-radius: 8px; margin-bottom: 16px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.08); overflow: hidden;
+  /* ── PDF pane ── */
+  .pdf-pane {
+    flex: 1 1 65%;
+    background: #2c2c2c;
+    overflow: hidden;
   }
-  .section-header {
-    background: #1F4E79; color: #fff; padding: 8px 16px;
-    font-size: 13px; font-weight: 700;
+  .pdf-pane iframe {
+    width: 100%; height: 100%; border: none; display: block;
   }
-  .section-body { padding: 12px 16px; }
-  .row {
-    display: flex; border-bottom: 1px solid #f0f0f0;
-    padding: 7px 0; align-items: baseline; gap: 8px; flex-wrap: wrap;
-  }
-  .row:last-child { border-bottom: none; }
-  .row-line { flex: 0 0 38px; font-weight: 700; color: #1F4E79; font-size: 11px; }
-  .row-label { flex: 0 0 200px; font-weight: 600; color: #555; font-size: 11px; text-transform: uppercase; }
-  .row-value { flex: 1; }
-  .row-desc { font-size: 12px; color: #555; margin-left: 4px; }
 
-  /* Code chip */
+  /* ── Code reference panel ── */
+  .ref-pane {
+    flex: 0 0 340px;
+    background: #f4f6f9;
+    border-left: 2px solid #1F4E79;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .ref-header {
+    background: #1F4E79; color: #fff;
+    padding: 10px 14px; font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .ref-header small { display: block; font-weight: 400; font-size: 10px; color: #cce0ff; margin-top: 2px; }
+  .ref-body {
+    flex: 1; overflow-y: auto; padding: 8px 0;
+  }
+
+  /* ── Accordion sections ── */
+  .acc-section { border-bottom: 1px solid #dde3ea; }
+  .acc-toggle {
+    width: 100%; background: #e8edf3; border: none; cursor: pointer;
+    padding: 8px 14px; text-align: left; font-size: 12px; font-weight: 700;
+    color: #1F4E79; display: flex; justify-content: space-between;
+    align-items: center; transition: background 0.15s;
+  }
+  .acc-toggle:hover { background: #dce4ef; }
+  .acc-toggle .arrow { font-size: 10px; transition: transform 0.2s; }
+  .acc-toggle.open .arrow { transform: rotate(180deg); }
+  .acc-content { display: none; padding: 6px 0; }
+  .acc-content.open { display: block; }
+
+  /* ── Code rows ── */
+  .code-row {
+    padding: 5px 14px; display: flex; align-items: flex-start; gap: 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .code-row:last-child { border-bottom: none; }
+  .code-line { flex: 0 0 30px; font-weight: 700; color: #1F4E79; font-size: 11px; padding-top: 1px; }
+
+  /* ── Code chip with tooltip ── */
   .code-chip {
-    display: inline-block;
+    display: inline-block; flex-shrink: 0;
     background: #e8f0fe; color: #1a3a5c;
     border: 1px solid #b3c6f5; border-radius: 3px;
     padding: 1px 7px; font-size: 12px; font-weight: 700;
     cursor: help; position: relative; white-space: nowrap;
-    vertical-align: middle;
   }
   .code-chip::after {
     content: attr(data-tip);
-    display: none;
-    position: absolute;
-    bottom: 130%; left: 50%;
-    transform: translateX(-50%);
+    display: none; position: absolute;
+    bottom: 130%; right: 0;
     background: #1a3a5c; color: #fff;
-    padding: 7px 12px; border-radius: 5px;
+    padding: 7px 10px; border-radius: 5px;
     font-size: 11px; font-weight: normal;
-    white-space: normal; width: 280px;
+    white-space: normal; width: 240px;
     z-index: 9999; box-shadow: 0 3px 12px rgba(0,0,0,0.3);
     line-height: 1.5; pointer-events: none;
   }
   .code-chip::before {
-    content: ''; display: none;
-    position: absolute; bottom: 120%; left: 50%;
-    transform: translateX(-50%);
+    content: ''; display: none; position: absolute;
+    bottom: 120%; right: 12px;
     border: 6px solid transparent;
     border-top-color: #1a3a5c; z-index: 9999;
   }
   .code-chip:hover::after,
   .code-chip:hover::before { display: block; }
 
-  .check-yes { color: #2d6a4f; font-weight: 600; }
-  .check-no  { color: #888; }
-  .blank     { color: #aaa; font-style: italic; }
+  .code-desc { font-size: 11px; color: #444; line-height: 1.4; }
+  .check-yes { color: #2d6a4f; font-weight: 600; font-size: 12px; }
+  .check-no  { color: #888; font-size: 12px; }
 
-  .tooltip-note {
-    background: #e8f0fe; border: 1px solid #b3c6f5; border-radius: 6px;
-    padding: 9px 14px; font-size: 11px; color: #1a3a5c; margin-bottom: 16px;
+  .ref-footer {
+    padding: 8px 14px; font-size: 10px; color: #888;
+    border-top: 1px solid #dde3ea; background: #f4f6f9; flex-shrink: 0;
+    line-height: 1.4;
   }
 </style>
 </head>
 <body>
 
+<!-- Top bar -->
 <div class="topbar">
-  <div>
-    <div class="topbar-title">PTT-172 &#8212; Property Transfer Tax Return</div>
+  <div class="topbar-left">
+    <div class="topbar-title">PTT-172 &mdash; Property Transfer Tax Return</div>
     <div class="topbar-sub">
       {{ rec.propertyLocationStreet or '' }}{% if rec.propertyLocationCity %}, {{ rec.propertyLocationCity }}{% endif %}
       &nbsp;|&nbsp; Closing: {{ closing_date }}
@@ -100,167 +136,194 @@
   <a class="btn-dl" href="/ptt172?id={{ rec_id }}&download=1">&#8659; Download PDF</a>
 </div>
 
-<div class="container">
+<!-- Main split layout -->
+<div class="main">
 
-  <div class="tooltip-note">
-    &#9432; Hover over any <span class="code-chip" style="cursor:default;" data-tip="Example tooltip &#8212; hover over blue chips to see code descriptions from the PTT-172 instructions.">00</span> blue code chip to see its full description.
+  <!-- Left: embedded PDF -->
+  <div class="pdf-pane">
+    <iframe src="/ptt172?id={{ rec_id }}" title="PTT-172 Form"></iframe>
   </div>
 
-  <!-- A — Seller -->
-  <div class="section">
-    <div class="section-header">A. Transferor (Seller)</div>
-    <div class="section-body">
-      {% if rec.sellerEntityName %}
-      <div class="row"><span class="row-label">Entity Name</span><span class="row-value">{{ rec.sellerEntityName }}</span></div>
-      {% endif %}
-      {% if rec.sellerLastName or rec.sellerFirstName %}
-      <div class="row"><span class="row-label">Individual Name</span><span class="row-value">{{ (rec.sellerFirstName or '') + ' ' + (rec.sellerLastName or '') }}</span></div>
-      {% endif %}
+  <!-- Right: collapsible code reference -->
+  <div class="ref-pane">
+    <div class="ref-header">
+      Code Reference
+      <small>Hover any chip for the full description</small>
     </div>
-  </div>
+    <div class="ref-body">
 
-  <!-- B — Buyer -->
-  <div class="section">
-    <div class="section-header">B. Transferee (Buyer)</div>
-    <div class="section-body">
-      {% if rec.buyerEntityName %}
-      <div class="row"><span class="row-label">Entity Name</span><span class="row-value">{{ rec.buyerEntityName }}</span></div>
-      {% endif %}
-      {% if rec.buyerLastName or rec.buyerFirstName %}
-      <div class="row"><span class="row-label">Individual Name</span><span class="row-value">{{ (rec.buyerFirstName or '') + ' ' + (rec.buyerLastName or '') }}</span></div>
-      {% endif %}
+      <!-- Section E -->
+      <div class="acc-section">
+        <button class="acc-toggle open" onclick="toggleAcc(this)">
+          Section E &mdash; Exemptions <span class="arrow">&#9660;</span>
+        </button>
+        <div class="acc-content open">
+          <div class="code-row">
+            <span class="code-line">E1</span>
+            {{ chips.e1 }}
+            <span class="code-desc">{{ descs.e1 or 'No exemption' }}</span>
+          </div>
+          {% if rec.familyMember and rec.familyMember != 0 %}
+          <div class="code-row">
+            <span class="code-line">E2</span>
+            {{ chips.e2 }}
+            <span class="code-desc">{{ descs.e2 }}</span>
+          </div>
+          {% endif %}
+          <div class="code-row">
+            <span class="code-line">E3</span>
+            {{ chips.e3 }}
+            <span class="code-desc">{{ descs.e3 or 'None or no land' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section F -->
+      <div class="acc-section">
+        <button class="acc-toggle open" onclick="toggleAcc(this)">
+          Section F &mdash; Transfer Information <span class="arrow">&#9660;</span>
+        </button>
+        <div class="acc-content open">
+          <div class="code-row">
+            <span class="code-line">F1</span>
+            {{ chips.f1 }}
+            <span class="code-desc">{{ descs.f1 }}</span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">F2</span>
+            {{ chips.f2 }}
+            <span class="code-desc">{{ descs.f2 }}</span>
+          </div>
+          {% for chip, desc, num in bldg_chips %}
+          <div class="code-row">
+            <span class="code-line">F3{% if num > 1 %}-{{ num }}{% endif %}</span>
+            {{ chip }}
+            <span class="code-desc">{{ desc }}</span>
+          </div>
+          {% endfor %}
+          <div class="code-row">
+            <span class="code-line">F4</span>
+            <span class="code-desc {% if rec.tenantPurchase == True %}check-yes{% else %}check-no{% endif %}">
+              Tenant prior: {{ 'Yes' if rec.tenantPurchase == True else 'No' }}
+            </span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">F5</span>
+            <span class="code-desc">{{ rec.financing or '&mdash;' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section G -->
+      <div class="acc-section">
+        <button class="acc-toggle" onclick="toggleAcc(this)">
+          Section G &mdash; Current Use <span class="arrow">&#9660;</span>
+        </button>
+        <div class="acc-content">
+          <div class="code-row">
+            <span class="code-line">G1</span>
+            <span class="code-desc {% if rec.enrolledCurrentUse == True %}check-yes{% else %}check-no{% endif %}">
+              Enrolled: {{ 'Yes' if rec.enrolledCurrentUse == True else 'No' }}
+            </span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">G2</span>
+            <span class="code-desc {% if rec.currentUseEnrollmentContinue == True %}check-yes{% else %}check-no{% endif %}">
+              Continue enrollment: {{ 'Yes' if rec.currentUseEnrollmentContinue == True else 'No' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section H -->
+      <div class="acc-section">
+        <button class="acc-toggle open" onclick="toggleAcc(this)">
+          Section H &mdash; Use of Property <span class="arrow">&#9660;</span>
+        </button>
+        <div class="acc-content open">
+          <div class="code-row">
+            <span class="code-line">H1</span>
+            {{ chips.h1 }}
+            <span class="code-desc">{{ descs.h1 }}</span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">H2</span>
+            {{ chips.h2 }}
+            <span class="code-desc">{{ descs.h2 }}</span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">H3</span>
+            <span class="code-desc {% if rec.rentedBefore == True %}check-yes{% else %}check-no{% endif %}">
+              Rented before: {{ 'Yes' if rec.rentedBefore == True else 'No' }}
+            </span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">H4</span>
+            <span class="code-desc {% if rec.rentedAfter == True %}check-yes{% else %}check-no{% endif %}">
+              Rented after: {{ 'Yes' if rec.rentedAfter == True else 'No' }}
+            </span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">H5</span>
+            <span class="code-desc {% if rec.developmentPrevConv == True %}check-yes{% else %}check-no{% endif %}">
+              Dev. rights conveyed separately: {{ 'Yes' if rec.developmentPrevConv == True else 'No' }}
+            </span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">H6</span>
+            <span class="code-desc {% if rec.buyerAdjoiningProperty == True %}check-yes{% else %}check-no{% endif %}">
+              Buyer holds adjoining property: {{ 'Yes' if rec.buyerAdjoiningProperty == True else 'No' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section J -->
+      <div class="acc-section">
+        <button class="acc-toggle" onclick="toggleAcc(this)">
+          Section J &mdash; Tax Calculation <span class="arrow">&#9660;</span>
+        </button>
+        <div class="acc-content">
+          <div class="code-row">
+            <span class="code-line">J8</span>
+            <span class="code-desc">${{ "%.2f"|format(rec.ValuePaidOrTransferred or 0) }}</span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">J9</span>
+            <span class="code-desc">${{ "%.2f"|format(rec.PersonalPropValuePaidOrTrans or 0) }}</span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">J10</span>
+            <span class="code-desc">${{ "%.2f"|format(rec.RealPropValuePaidOrTrans or 0) }}</span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">J14</span>
+            <span class="code-desc">${{ "%.2f"|format(rec.GenRateTaxDue or 0) }}</span>
+          </div>
+          <div class="code-row" style="background:#f0f7f4;">
+            <span class="code-line" style="color:#2d6a4f;">J15</span>
+            <span class="code-desc" style="font-weight:700; color:#2d6a4f;">
+              Total Tax Due: ${{ "%.2f"|format(rec.TotalTaxDue or 0) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end ref-body -->
+    <div class="ref-footer">
+      Source: Form PTT-172 Instructions Rev. 11/25<br>
+      Downloaded PDF includes this code reference as Page 5.
     </div>
-  </div>
+  </div><!-- end ref-pane -->
 
-  <!-- C — Property -->
-  <div class="section">
-    <div class="section-header">C. Property Information</div>
-    <div class="section-body">
-      <div class="row"><span class="row-label">Address</span><span class="row-value">{{ rec.propertyLocationStreet or '&#8212;' }}{% if rec.propertyLocationCity %}, {{ rec.propertyLocationCity }}{% endif %}</span></div>
-      <div class="row"><span class="row-label">SPAN</span><span class="row-value">{{ span_fmt or '&#8212;' }}</span></div>
-      <div class="row"><span class="row-label">Land Size</span><span class="row-value">{% if rec.landSize %}{{ rec.landSize }} acres{% else %}<span class="blank">No land involved</span>{% endif %}</span></div>
-    </div>
-  </div>
+</div><!-- end main -->
 
-  <!-- D — Holding Period -->
-  <div class="section">
-    <div class="section-header">D. Holding Period</div>
-    <div class="section-body">
-      <div class="row"><span class="row-label">Date Acquired</span><span class="row-value">{{ acquired_date or '&#8212;' }}</span></div>
-      <div class="row"><span class="row-label">Date of Closing</span><span class="row-value">{{ closing_date or '&#8212;' }}</span></div>
-      <div class="row"><span class="row-label">Time Held</span><span class="row-value">{{ held_years }} years, {{ held_months }} months</span></div>
-    </div>
-  </div>
-
-  <!-- E — Exemptions -->
-  <div class="section">
-    <div class="section-header">E. Exemptions</div>
-    <div class="section-body">
-      <div class="row">
-        <span class="row-line">E1</span><span class="row-label">PTT Exemption</span>
-        <span class="row-value">{{ chips.e1 }}<span class="row-desc">{{ descs.e1 }}</span></span>
-      </div>
-      {% if rec.familyMember and rec.familyMember != 0 %}
-      <div class="row">
-        <span class="row-line">E2</span><span class="row-label">Family Member</span>
-        <span class="row-value">{{ chips.e2 }}<span class="row-desc">{{ descs.e2 }}</span></span>
-      </div>
-      {% endif %}
-      <div class="row">
-        <span class="row-line">E3</span><span class="row-label">Land Gains Exemption</span>
-        <span class="row-value">{{ chips.e3 }}<span class="row-desc">{{ descs.e3 }}</span></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- F — Transfer Info -->
-  <div class="section">
-    <div class="section-header">F. Transfer Information</div>
-    <div class="section-body">
-      <div class="row">
-        <span class="row-line">F1</span><span class="row-label">How Acquired</span>
-        <span class="row-value">{{ chips.f1 }}<span class="row-desc">{{ descs.f1 }}</span></span>
-      </div>
-      <div class="row">
-        <span class="row-line">F2</span><span class="row-label">Interest Type</span>
-        <span class="row-value">{{ chips.f2 }}<span class="row-desc">{{ descs.f2 }}</span></span>
-      </div>
-      {% for chip, desc, num in bldg_chips %}
-      <div class="row">
-        <span class="row-line">F3{% if num > 1 %}-{{ num }}{% endif %}</span>
-        <span class="row-label">Building Type</span>
-        <span class="row-value">{{ chip }}<span class="row-desc">{{ desc }}</span></span>
-      </div>
-      {% endfor %}
-      <div class="row">
-        <span class="row-line">F4</span><span class="row-label">Tenant Prior to Transfer</span>
-        <span class="row-value {% if rec.tenantPurchase == True %}check-yes{% else %}check-no{% endif %}">{{ 'Yes' if rec.tenantPurchase == True else 'No' }}</span>
-      </div>
-      <div class="row">
-        <span class="row-line">F5</span><span class="row-label">Financing</span>
-        <span class="row-value">{{ rec.financing or '&#8212;' }}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- G — Current Use -->
-  <div class="section">
-    <div class="section-header">G. Agricultural / Managed Forest Land Use Value Program</div>
-    <div class="section-body">
-      <div class="row">
-        <span class="row-line">G1</span><span class="row-label">Enrolled in Current Use</span>
-        <span class="row-value {% if rec.enrolledCurrentUse == True %}check-yes{% else %}check-no{% endif %}">{{ 'Yes' if rec.enrolledCurrentUse == True else 'No' }}</span>
-      </div>
-      <div class="row">
-        <span class="row-line">G2</span><span class="row-label">Continue Enrollment</span>
-        <span class="row-value {% if rec.currentUseEnrollmentContinue == True %}check-yes{% else %}check-no{% endif %}">{{ 'Yes' if rec.currentUseEnrollmentContinue == True else 'No' }}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- H — Use of Property -->
-  <div class="section">
-    <div class="section-header">H. Use of Property</div>
-    <div class="section-body">
-      <div class="row">
-        <span class="row-line">H1</span><span class="row-label">Seller Use (Before)</span>
-        <span class="row-value">{{ chips.h1 }}<span class="row-desc">{{ descs.h1 }}</span></span>
-      </div>
-      <div class="row">
-        <span class="row-line">H2</span><span class="row-label">Buyer Use (After)</span>
-        <span class="row-value">{{ chips.h2 }}<span class="row-desc">{{ descs.h2 }}</span></span>
-      </div>
-      <div class="row">
-        <span class="row-line">H3</span><span class="row-label">Rented Before</span>
-        <span class="row-value {% if rec.rentedBefore == True %}check-yes{% else %}check-no{% endif %}">{{ 'Yes' if rec.rentedBefore == True else 'No' }}</span>
-      </div>
-      <div class="row">
-        <span class="row-line">H4</span><span class="row-label">Rented After</span>
-        <span class="row-value {% if rec.rentedAfter == True %}check-yes{% else %}check-no{% endif %}">{{ 'Yes' if rec.rentedAfter == True else 'No' }}</span>
-      </div>
-      <div class="row">
-        <span class="row-line">H5</span><span class="row-label">Development Rights Conveyed Separately</span>
-        <span class="row-value {% if rec.developmentPrevConv == True %}check-yes{% else %}check-no{% endif %}">{{ 'Yes' if rec.developmentPrevConv == True else 'No' }}</span>
-      </div>
-      <div class="row">
-        <span class="row-line">H6</span><span class="row-label">Buyer Holds Adjoining Property</span>
-        <span class="row-value {% if rec.buyerAdjoiningProperty == True %}check-yes{% else %}check-no{% endif %}">{{ 'Yes' if rec.buyerAdjoiningProperty == True else 'No' }}</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- J — Tax -->
-  <div class="section">
-    <div class="section-header">J. Tax Calculation</div>
-    <div class="section-body">
-      <div class="row"><span class="row-line">J8</span><span class="row-label">Value Paid or Transferred</span><span class="row-value">${{ "%.2f"|format(rec.ValuePaidOrTransferred or 0) }}</span></div>
-      <div class="row"><span class="row-line">J9</span><span class="row-label">Personal Property Value</span><span class="row-value">${{ "%.2f"|format(rec.PersonalPropValuePaidOrTrans or 0) }}</span></div>
-      <div class="row"><span class="row-line">J10</span><span class="row-label">Real Property Value</span><span class="row-value">${{ "%.2f"|format(rec.RealPropValuePaidOrTrans or 0) }}</span></div>
-      <div class="row"><span class="row-line">J14</span><span class="row-label">General Rate Tax Due</span><span class="row-value">${{ "%.2f"|format(rec.GenRateTaxDue or 0) }}</span></div>
-      <div class="row"><span class="row-line">J15</span><span class="row-label">Total Tax Due</span><span class="row-value" style="font-weight:700;">${{ "%.2f"|format(rec.TotalTaxDue or 0) }}</span></div>
-    </div>
-  </div>
-
-</div>
+<script>
+function toggleAcc(btn) {
+  btn.classList.toggle('open');
+  const content = btn.nextElementSibling;
+  content.classList.toggle('open');
+}
+</script>
 </body>
 </html>
