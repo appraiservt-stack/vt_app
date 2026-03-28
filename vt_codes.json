@@ -1915,5 +1915,41 @@
       "lon": -73.114466,
       "county": "04"
     }
+  },
+  "family_member_codes": {
+    "1": "Married / Civil Union",
+    "2": "Parent / Child",
+    "3": "Grandparent / Grandchild",
+    "4": "Self / Exempt Trust (see 32 V.S.A. \u00a7 9603(5))",
+    "5": "Other (must complete Line E2a)"
+  },
+  "land_gains_exemptions": {
+    "0": "None or no land",
+    "1": "Sale or transfer falls outside the definition of \"land\"",
+    "2": "Sale of land held by the Transferor for six years or longer",
+    "3": "Transfer without consideration, such as a gift, devise, partition, or straw transfer by corrective deed",
+    "4": "Sale of up to 10 acres of land on which transferor lived as their principal residence (up to 25 acres if local zoning requires)",
+    "5": "Court-decreed transfer of land between the parties through a divorce",
+    "6": "Transfer to a mortgagee in foreclosure or voluntary conveyance in lieu of foreclosure, provided there is no gain from the transfer",
+    "7": "Sale of land to the State of Vermont from a \u00a7501(c)(3) organization; or sale to preserve agricultural, forestry or open-space land for at least six years",
+    "8": "Sale of land owned by the United States, the State of Vermont, or a \u00a7501(c)(3) organization exempt from federal income taxation",
+    "9": "Leases of land for less than 50 years, including extensions",
+    "10": "Sale of mineral rights for a limited period of time; or sale of gravel, soil or similar items",
+    "11": "Sale of a perpetual easement for $1.00 or less",
+    "12": "Sale of land that is a mobile home park transferred to a group of leaseholders or a nonprofit representing them",
+    "13": "Transfers of land in a Vermont neighborhood, downtown development district, village center, growth center, or new town center development district"
+  },
+  "how_acquired_codes": {
+    "1": "The Transferor purchased the property",
+    "2": "The Transferor inherited the property",
+    "3": "The Transferor was gifted the property",
+    "4": "Other circumstances (must enter explanation on Line F1a)"
+  },
+  "withholding_exemption_codes": {
+    "1": "Transferor(s) certify that at the time of transfer, each Transferor was a resident of Vermont or an estate",
+    "2": "Transferee(s) certify that this is a transfer without consideration",
+    "3": "Transferor is a mortgagor conveying the mortgaged property to a mortgagee in a foreclosure or transfer in lieu of foreclosure with no additional consideration",
+    "4": "Transferee certifies that a withholding certificate was obtained from the Commissioner of Taxes in advance of this sale",
+    "5": "Pending Certification"
   }
 }

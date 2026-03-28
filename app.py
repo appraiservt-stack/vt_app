@@ -876,11 +876,15 @@ def home():
 def codes():
     """Return all code lookup tables to the frontend."""
     return jsonify({
-        "ptt_exemptions":      VT_CODES.get("ptt_exemptions", {}),
-        "interest_types":      VT_CODES.get("interest_types", {}),
-        "building_types":      VT_CODES.get("building_types", {}),
-        "use_of_property":     VT_CODES.get("use_of_property", {}),
-        "grand_list_categories": VT_CODES.get("grand_list_categories", {}),
+        "ptt_exemptions":          VT_CODES.get("ptt_exemptions", {}),
+        "family_member_codes":      VT_CODES.get("family_member_codes", {}),
+        "land_gains_exemptions":    VT_CODES.get("land_gains_exemptions", {}),
+        "how_acquired_codes":       VT_CODES.get("how_acquired_codes", {}),
+        "interest_types":           VT_CODES.get("interest_types", {}),
+        "building_types":           VT_CODES.get("building_types", {}),
+        "use_of_property":          VT_CODES.get("use_of_property", {}),
+        "grand_list_categories":    VT_CODES.get("grand_list_categories", {}),
+        "withholding_exemption_codes": VT_CODES.get("withholding_exemption_codes", {}),
     })
 
 
@@ -958,11 +962,29 @@ def data():
                 "schoolCode":        rec["schoolCode"],
                 "span":              rec["span"],
                 "correctedCounty":   rec["correctedCounty"],
-                # Extra fields for popup display
+                # Extra fields for popup display and tooltips
                 "interestUndivPercentDesc": rec["interestUndivPercentDesc"],
                 "buildingConstruction1Desc": rec["buildingConstruction1Desc"],
                 "sellerUseOfPropertyDesc": rec["sellerUseOfPropertyDesc"],
                 "buyerUseOfPropertyDesc":  rec["buyerUseOfPropertyDesc"],
+                # Code fields for tooltip display
+                "propertyTaxExemption":    rec["propertyTaxExemption"],
+                "propertyTaxExemptionDesc": rec["propertyTaxExemptionDesc"],
+                "familyMember":            rec["familyMember"],
+                "familyMemberDesc":        rec["familyMemberDesc"],
+                "LGTExemption":            rec["LGTExemption"],
+                "LGTExemptionDesc":        rec["LGTExemptionDesc"],
+                "sellerAcquire":           rec["sellerAcquire"],
+                "sellerAcquireDesc":       rec["sellerAcquireDesc"],
+                "interestPropertyType":    rec["interestPropertyType"],
+                "buildingConstruction1":   rec["buildingConstruction1"],
+                "buildingConstruction2":   rec["buildingConstruction2"],
+                "buildingConstruction2Desc": rec["buildingConstruction2Desc"],
+                "buildingConstruction3":   rec["buildingConstruction3"],
+                "buildingConstruction3Desc": rec["buildingConstruction3Desc"],
+                "sellerUseOfProperty":     rec["sellerUseOfProperty"],
+                "buyerUseOfProperty":      rec["buyerUseOfProperty"],
+                "approxLocation":          rec["approxLocation"],
                 "sellerLastName":   rec["sellerLastName"],
                 "sellerFirstName":  rec["sellerFirstName"],
                 "sellerEntityName": rec["sellerEntityName"],
@@ -1934,6 +1956,127 @@ def ptt172():  # noqa: C901
     overlay_reader = _PR2(overlay_buf)
     page4 = writer.pages[3]
     page4.merge_page(overlay_reader.pages[0])
+
+    # ---- Page 5: Code Reference Notes page ----
+    notes_buf = _io.BytesIO()
+    nc = rl_canvas.Canvas(notes_buf, pagesize=letter)
+    NW, NH = letter  # 612 x 792
+
+    # Helper: look up code description
+    def code_desc(table_name, code_val):
+        if code_val is None or code_val == "": return None
+        try:
+            key = str(int(float(str(code_val))))
+        except Exception:
+            key = str(code_val)
+        return VT_CODES.get(table_name, {}).get(key)
+
+    # Build list of (section, line, code, description) tuples
+    notes_rows = []
+    def add_row(section, line, code_val, table_name, override_desc=None):
+        if code_val is None or str(code_val).strip() == "": return
+        desc = override_desc or code_desc(table_name, code_val)
+        try:
+            code_str = str(int(float(str(code_val)))).zfill(2)
+        except Exception:
+            code_str = str(code_val)
+        notes_rows.append((section, line, code_str, desc or ""))
+
+    add_row("E", "E1 – PTT Exemption",       rec.get("propertyTaxExemption"),  "ptt_exemptions")
+    add_row("E", "E2 – Family Member",        rec.get("familyMember"),           "family_member_codes")
+    add_row("E", "E3 – Land Gains Exemption", rec.get("LGTExemption"),           "land_gains_exemptions")
+    add_row("F", "F1 – How Acquired",         rec.get("sellerAcquire"),          "how_acquired_codes")
+    add_row("F", "F2 – Interest Type",        rec.get("interestPropertyType"),   "interest_types")
+    add_row("F", "F3 – Building Type (1)",    rec.get("buildingConstruction1"),  "building_types")
+    add_row("F", "F3 – Building Type (2)",    rec.get("buildingConstruction2"),  "building_types")
+    add_row("F", "F3 – Building Type (3)",    rec.get("buildingConstruction3"),  "building_types")
+    add_row("H", "H1 – Seller Use",           rec.get("sellerUseOfProperty"),    "use_of_property")
+    add_row("H", "H2 – Buyer Use",            rec.get("buyerUseOfProperty"),     "use_of_property")
+    add_row("I", "I2 – Withholding Exemption",rec.get("REWExemption") or rec.get("I2"), "withholding_exemption_codes")
+
+    if notes_rows:  # only add page if there's something to show
+        from reportlab.platypus import Paragraph
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib import colors as rl_colors
+
+        nc.setTitle("PTT-172 Code Reference")
+
+        # Header
+        nc.setFillColorRGB(0.1, 0.31, 0.49)  # #1a4f7d
+        nc.rect(36, NH-72, NW-72, 36, fill=1, stroke=0)
+        nc.setFillColorRGB(1, 1, 1)
+        nc.setFont("Helvetica-Bold", 13)
+        nc.drawString(44, NH-58, "PTT-172 Code Reference")
+        nc.setFont("Helvetica", 9)
+        prop_addr = (rec.get("propertyLocationStreet") or "") + ", " + (rec.get("propertyLocationCity") or "")
+        nc.drawString(44, NH-68, prop_addr.strip(", "))
+        nc.setFillColorRGB(0, 0, 0)
+
+        nc.setFont("Helvetica", 8)
+        nc.setFillColorRGB(0.4, 0.4, 0.4)
+        nc.drawString(44, NH-88, "Hover over code chips in the VT Property Sales popup to see these descriptions.")
+        nc.setFillColorRGB(0, 0, 0)
+
+        y = NH - 110
+        current_section = None
+        for (section, line, code_str, desc) in notes_rows:
+            if not code_str or code_str == "00" and "Exemption" in line and not desc:
+                pass  # still show 00 None entries
+            # Section header
+            if section != current_section:
+                if current_section is not None:
+                    y -= 6
+                nc.setFillColorRGB(0.88, 0.93, 0.97)
+                nc.rect(36, y-2, NW-72, 14, fill=1, stroke=0)
+                nc.setFont("Helvetica-Bold", 9)
+                nc.setFillColorRGB(0.1, 0.31, 0.49)
+                nc.drawString(40, y+2, f"Section {section}")
+                nc.setFillColorRGB(0, 0, 0)
+                y -= 18
+                current_section = section
+
+            # Row
+            nc.setFont("Helvetica-Bold", 8)
+            nc.drawString(44, y, line)
+            nc.setFont("Helvetica", 8)
+            nc.drawString(180, y, f"{code_str}")
+
+            # Wrap long descriptions
+            if desc:
+                max_w = NW - 220  # available width for description
+                words = desc.split()
+                lines_desc = []
+                cur = ""
+                for w in words:
+                    test = (cur + " " + w).strip()
+                    if nc.stringWidth(test, "Helvetica", 8) < max_w:
+                        cur = test
+                    else:
+                        lines_desc.append(cur)
+                        cur = w
+                if cur:
+                    lines_desc.append(cur)
+                for i, dl in enumerate(lines_desc):
+                    nc.drawString(200, y - i*10, dl)
+                y -= (len(lines_desc) - 1) * 10
+            y -= 14
+
+            if y < 60:  # new page if needed
+                nc.showPage()
+                y = NH - 60
+                nc.setFont("Helvetica", 8)
+
+        # Footer
+        nc.setFont("Helvetica", 7)
+        nc.setFillColorRGB(0.5, 0.5, 0.5)
+        nc.drawString(44, 36, "PTT-172 Code Reference — VT Property Sales | Source: Form PTT-172 Instructions Rev. 11/25")
+        nc.setFillColorRGB(0, 0, 0)
+
+        nc.save()
+        notes_buf.seek(0)
+        notes_reader = _PR2(notes_buf)
+        for pg in notes_reader.pages:
+            writer.add_page(pg)
 
     # ---- Produce final PDF bytes ----
     buf = _io.BytesIO()

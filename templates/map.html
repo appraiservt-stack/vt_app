@@ -127,6 +127,50 @@
         .leaflet-popup-content div[style*="overflow-y"] {
             pointer-events: auto;
         }
+        /* Code tooltip styles */
+        .code-chip {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #1a3a5c;
+            border: 1px solid #b3c6f5;
+            border-radius: 3px;
+            padding: 0px 4px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: help;
+            position: relative;
+            white-space: nowrap;
+        }
+        .code-chip:hover::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a3a5c;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: normal;
+            white-space: normal;
+            width: 220px;
+            z-index: 9999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            pointer-events: none;
+            line-height: 1.4;
+        }
+        .code-chip:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1a3a5c;
+            z-index: 9999;
+            pointer-events: none;
+        }
 
         /* ---- BOUNDARY LABEL (no default Leaflet bg) ---- */
         .bdy-label {
@@ -1752,14 +1796,86 @@ function hasDateFilter(){
 }
 
 // Build one sale row for the popup
+// Build a code chip with hover tooltip
+function codeChip(code, desc, label) {
+  if (!code && code !== 0) return '';
+  const c = String(code).padStart(2, '0');
+  const tip = desc ? `${label}: ${c} \u2014 ${desc}` : `${label}: ${c}`;
+  // Escape quotes for HTML attribute
+  const safeTip = tip.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  return `<span class="code-chip" data-tip="${safeTip}">${c}</span> `;
+}
+
 function buildSaleRow(s, dimmed){
   const checked = selectedSales[s.id] ? 'checked' : '';
   const dateStr = s.date ? formatDate(s.date) : '';
   const price   = s.price != null ? '$' + Number(s.price).toLocaleString() : '';
-  const bldg    = s.buildingConstruction1Desc || '';
-  const itype   = s.interestUndivPercentDesc  || '';
   const addr    = s.address || '';
   const style   = dimmed ? 'opacity:0.65;' : '';
+
+  // Building description — show all 3 if present
+  const bldgParts = [
+    s.buildingConstruction1Desc,
+    s.buildingConstruction2Desc,
+    s.buildingConstruction3Desc
+  ].filter(Boolean);
+  const bldg = bldgParts.join(' / ');
+  const itype = s.interestUndivPercentDesc || '';
+
+  // Code chips row — only show codes that have values
+  const C = CODES || {};
+  let chips = '';
+  // E1 - PTT Exemption
+  const e1 = s.propertyTaxExemption;
+  if (e1 !== null && e1 !== undefined && e1 !== '') {
+    const e1desc = (C.ptt_exemptions || {})[String(parseInt(e1))] || s.propertyTaxExemptionDesc || '';
+    chips += codeChip(e1, e1desc, 'E1 Exemption');
+  }
+  // E2 - Family Member
+  const e2 = s.familyMember;
+  if (e2 !== null && e2 !== undefined && e2 !== '' && e2 != 0) {
+    const e2desc = (C.family_member_codes || {})[String(parseInt(e2))] || s.familyMemberDesc || '';
+    chips += codeChip(e2, e2desc, 'E2 Family');
+  }
+  // E3 - Land Gains
+  const e3 = s.LGTExemption;
+  if (e3 !== null && e3 !== undefined && e3 !== '') {
+    const e3desc = (C.land_gains_exemptions || {})[String(parseInt(e3))] || s.LGTExemptionDesc || '';
+    chips += codeChip(e3, e3desc, 'E3 Land Gains');
+  }
+  // F1 - How Acquired
+  const f1 = s.sellerAcquire;
+  if (f1 !== null && f1 !== undefined && f1 !== '') {
+    const f1desc = (C.how_acquired_codes || {})[String(parseInt(f1))] || s.sellerAcquireDesc || '';
+    chips += codeChip(f1, f1desc, 'F1 Acquired');
+  }
+  // F2 - Interest Type
+  const f2 = s.interestPropertyType;
+  if (f2 !== null && f2 !== undefined && f2 !== '') {
+    const f2desc = (C.interest_types || {})[String(parseInt(f2))] || s.interestUndivPercentDesc || '';
+    chips += codeChip(f2, f2desc, 'F2 Interest');
+  }
+  // F3 - Building (code only, description shown above)
+  const f3 = s.buildingConstruction1;
+  if (f3 !== null && f3 !== undefined && f3 !== '') {
+    const f3desc = (C.building_types || {})[String(parseInt(f3))] || s.buildingConstruction1Desc || '';
+    chips += codeChip(f3, f3desc, 'F3 Building');
+  }
+  // H1 - Seller Use
+  const h1 = s.sellerUseOfProperty;
+  if (h1 !== null && h1 !== undefined && h1 !== '') {
+    const h1desc = (C.use_of_property || {})[String(parseInt(h1))] || s.sellerUseOfPropertyDesc || '';
+    chips += codeChip(h1, h1desc, 'H1 Seller Use');
+  }
+  // H2 - Buyer Use
+  const h2 = s.buyerUseOfProperty;
+  if (h2 !== null && h2 !== undefined && h2 !== '') {
+    const h2desc = (C.use_of_property || {})[String(parseInt(h2))] || s.buyerUseOfPropertyDesc || '';
+    chips += codeChip(h2, h2desc, 'H2 Buyer Use');
+  }
+
+  const chipsRow = chips ? `<div style="margin-top:2px; line-height:1.8;">${chips}</div>` : '';
+
   return `
   <div style="border-top:1px solid #eee; padding:3px 0; ${style}">
     <div style="display:flex; align-items:center; justify-content:space-between;">
@@ -1776,6 +1892,7 @@ function buildSaleRow(s, dimmed){
     </div>
     <span style="font-size:11px;">${addr}</span><br>
     <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
+    ${chipsRow}
   </div>`;
 }
 
