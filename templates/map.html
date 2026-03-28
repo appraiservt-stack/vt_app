@@ -557,13 +557,13 @@
         title="Selects all checkboxes except location"
         onclick="selectAllCheckboxes()"
         style="flex:1; padding:5px 4px; font-size:11px; font-weight:bold; border:none; border-radius:3px; cursor:pointer; background:#5c6bc0; color:white;">
-        Select All Checkboxes
+        Select All Filters
       </button>
       <button id="clearAllChkBtn"
         title="Unselects all checkboxes including location"
         onclick="clearAllCheckboxes()"
         style="flex:1; padding:5px 4px; font-size:11px; font-weight:bold; border:none; border-radius:3px; cursor:pointer; background:#78909c; color:white;">
-        Clear All Checkboxes
+        Clear All Filters
       </button>
     </div>
 
@@ -1331,7 +1331,7 @@ function buildCheckboxList(containerId, codesObj){
   el.innerHTML = "";
   Object.entries(codesObj).forEach(([code, desc]) => {
     const div = document.createElement("div");
-    div.innerHTML = `<label><input type="checkbox" data-code="${code}" checked> ${desc}</label>`;
+    div.innerHTML = `<label><input type="checkbox" data-code="${code}"> ${desc}</label>`;
     el.appendChild(div);
   });
 }
@@ -1675,10 +1675,14 @@ function loadData(){
 
   const b      = map.getBounds();
   const params = buildFilterParams();
-  params.set("xmin", b.getWest());
-  params.set("ymin", b.getSouth());
-  params.set("xmax", b.getEast());
-  params.set("ymax", b.getNorth());
+  // Expand bounds by ~10% so approximate markers (town centroids near the
+  // viewport edge) don't get clipped out of the fetch at certain zoom levels.
+  const latPad = (b.getNorth() - b.getSouth()) * 0.10;
+  const lonPad = (b.getEast()  - b.getWest())  * 0.10;
+  params.set("xmin", b.getWest()  - lonPad);
+  params.set("ymin", b.getSouth() - latPad);
+  params.set("xmax", b.getEast()  + lonPad);
+  params.set("ymax", b.getNorth() + latPad);
 
   document.getElementById("statusBar").textContent = "Loading...";
 
@@ -1822,59 +1826,7 @@ function buildSaleRow(s, dimmed){
   const bldg = bldgParts.join(' / ');
   const itype = s.interestUndivPercentDesc || '';
 
-  // Code chips row — only show codes that have values
-  const C = CODES || {};
-  let chips = '';
-  // E1 - PTT Exemption
-  const e1 = s.propertyTaxExemption;
-  if (e1 !== null && e1 !== undefined && e1 !== '') {
-    const e1desc = (C.ptt_exemptions || {})[String(parseInt(e1))] || s.propertyTaxExemptionDesc || '';
-    chips += codeChip(e1, e1desc, 'E1 Exemption');
-  }
-  // E2 - Family Member
-  const e2 = s.familyMember;
-  if (e2 !== null && e2 !== undefined && e2 !== '' && e2 != 0) {
-    const e2desc = (C.family_member_codes || {})[String(parseInt(e2))] || s.familyMemberDesc || '';
-    chips += codeChip(e2, e2desc, 'E2 Family');
-  }
-  // E3 - Land Gains
-  const e3 = s.LGTExemption;
-  if (e3 !== null && e3 !== undefined && e3 !== '') {
-    const e3desc = (C.land_gains_exemptions || {})[String(parseInt(e3))] || s.LGTExemptionDesc || '';
-    chips += codeChip(e3, e3desc, 'E3 Land Gains');
-  }
-  // F1 - How Acquired
-  const f1 = s.sellerAcquire;
-  if (f1 !== null && f1 !== undefined && f1 !== '') {
-    const f1desc = (C.how_acquired_codes || {})[String(parseInt(f1))] || s.sellerAcquireDesc || '';
-    chips += codeChip(f1, f1desc, 'F1 Acquired');
-  }
-  // F2 - Interest Type
-  const f2 = s.interestPropertyType;
-  if (f2 !== null && f2 !== undefined && f2 !== '') {
-    const f2desc = (C.interest_types || {})[String(parseInt(f2))] || s.interestUndivPercentDesc || '';
-    chips += codeChip(f2, f2desc, 'F2 Interest');
-  }
-  // F3 - Building (code only, description shown above)
-  const f3 = s.buildingConstruction1;
-  if (f3 !== null && f3 !== undefined && f3 !== '') {
-    const f3desc = (C.building_types || {})[String(parseInt(f3))] || s.buildingConstruction1Desc || '';
-    chips += codeChip(f3, f3desc, 'F3 Building');
-  }
-  // H1 - Seller Use
-  const h1 = s.sellerUseOfProperty;
-  if (h1 !== null && h1 !== undefined && h1 !== '') {
-    const h1desc = (C.use_of_property || {})[String(parseInt(h1))] || s.sellerUseOfPropertyDesc || '';
-    chips += codeChip(h1, h1desc, 'H1 Seller Use');
-  }
-  // H2 - Buyer Use
-  const h2 = s.buyerUseOfProperty;
-  if (h2 !== null && h2 !== undefined && h2 !== '') {
-    const h2desc = (C.use_of_property || {})[String(parseInt(h2))] || s.buyerUseOfPropertyDesc || '';
-    chips += codeChip(h2, h2desc, 'H2 Buyer Use');
-  }
-
-  const chipsRow = chips ? `<div style="margin-top:2px; line-height:1.8;">${chips}</div>` : '';
+  const chipsRow = ''; // Code chips moved to PTT-172 HTML preview page
 
   return `
   <div style="border-top:1px solid #eee; padding:3px 0; ${style}">
@@ -1883,8 +1835,8 @@ function buildSaleRow(s, dimmed){
         <input type="checkbox" ${checked} onclick="event.stopPropagation(); toggleSale('${s.id}', this)">
         <b>${price}</b> &nbsp; ${dateStr}
       </div>
-      <a id="ptt172-link-${s.id}" href="/ptt172?id=${s.id}" target="_blank"
-         onclick="event.stopPropagation(); this.href='/ptt172?id=${s.id}'+(_ptt172DlMode?'&download=1':'');"
+      <a id="ptt172-link-${s.id}" href="/ptt172/preview?id=${s.id}" target="_blank"
+         onclick="event.stopPropagation(); this.href=_ptt172DlMode?'/ptt172?id=${s.id}&download=1':'/ptt172/preview?id=${s.id}';"
          style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
                 border-radius:2px; text-decoration:none; white-space:nowrap; flex-shrink:0;">
         PTT-172
@@ -3502,3 +3454,4 @@ document.addEventListener('click', function(e){
 
 </body>
 </html>
+

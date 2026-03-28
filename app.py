@@ -1638,6 +1638,91 @@ def history():
     return jsonify({"data": results})
 
 
+@app.route("/ptt172/preview")
+def ptt172_preview():
+    """HTML preview of PTT-172 data with hover tooltips on code fields."""
+    from datetime import datetime as _dt, timezone as _tz
+
+    rec_id = request.args.get("id", "")
+    if not rec_id:
+        return jsonify({"error": "Missing id"}), 400
+
+    features = fetch_features(f"OBJECTID = {rec_id}", max_records=1)
+    if not features:
+        return jsonify({"error": "Record not found"}), 404
+
+    empty_f = {k: "" for k in [
+        "counties","towns","date_from","date_to","price_low","price_high",
+        "land_low","land_high","street","interest","building","seller_use",
+        "buyer_use","span","buyer_entity","buyer_last","buyer_first",
+        "seller_entity","seller_last","seller_first",
+    ]}
+    rec = feature_to_record(features[0], empty_f)
+    if not rec:
+        return jsonify({"error": "Could not parse record"}), 500
+
+    # Date formatting helpers
+    def fmtd(epoch_ms):
+        if not epoch_ms: return ""
+        try: return _dt.fromtimestamp(int(epoch_ms)/1000, tz=_tz.utc).strftime("%m/%d/%Y")
+        except: return ""
+
+    def fmt_span(s):
+        if not s: return ""
+        s = str(s).replace("-","").zfill(11)
+        return f"{s[:3]}-{s[3:6]}-{s[6:]}"
+
+    # Time held
+    def time_held(acq_ms, close_ms):
+        if not acq_ms or not close_ms: return 0, 0
+        try:
+            d1 = _dt.fromtimestamp(int(acq_ms)/1000, tz=_tz.utc)
+            d2 = _dt.fromtimestamp(int(close_ms)/1000, tz=_tz.utc)
+            mt = (d2.year-d1.year)*12 + (d2.month-d1.month)
+            if d2.day < d1.day: mt -= 1
+            return mt//12, mt%12
+        except: return 0, 0
+
+    held_y, held_m = time_held(rec.get("dateSellerAcquired"), rec.get("closingDate"))
+
+    # Building rows
+    building_rows = []
+    for i, (code_key, desc_key) in enumerate([
+        ("buildingConstruction1", "buildingConstruction1Desc"),
+        ("buildingConstruction2", "buildingConstruction2Desc"),
+        ("buildingConstruction3", "buildingConstruction3Desc"),
+    ], 1):
+        c = rec.get(code_key)
+        d = rec.get(desc_key) or BUILDING_TYPE_LOOKUP.get(str(c), "")
+        if c:
+            building_rows.append((c, d, i))
+
+    # Jinja2 helper: render a code chip
+    def code_chip(val, table, label):
+        if val is None or val == "": return ""
+        try: code_str = str(int(float(str(val)))).zfill(2)
+        except: code_str = str(val)
+        desc = VT_CODES.get(table, {}).get(str(int(float(str(val)))) if val else "", "")
+        tip  = f"{label}: {code_str} \u2014 {desc}" if desc else f"{label}: {code_str}"
+        tip  = tip.replace('"', '&quot;').replace("'", "&#39;")
+        from markupsafe import Markup
+        return Markup(f'<span class="code-chip" data-tip="{tip}">{code_str}</span>')
+
+    return render_template(
+        "ptt172_preview.html",
+        rec=rec,
+        rec_id=rec_id,
+        codes=VT_CODES,
+        code_chip=code_chip,
+        closing_date=fmtd(rec.get("closingDate")),
+        acquired_date=fmtd(rec.get("dateSellerAcquired")),
+        held_years=held_y,
+        held_months=held_m,
+        span_fmt=fmt_span(rec.get("span")),
+        building_rows=building_rows,
+    )
+
+
 @app.route("/ptt172")
 def ptt172():  # noqa: C901
     """Pre-filled PTT-172 PDF. Opens inline in browser by default.

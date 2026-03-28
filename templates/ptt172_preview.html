@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PTT-172 — {{ rec.propertyLocationStreet or '' }}, {{ rec.propertyLocationCity or '' }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; color: #222; font-size: 13px; }
+
+  .topbar {
+    background: #1F4E79; color: #fff; padding: 10px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .topbar h1 { font-size: 16px; font-weight: 700; }
+  .topbar .sub { font-size: 11px; color: #cce0ff; margin-top: 2px; }
+  .btn-dl {
+    background: #fff; color: #1F4E79; font-weight: 700; font-size: 13px;
+    padding: 8px 18px; border: none; border-radius: 5px; cursor: pointer;
+    text-decoration: none; display: inline-block;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .btn-dl:hover { background: #e8f0fe; }
+
+  .container { max-width: 860px; margin: 24px auto; padding: 0 16px 40px; }
+
+  .section {
+    background: #fff; border-radius: 8px; margin-bottom: 16px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .section-header {
+    background: #1F4E79; color: #fff; padding: 8px 16px;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.3px;
+  }
+  .section-body { padding: 12px 16px; }
+  .row {
+    display: flex; border-bottom: 1px solid #f0f0f0;
+    padding: 6px 0; align-items: baseline; gap: 8px;
+  }
+  .row:last-child { border-bottom: none; }
+  .row-label {
+    flex: 0 0 180px; font-weight: 600; color: #555; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .row-line {
+    flex: 0 0 36px; font-weight: 700; color: #1F4E79; font-size: 11px;
+  }
+  .row-value { flex: 1; color: #222; }
+
+  /* Code chip with tooltip */
+  .code-chip {
+    display: inline-block;
+    background: #e8f0fe; color: #1a3a5c;
+    border: 1px solid #b3c6f5; border-radius: 3px;
+    padding: 1px 6px; font-size: 12px; font-weight: 700;
+    cursor: help; position: relative; white-space: nowrap;
+  }
+  .code-chip::after {
+    content: attr(data-tip);
+    display: none;
+    position: absolute;
+    bottom: 130%; left: 50%;
+    transform: translateX(-50%);
+    background: #1a3a5c; color: #fff;
+    padding: 6px 10px; border-radius: 5px;
+    font-size: 11px; font-weight: normal;
+    white-space: normal; width: 260px;
+    z-index: 9999; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    line-height: 1.5; pointer-events: none;
+  }
+  .code-chip::before {
+    content: ''; display: none;
+    position: absolute; bottom: 120%; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #1a3a5c; z-index: 9999;
+  }
+  .code-chip:hover::after,
+  .code-chip:hover::before { display: block; }
+  .code-desc { font-size: 12px; color: #555; margin-left: 6px; }
+
+  .hint { font-size: 10px; color: #888; margin-top: 2px; font-style: italic; }
+  .check-val { font-weight: 600; }
+  .check-yes { color: #2d6a4f; }
+  .check-no  { color: #c0392b; }
+  .blank     { color: #aaa; font-style: italic; }
+
+  .tooltip-note {
+    background: #e8f0fe; border: 1px solid #b3c6f5; border-radius: 6px;
+    padding: 8px 14px; font-size: 11px; color: #1a3a5c; margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="h1" style="font-size:16px;font-weight:700;">PTT-172 — Property Transfer Tax Return</div>
+    <div class="sub">{{ rec.propertyLocationStreet or '' }}{% if rec.propertyLocationCity %}, {{ rec.propertyLocationCity }}{% endif %} &nbsp;|&nbsp; Closing: {{ closing_date }}</div>
+  </div>
+  <a class="btn-dl" href="/ptt172?id={{ rec_id }}&download=1">&#8659; Download PDF</a>
+</div>
+
+<div class="container">
+
+  <div class="tooltip-note">
+    &#9432; Hover over any <span class="code-chip" style="cursor:default;" data-tip="This is an example tooltip — hover over blue code chips to see descriptions.">00</span> blue code chip to see the full description from the PTT-172 instructions.
+  </div>
+
+  <!-- SECTION A — Seller -->
+  <div class="section">
+    <div class="section-header">A. Transferor (Seller)</div>
+    <div class="section-body">
+      {% if rec.sellerEntityName %}
+      <div class="row"><span class="row-label">Entity Name</span><span class="row-value">{{ rec.sellerEntityName }}</span></div>
+      {% endif %}
+      {% if rec.sellerLastName or rec.sellerFirstName %}
+      <div class="row"><span class="row-label">Individual Name</span><span class="row-value">{{ rec.sellerFirstName or '' }} {{ rec.sellerLastName or '' }}</span></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- SECTION B — Buyer -->
+  <div class="section">
+    <div class="section-header">B. Transferee (Buyer)</div>
+    <div class="section-body">
+      {% if rec.buyerEntityName %}
+      <div class="row"><span class="row-label">Entity Name</span><span class="row-value">{{ rec.buyerEntityName }}</span></div>
+      {% endif %}
+      {% if rec.buyerLastName or rec.buyerFirstName %}
+      <div class="row"><span class="row-label">Individual Name</span><span class="row-value">{{ rec.buyerFirstName or '' }} {{ rec.buyerLastName or '' }}</span></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- SECTION C — Property -->
+  <div class="section">
+    <div class="section-header">C. Property Information</div>
+    <div class="section-body">
+      <div class="row"><span class="row-label">Address</span><span class="row-value">{{ rec.propertyLocationStreet or '—' }}, {{ rec.propertyLocationCity or '' }}</span></div>
+      <div class="row"><span class="row-label">SPAN</span><span class="row-value">{{ span_fmt or '—' }}</span></div>
+      <div class="row"><span class="row-label">Land Size</span><span class="row-value">{% if rec.landSize %}{{ rec.landSize }} acres{% else %}<span class="blank">No land involved</span>{% endif %}</span></div>
+    </div>
+  </div>
+
+  <!-- SECTION D — Holding Period -->
+  <div class="section">
+    <div class="section-header">D. Holding Period</div>
+    <div class="section-body">
+      <div class="row"><span class="row-label">Date Acquired</span><span class="row-value">{{ acquired_date or '—' }}</span></div>
+      <div class="row"><span class="row-label">Date of Closing</span><span class="row-value">{{ closing_date or '—' }}</span></div>
+      <div class="row"><span class="row-label">Time Held</span><span class="row-value">{{ held_years }} years, {{ held_months }} months</span></div>
+    </div>
+  </div>
+
+  <!-- SECTION E — Exemptions -->
+  <div class="section">
+    <div class="section-header">E. Exemptions</div>
+    <div class="section-body">
+      <div class="row">
+        <span class="row-line">E1</span>
+        <span class="row-label">PTT Exemption</span>
+        <span class="row-value">
+          {{ code_chip(rec.propertyTaxExemption, 'ptt_exemptions', 'E1 PTT Exemption') }}
+          <span class="code-desc">{{ codes.ptt_exemptions.get(str(int(rec.propertyTaxExemption or 0))) or rec.propertyTaxExemptionDesc or '' }}</span>
+        </span>
+      </div>
+      {% if rec.familyMember and rec.familyMember != 0 %}
+      <div class="row">
+        <span class="row-line">E2</span>
+        <span class="row-label">Family Member</span>
+        <span class="row-value">
+          {{ code_chip(rec.familyMember, 'family_member_codes', 'E2 Family Member') }}
+          <span class="code-desc">{{ codes.family_member_codes.get(str(int(rec.familyMember or 0))) or rec.familyMemberDesc or '' }}</span>
+        </span>
+      </div>
+      {% endif %}
+      <div class="row">
+        <span class="row-line">E3</span>
+        <span class="row-label">Land Gains Exemption</span>
+        <span class="row-value">
+          {{ code_chip(rec.LGTExemption, 'land_gains_exemptions', 'E3 Land Gains') }}
+          <span class="code-desc">{{ codes.land_gains_exemptions.get(str(int(rec.LGTExemption or 0))) or rec.LGTExemptionDesc or '' }}</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION F — Transfer Info -->
+  <div class="section">
+    <div class="section-header">F. Transfer Information</div>
+    <div class="section-body">
+      <div class="row">
+        <span class="row-line">F1</span>
+        <span class="row-label">How Acquired</span>
+        <span class="row-value">
+          {{ code_chip(rec.sellerAcquire, 'how_acquired_codes', 'F1 How Acquired') }}
+          <span class="code-desc">{{ codes.how_acquired_codes.get(str(int(rec.sellerAcquire or 0))) or rec.sellerAcquireDesc or '' }}</span>
+        </span>
+      </div>
+      <div class="row">
+        <span class="row-line">F2</span>
+        <span class="row-label">Interest Type</span>
+        <span class="row-value">
+          {{ code_chip(rec.interestPropertyType, 'interest_types', 'F2 Interest Type') }}
+          <span class="code-desc">{{ codes.interest_types.get(str(int(rec.interestPropertyType or 0))) or rec.interestUndivPercentDesc or '' }}</span>
+        </span>
+      </div>
+      {% for bldg_code, bldg_desc, bldg_num in building_rows %}
+      <div class="row">
+        <span class="row-line">F3{% if bldg_num > 1 %}-{{ bldg_num }}{% endif %}</span>
+        <span class="row-label">Building Type</span>
+        <span class="row-value">
+          {{ code_chip(bldg_code, 'building_types', 'F3 Building Type') }}
+          <span class="code-desc">{{ bldg_desc }}</span>
+        </span>
+      </div>
+      {% endfor %}
+      <div class="row">
+        <span class="row-line">F4</span>
+        <span class="row-label">Tenant Prior</span>
+        <span class="row-value {{ 'check-yes' if rec.tenantPurchase == True else 'check-no' }}">{{ 'Yes' if rec.tenantPurchase == True else 'No' }}</span>
+      </div>
+      <div class="row">
+        <span class="row-line">F5</span>
+        <span class="row-label">Financing</span>
+        <span class="row-value">{{ rec.financing or '—' }}</span>
+      </div>
+      <div class="row">
+        <span class="row-line">F6</span>
+        <span class="row-label">Record within 60 days</span>
+        <span class="row-value">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION G — Current Use -->
+  <div class="section">
+    <div class="section-header">G. Agricultural / Managed Forest Land Use Value Program</div>
+    <div class="section-body">
+      <div class="row">
+        <span class="row-line">G1</span>
+        <span class="row-label">Enrolled in Current Use</span>
+        <span class="row-value {{ 'check-yes' if rec.enrolledCurrentUse == True else 'check-no' }}">{{ 'Yes' if rec.enrolledCurrentUse == True else 'No' }}</span>
+      </div>
+      <div class="row">
+        <span class="row-line">G2</span>
+        <span class="row-label">Continue Enrollment</span>
+        <span class="row-value {{ 'check-yes' if rec.currentUseEnrollmentContinue == True else 'check-no' }}">{{ 'Yes' if rec.currentUseEnrollmentContinue == True else 'No' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION H — Use of Property -->
+  <div class="section">
+    <div class="section-header">H. Transfer Information — Use of Property</div>
+    <div class="section-body">
+      <div class="row">
+        <span class="row-line">H1</span>
+        <span class="row-label">Seller Use (Before)</span>
+        <span class="row-value">
+          {{ code_chip(rec.sellerUseOfProperty, 'use_of_property', 'H1 Seller Use') }}
+          <span class="code-desc">{{ codes.use_of_property.get(str(int(rec.sellerUseOfProperty or 0))) or rec.sellerUseOfPropertyDesc or '' }}</span>
+        </span>
+      </div>
+      <div class="row">
+        <span class="row-line">H2</span>
+        <span class="row-label">Buyer Use (After)</span>
+        <span class="row-value">
+          {{ code_chip(rec.buyerUseOfProperty, 'use_of_property', 'H2 Buyer Use') }}
+          <span class="code-desc">{{ codes.use_of_property.get(str(int(rec.buyerUseOfProperty or 0))) or rec.buyerUseOfPropertyDesc or '' }}</span>
+        </span>
+      </div>
+      <div class="row">
+        <span class="row-line">H3</span>
+        <span class="row-label">Rented Before</span>
+        <span class="row-value {{ 'check-yes' if rec.rentedBefore == True else 'check-no' }}">{{ 'Yes' if rec.rentedBefore == True else 'No' }}</span>
+      </div>
+      <div class="row">
+        <span class="row-line">H4</span>
+        <span class="row-label">Rented After</span>
+        <span class="row-value {{ 'check-yes' if rec.rentedAfter == True else 'check-no' }}">{{ 'Yes' if rec.rentedAfter == True else 'No' }}</span>
+      </div>
+      <div class="row">
+        <span class="row-line">H5</span>
+        <span class="row-label">Development Rights Conveyed Separately</span>
+        <span class="row-value {{ 'check-yes' if rec.developmentPrevConv == True else 'check-no' }}">{{ 'Yes' if rec.developmentPrevConv == True else 'No' }}</span>
+      </div>
+      <div class="row">
+        <span class="row-line">H6</span>
+        <span class="row-label">Buyer Holds Adjoining Property</span>
+        <span class="row-value {{ 'check-yes' if rec.buyerAdjoiningProperty == True else 'check-no' }}">{{ 'Yes' if rec.buyerAdjoiningProperty == True else 'No' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION J — Tax -->
+  <div class="section">
+    <div class="section-header">J. Tax Calculation</div>
+    <div class="section-body">
+      <div class="row"><span class="row-line">J8</span><span class="row-label">Value Paid or Transferred</span><span class="row-value">${{ '{:,.2f}'.format(rec.ValuePaidOrTransferred or 0) }}</span></div>
+      <div class="row"><span class="row-line">J9</span><span class="row-label">Personal Property Value</span><span class="row-value">${{ '{:,.2f}'.format(rec.PersonalPropValuePaidOrTrans or 0) }}</span></div>
+      <div class="row"><span class="row-line">J10</span><span class="row-label">Real Property Value</span><span class="row-value">${{ '{:,.2f}'.format(rec.RealPropValuePaidOrTrans or 0) }}</span></div>
+      <div class="row"><span class="row-line">J14</span><span class="row-label">General Rate Tax Due</span><span class="row-value">${{ '{:,.2f}'.format(rec.GenRateTaxDue or 0) }}</span></div>
+      <div class="row"><span class="row-line">J15</span><span class="row-label">Total Tax Due</span><span class="row-value" style="font-weight:700;">${{ '{:,.2f}'.format(rec.TotalTaxDue or 0) }}</span></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
