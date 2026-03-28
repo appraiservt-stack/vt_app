@@ -1697,29 +1697,66 @@ def ptt172_preview():
         if c:
             building_rows.append((c, d, i))
 
-    # Jinja2 helper: render a code chip
-    def code_chip(val, table, label):
-        if val is None or val == "": return ""
+    from markupsafe import Markup
+
+    # Pre-compute all code chip HTML so template needs no Python logic
+    def mk_chip(val, table, label):
+        if val is None or str(val).strip() == "": return Markup("")
         try: code_str = str(int(float(str(val)))).zfill(2)
         except: code_str = str(val)
-        desc = VT_CODES.get(table, {}).get(str(int(float(str(val)))) if val else "", "")
+        desc = VT_CODES.get(table, {}).get(str(int(float(str(val)))), "") if val else ""
         tip  = f"{label}: {code_str} \u2014 {desc}" if desc else f"{label}: {code_str}"
         tip  = tip.replace('"', '&quot;').replace("'", "&#39;")
-        from markupsafe import Markup
         return Markup(f'<span class="code-chip" data-tip="{tip}">{code_str}</span>')
+
+    def code_desc(val, table):
+        if val is None or str(val).strip() == "": return ""
+        try: key = str(int(float(str(val))))
+        except: key = str(val)
+        return VT_CODES.get(table, {}).get(key, "")
+
+    chips = {
+        "e1": mk_chip(rec.get("propertyTaxExemption"),  "ptt_exemptions",       "E1 PTT Exemption"),
+        "e2": mk_chip(rec.get("familyMember"),           "family_member_codes",  "E2 Family Member"),
+        "e3": mk_chip(rec.get("LGTExemption"),           "land_gains_exemptions","E3 Land Gains"),
+        "f1": mk_chip(rec.get("sellerAcquire"),          "how_acquired_codes",   "F1 How Acquired"),
+        "f2": mk_chip(rec.get("interestPropertyType"),   "interest_types",       "F2 Interest Type"),
+        "h1": mk_chip(rec.get("sellerUseOfProperty"),    "use_of_property",      "H1 Seller Use"),
+        "h2": mk_chip(rec.get("buyerUseOfProperty"),     "use_of_property",      "H2 Buyer Use"),
+    }
+    descs = {
+        "e1": code_desc(rec.get("propertyTaxExemption"),  "ptt_exemptions")       or rec.get("propertyTaxExemptionDesc",""),
+        "e2": code_desc(rec.get("familyMember"),           "family_member_codes")  or rec.get("familyMemberDesc",""),
+        "e3": code_desc(rec.get("LGTExemption"),           "land_gains_exemptions") or rec.get("LGTExemptionDesc",""),
+        "f1": code_desc(rec.get("sellerAcquire"),          "how_acquired_codes")   or rec.get("sellerAcquireDesc",""),
+        "f2": code_desc(rec.get("interestPropertyType"),   "interest_types")       or rec.get("interestUndivPercentDesc",""),
+        "h1": code_desc(rec.get("sellerUseOfProperty"),    "use_of_property")      or rec.get("sellerUseOfPropertyDesc",""),
+        "h2": code_desc(rec.get("buyerUseOfProperty"),     "use_of_property")      or rec.get("buyerUseOfPropertyDesc",""),
+    }
+    # Building chips
+    bldg_chips = []
+    for i, (ck, dk) in enumerate([
+        ("buildingConstruction1","buildingConstruction1Desc"),
+        ("buildingConstruction2","buildingConstruction2Desc"),
+        ("buildingConstruction3","buildingConstruction3Desc"),
+    ], 1):
+        c = rec.get(ck)
+        if c:
+            d = code_desc(c, "building_types") or rec.get(dk, "")
+            bldg_chips.append((mk_chip(c, "building_types", f"F3 Building Type"), d, i))
 
     return render_template(
         "ptt172_preview.html",
         rec=rec,
         rec_id=rec_id,
-        codes=VT_CODES,
-        code_chip=code_chip,
+        chips=chips,
+        descs=descs,
+        bldg_chips=bldg_chips,
         closing_date=fmtd(rec.get("closingDate")),
         acquired_date=fmtd(rec.get("dateSellerAcquired")),
         held_years=held_y,
         held_months=held_m,
         span_fmt=fmt_span(rec.get("span")),
-        building_rows=building_rows,
     )
 
 
