@@ -2269,14 +2269,10 @@ def ptt172():  # noqa: C901
 @app.route("/contact", methods=["POST"])
 @login_required
 def contact():
-    """Handle contact form submission — sends email via Gmail SMTP."""
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-
-    GMAIL_USER = os.environ.get("CONTACT_GMAIL_USER", "vtrealestatesales@gmail.com")
-    GMAIL_PASS = os.environ.get("CONTACT_GMAIL_PASS", "")
-    NOTIFY_EMAIL = os.environ.get("CONTACT_NOTIFY_EMAIL", "vtrealestatesales@gmail.com")
+    """Handle contact form submission — sends email via Resend HTTP API."""
+    RESEND_API_KEY  = os.environ.get("RESEND_API_KEY", "")
+    NOTIFY_EMAIL    = os.environ.get("CONTACT_NOTIFY_EMAIL", "vtrealestatesales@gmail.com")
+    FROM_EMAIL      = os.environ.get("CONTACT_FROM_EMAIL", "onboarding@resend.dev")
 
     data        = request.get_json() or {}
     user_email  = data.get("email", "").strip()
@@ -2286,13 +2282,6 @@ def contact():
     if not message:
         return jsonify({"error": "Message is required."}), 400
 
-    # Build email
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"[VT Property Sales] {subject_cat}"
-    msg["From"]    = GMAIL_USER
-    msg["To"]      = NOTIFY_EMAIL
-    msg["Reply-To"] = user_email if user_email else GMAIL_USER
-
     body = f"""From: {user_email or 'Unknown'}
 Category: {subject_cat}
 
@@ -2301,17 +2290,31 @@ Category: {subject_cat}
 ---
 Sent via VT Property Sales contact form"""
 
-    msg.attach(MIMEText(body, "plain"))
+    payload = {
+        "from":     FROM_EMAIL,
+        "to":       [NOTIFY_EMAIL],
+        "reply_to": user_email if user_email else NOTIFY_EMAIL,
+        "subject":  f"[VT Property Sales] {subject_cat}",
+        "text":     body,
+    }
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.login(GMAIL_USER, GMAIL_PASS)
-            smtp.sendmail(GMAIL_USER, NOTIFY_EMAIL, msg.as_string())
-        return jsonify({"ok": True})
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type":  "application/json",
+            },
+            json=payload,
+            timeout=10,
+        )
+        if resp.status_code in (200, 201):
+            return jsonify({"ok": True})
+        else:
+            app.logger.error(f"Resend error {resp.status_code}: {resp.text}")
+            return jsonify({"error": "Failed to send message. Please try again."}), 500
     except Exception as e:
-        app.logger.error(f"Contact form email error: {e}")
+        app.logger.error(f"Contact form error: {e}")
         return jsonify({"error": "Failed to send message. Please try again."}), 500
 
 
