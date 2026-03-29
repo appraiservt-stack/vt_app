@@ -2276,7 +2276,7 @@ def contact():
 
     GMAIL_USER = os.environ.get("CONTACT_GMAIL_USER", "vtrealestatesales@gmail.com")
     GMAIL_PASS = os.environ.get("CONTACT_GMAIL_PASS", "")
-    NOTIFY_EMAIL = os.environ.get("CONTACT_NOTIFY_EMAIL", "appraiservt@gmail.com")
+    NOTIFY_EMAIL = os.environ.get("CONTACT_NOTIFY_EMAIL", "vtrealestatesales@gmail.com")
 
     data        = request.get_json() or {}
     user_email  = data.get("email", "").strip()
