@@ -2304,7 +2304,9 @@ Sent via VT Property Sales contact form"""
     msg.attach(MIMEText(body, "plain"))
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
             smtp.login(GMAIL_USER, GMAIL_PASS)
             smtp.sendmail(GMAIL_USER, NOTIFY_EMAIL, msg.as_string())
         return jsonify({"ok": True})
