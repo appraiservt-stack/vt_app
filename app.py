@@ -2266,5 +2266,52 @@ def ptt172():  # noqa: C901
                     headers={"Content-Disposition": disposition})
 
 
+@app.route("/contact", methods=["POST"])
+@login_required
+def contact():
+    """Handle contact form submission — sends email via Gmail SMTP."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    GMAIL_USER = os.environ.get("CONTACT_GMAIL_USER", "vtrealestatesales@gmail.com")
+    GMAIL_PASS = os.environ.get("CONTACT_GMAIL_PASS", "")
+    NOTIFY_EMAIL = os.environ.get("CONTACT_NOTIFY_EMAIL", "appraiservt@gmail.com")
+
+    data        = request.get_json() or {}
+    user_email  = data.get("email", "").strip()
+    subject_cat = data.get("category", "General").strip()
+    message     = data.get("message", "").strip()
+
+    if not message:
+        return jsonify({"error": "Message is required."}), 400
+
+    # Build email
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"[VT Property Sales] {subject_cat}"
+    msg["From"]    = GMAIL_USER
+    msg["To"]      = NOTIFY_EMAIL
+    msg["Reply-To"] = user_email if user_email else GMAIL_USER
+
+    body = f"""From: {user_email or 'Unknown'}
+Category: {subject_cat}
+
+{message}
+
+---
+Sent via VT Property Sales contact form"""
+
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(GMAIL_USER, GMAIL_PASS)
+            smtp.sendmail(GMAIL_USER, NOTIFY_EMAIL, msg.as_string())
+        return jsonify({"ok": True})
+    except Exception as e:
+        app.logger.error(f"Contact form email error: {e}")
+        return jsonify({"error": "Failed to send message. Please try again."}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)
