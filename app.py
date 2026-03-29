@@ -2272,7 +2272,7 @@ def contact():
     """Handle contact form submission — sends email via Resend HTTP API."""
     RESEND_API_KEY  = os.environ.get("RESEND_API_KEY", "")
     NOTIFY_EMAIL    = os.environ.get("CONTACT_NOTIFY_EMAIL", "vtrealestatesales@gmail.com")
-    FROM_EMAIL      = os.environ.get("CONTACT_FROM_EMAIL", "onboarding@resend.dev")
+    FROM_EMAIL      = os.environ.get("CONTACT_FROM_EMAIL", "info@vtpropertysales.com")
 
     data        = request.get_json() or {}
     user_email  = data.get("email", "").strip()
