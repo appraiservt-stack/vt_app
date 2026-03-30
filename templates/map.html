@@ -978,20 +978,32 @@ if(!map.getPane('femaPane')){
   fp.style.pointerEvents = 'none';
 }
 
-// Helper: build a Leaflet TileLayer from an ArcGIS dynamic MapServer export endpoint
+// Helper: build a Leaflet TileLayer from an ArcGIS dynamic MapServer export endpoint.
+// baseUrl can be a direct URL or a /proxy/wms?url=... string.
 function esriDynamicLayer(baseUrl, layers, pane, opacity){
-  return L.tileLayer(baseUrl + '/export?bbox={bbox-epsg-3857}&bboxSR=3857&layers=show:' + layers +
-    '&size=256,256&imageSR=3857&format=png32&transparent=true&f=image', {
+  // If going through proxy, append export path + params to the proxied URL
+  let tileUrl;
+  if(baseUrl.startsWith('/proxy/wms?url=')){
+    const encodedExportUrl = baseUrl.replace('/proxy/wms?url=', '') +
+      encodeURIComponent('/export');
+    tileUrl = '/proxy/wms?url=' + encodedExportUrl +
+      '&bbox={bbox-epsg-3857}&bboxSR=3857&layers=show:' + encodeURIComponent(layers) +
+      '&size=256,256&imageSR=3857&format=png32&transparent=true&f=image';
+  } else {
+    tileUrl = baseUrl + '/export?bbox={bbox-epsg-3857}&bboxSR=3857&layers=show:' + layers +
+      '&size=256,256&imageSR=3857&format=png32&transparent=true&f=image';
+  }
+  return L.tileLayer(tileUrl, {
     tileSize: 256,
     pane: pane,
     opacity: opacity,
     attribution: 'VT ANR / FEMA',
-    bounds: L.latLngBounds([42.7, -73.5], [45.1, -71.4]) // VT only
+    bounds: L.latLngBounds([42.7, -73.5], [45.1, -71.4])
   });
 }
 
 const femaFloodLayer = esriDynamicLayer(
-  'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer',
+  PROXY('https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer'),
   '28', 'femaPane', 0.7
 );
 let femaOn = false;
@@ -1007,7 +1019,7 @@ if(!map.getPane('wetlandsPane')){
 }
 
 const wetlandsLayer = esriDynamicLayer(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer',
+  PROXY('https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer'),
   '14,15', 'wetlandsPane', 0.7
 );
 let wetlandsOn = false;
@@ -1022,7 +1034,7 @@ if(!map.getPane('protectedPane')){
 }
 
 const protectedLandsLayer = esriDynamicLayer(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer',
+  PROXY('https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer'),
   '39', 'protectedPane', 0.6
 );
 let protectedOn = false;
