@@ -1728,7 +1728,7 @@ function loadData(){
     .then(r => r.json())
     .then(data => { _dataXhr = null; renderData(data.data || []); })
     .catch(e => { if(e.name !== 'AbortError') console.warn('Data fetch error:', e); });
-  }, 300); // 300ms debounce
+  }, 150); // 150ms debounce
 }
 
 // ===================================================
@@ -2145,7 +2145,20 @@ function initMapEvents(){
   restoreBdySettings();
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
-  loadData();
+  // Fire initial load immediately (no debounce)
+  if(_loadDataTimer) clearTimeout(_loadDataTimer);
+  const b = map.getBounds();
+  const params = buildFilterParams();
+  const latPad = (b.getNorth() - b.getSouth()) * 0.10;
+  const lonPad = (b.getEast()  - b.getWest())  * 0.10;
+  params.set("xmin", b.getWest()  - lonPad);
+  params.set("ymin", b.getSouth() - latPad);
+  params.set("xmax", b.getEast()  + lonPad);
+  params.set("ymax", b.getNorth() + latPad);
+  document.getElementById("statusBar").textContent = "Loading...";
+  fetch("/data?" + params.toString())
+  .then(r => r.json())
+  .then(data => { renderData(data.data || []); });
 }
 
 loadCodes();
