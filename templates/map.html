@@ -985,14 +985,14 @@ if(!map.getPane('femaPane')){
 }
 
 const femaFloodLayer = L.tileLayer.wms(
-  PROXY('https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/WMSServer'), {
-  layers: '28',
+  PROXY('https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer/WMSServer'), {
+  layers: '16,18',
   format: 'image/png',
   transparent: true,
   version: '1.3.0',
   pane: 'femaPane',
   opacity: 0.7,
-  attribution: 'FEMA NFHL'
+  attribution: 'VT ANR / FEMA'
 });
 let femaOn = false;
 function loadFema(){} // no-op — WMS tiles load automatically
@@ -1660,6 +1660,9 @@ function applyFilters(){
 // ===================================================
 // LOAD DATA (MAP) — viewport-bounded fetch
 // ===================================================
+let _dataXhr = null;  // cancel in-flight data request on new move
+let _loadDataTimer = null; // debounce timer
+
 function loadData(){
   // If a name search cache is active, just re-render from it (no new fetch)
   if(nameSearchCache !== null){
@@ -1667,22 +1670,32 @@ function loadData(){
     return;
   }
 
-  const b      = map.getBounds();
-  const params = buildFilterParams();
-  // Expand bounds by ~10% so approximate markers (town centroids near the
-  // viewport edge) don't get clipped out of the fetch at certain zoom levels.
-  const latPad = (b.getNorth() - b.getSouth()) * 0.10;
-  const lonPad = (b.getEast()  - b.getWest())  * 0.10;
-  params.set("xmin", b.getWest()  - lonPad);
-  params.set("ymin", b.getSouth() - latPad);
-  params.set("xmax", b.getEast()  + lonPad);
-  params.set("ymax", b.getNorth() + latPad);
+  // Debounce: cancel pending timer and abort in-flight request
+  if(_loadDataTimer) clearTimeout(_loadDataTimer);
+  if(_dataXhr){ _dataXhr.abort(); _dataXhr = null; }
 
-  document.getElementById("statusBar").textContent = "Loading...";
+  _loadDataTimer = setTimeout(() => {
+    const b      = map.getBounds();
+    const params = buildFilterParams();
+    // Expand bounds by ~10% so approximate markers (town centroids near the
+    // viewport edge) don't get clipped out of the fetch at certain zoom levels.
+    const latPad = (b.getNorth() - b.getSouth()) * 0.10;
+    const lonPad = (b.getEast()  - b.getWest())  * 0.10;
+    params.set("xmin", b.getWest()  - lonPad);
+    params.set("ymin", b.getSouth() - latPad);
+    params.set("xmax", b.getEast()  + lonPad);
+    params.set("ymax", b.getNorth() + latPad);
 
-  fetch("/data?" + params.toString())
-  .then(r => r.json())
-  .then(data => { renderData(data.data || []); });
+    document.getElementById("statusBar").textContent = "Loading...";
+
+    const ctrl = new AbortController();
+    _dataXhr = ctrl;
+
+    fetch("/data?" + params.toString(), { signal: ctrl.signal })
+    .then(r => r.json())
+    .then(data => { _dataXhr = null; renderData(data.data || []); })
+    .catch(e => { if(e.name !== 'AbortError') console.warn('Data fetch error:', e); });
+  }, 300); // 300ms debounce
 }
 
 // ===================================================
