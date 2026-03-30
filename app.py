@@ -2329,7 +2329,6 @@ WMS_ALLOWED = [
 ]
 
 @app.route("/proxy/wms")
-@login_required
 def proxy_wms():
     from urllib.parse import urlparse, urlencode
     target_url = request.args.get('url', '')
