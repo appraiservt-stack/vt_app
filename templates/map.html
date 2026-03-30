@@ -921,6 +921,7 @@ let parcelXhr    = null;    // cancel in-flight request on new move
 
 const PARCEL_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
 const PARCEL_MIN_ZOOM = 14;
+const PARCEL_CACHE = new Map(); // cache parcel results by bbox key
 
 function loadParcels(){
   if(!parcelsOn) return;
@@ -940,6 +941,22 @@ function loadParcels(){
   const ne = toMerc(b.getEast(),  b.getNorth());
   const env = `${sw[0]},${sw[1]},${ne[0]},${ne[1]}`;
 
+  // Round bbox to cache key (~500m grid at zoom 14)
+  const rp = v => Math.round(v * 200) / 200;
+  const parcCacheKey = `${rp(b.getWest())},${rp(b.getSouth())},${rp(b.getEast())},${rp(b.getNorth())}`;
+  if(PARCEL_CACHE.has(parcCacheKey)){
+    parcelLayer.clearLayers();
+    const cached = PARCEL_CACHE.get(parcCacheKey);
+    (cached.features || []).forEach(feat => {
+      if(!feat.geometry || !feat.geometry.rings) return;
+      const gj = { type:'Feature', geometry:{type:'Polygon',coordinates:feat.geometry.rings}, properties:feat.attributes };
+      parcelLayer.addData(gj);
+    });
+    parcelLayer.setStyle(getParcelStyle());
+    parcelLayer.eachLayer(l => { bindParcelPopup(l); });
+    return;
+  }
+
   if(parcelXhr) parcelXhr.abort();
   const ctrl = new AbortController();
   parcelXhr = ctrl;
@@ -954,13 +971,16 @@ function loadParcels(){
     returnGeometry:  'true',
     outSR:           '4326',
     f:               'json',
-    resultRecordCount: '500'
+    resultRecordCount: '300'
   });
 
   fetch(PARCEL_URL + '?' + params.toString(), { signal: ctrl.signal })
   .then(r => r.json())
   .then(data => {
     if(data.error){ console.warn('Parcel query error:', data.error.message); return; }
+    // Store in cache
+    if(PARCEL_CACHE.size > 30) PARCEL_CACHE.delete(PARCEL_CACHE.keys().next().value);
+    PARCEL_CACHE.set(parcCacheKey, data);
     parcelLayer.clearLayers();
     (data.features || []).forEach(feat => {
       if(!feat.geometry || !feat.geometry.rings) return;
@@ -974,65 +994,63 @@ function loadParcels(){
     });
     // Apply current basemap-aware style then bind popups
     parcelLayer.setStyle(getParcelStyle());
-    parcelLayer.eachLayer(l => {
-      const p = l.feature.properties;
-      const fmt$ = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
-      const fmtN = v => (v != null && v !== '') ? Number(v).toLocaleString() : '—';
-      const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
-
-      const addr   = p.E911ADDR  || '';
-      const town   = p.TNAME     || '';
-      const span   = p.SPAN      || '';
-      const owner1 = p.OWNER1    || '';
-      const owner2 = p.OWNER2    || '';
-      const ptype  = p.PROPTYPE  || '';
-      const cat    = p.CAT       || '';
-      const glyear = p.GLYEAR    || '';
-      const acres  = fmtA(p.ACRESGL);
-      const realFLV  = fmt$(p.REAL_FLV);
-      const landLV   = fmt$(p.LAND_LV);
-      const imprvLV  = fmt$(p.IMPRV_LV);
-      const hstedFLV = fmt$(p.HSTED_FLV);
-      const munGL    = fmt$(p.MUNGL1PCT);
-      const hsdecl   = (p.HSDECL === 'Y' || p.HSDECL === true) ? 'Yes' : (p.HSDECL ? p.HSDECL : '—');
-
-      const html = `
-        <div style="font-size:12px; min-width:220px;">
-          <div style="background:#1a7a1a; color:white; font-weight:bold; padding:4px 8px;
-                      border-radius:3px 3px 0 0; margin-bottom:4px;">
-            &#x1F4CB; Grand List Data
-          </div>
-          <b>${addr}</b>${addr && town ? ', ' : ''}${town}<br>
-          ${owner1 ? `<span style="font-size:11px;">${owner1}${owner2 ? '<br>' + owner2 : ''}</span><br>` : ''}
-          <table style="font-size:11px; border-collapse:collapse; width:100%; margin-top:4px;">
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">SPAN:</td>
-                <td style="font-weight:bold;">${span}</td></tr>
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">Type:</td>
-                <td>${ptype}${cat ? ' / ' + cat : ''}</td></tr>
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">GL Year:</td>
-                <td>${glyear}</td></tr>
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">Acres (GL):</td>
-                <td>${acres}</td></tr>
-            <tr style="border-top:1px solid #eee;">
-                <td style="color:#555; padding:3px 4px 1px 0;">Listed Value:</td>
-                <td style="font-weight:bold;">${realFLV}</td></tr>
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">Land:</td>
-                <td>${landLV}</td></tr>
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">Improvements:</td>
-                <td>${imprvLV}</td></tr>
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Val:</td>
-                <td>${hstedFLV}</td></tr>
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">Mun. 1% GL:</td>
-                <td>${munGL}</td></tr>
-            <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Decl:</td>
-                <td>${hsdecl}</td></tr>
-          </table>
-        </div>`;
-
-      l.bindPopup(html, { maxWidth: 260, maxHeight: 380 });
-    });
+    parcelLayer.eachLayer(l => { bindParcelPopup(l); });
   })
   .catch(e => { if(e.name !== 'AbortError') console.warn('Parcel fetch error:', e); });
+}
+
+function bindParcelPopup(l) {
+  const p = l.feature.properties;
+  const fmt$ = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
+  const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
+  const addr   = p.E911ADDR  || '';
+  const town   = p.TNAME     || '';
+  const span   = p.SPAN      || '';
+  const owner1 = p.OWNER1    || '';
+  const owner2 = p.OWNER2    || '';
+  const ptype  = p.PROPTYPE  || '';
+  const cat    = p.CAT       || '';
+  const glyear = p.GLYEAR    || '';
+  const acres  = fmtA(p.ACRESGL);
+  const realFLV  = fmt$(p.REAL_FLV);
+  const landLV   = fmt$(p.LAND_LV);
+  const imprvLV  = fmt$(p.IMPRV_LV);
+  const hstedFLV = fmt$(p.HSTED_FLV);
+  const munGL    = fmt$(p.MUNGL1PCT);
+  const hsdecl   = (p.HSDECL === 'Y' || p.HSDECL === true) ? 'Yes' : (p.HSDECL ? p.HSDECL : '—');
+  const html = `
+    <div style="font-size:12px; min-width:220px;">
+      <div style="background:#1a7a1a; color:white; font-weight:bold; padding:4px 8px;
+                  border-radius:3px 3px 0 0; margin-bottom:4px;">
+        &#x1F4CB; Grand List Data
+      </div>
+      <b>${addr}</b>${addr && town ? ', ' : ''}${town}<br>
+      ${owner1 ? `<span style="font-size:11px;">${owner1}${owner2 ? '<br>' + owner2 : ''}</span><br>` : ''}
+      <table style="font-size:11px; border-collapse:collapse; width:100%; margin-top:4px;">
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">SPAN:</td>
+            <td style="font-weight:bold;">${span}</td></tr>
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">Type:</td>
+            <td>${ptype}${cat ? ' / ' + cat : ''}</td></tr>
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">GL Year:</td>
+            <td>${glyear}</td></tr>
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">Acres (GL):</td>
+            <td>${acres}</td></tr>
+        <tr style="border-top:1px solid #eee;">
+            <td style="color:#555; padding:3px 4px 1px 0;">Listed Value:</td>
+            <td style="font-weight:bold;">${realFLV}</td></tr>
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">Land:</td>
+            <td>${landLV}</td></tr>
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">Improvements:</td>
+            <td>${imprvLV}</td></tr>
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Val:</td>
+            <td>${hstedFLV}</td></tr>
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">Mun. 1% GL:</td>
+            <td>${munGL}</td></tr>
+        <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Decl:</td>
+            <td>${hsdecl}</td></tr>
+      </table>
+    </div>`;
+  l.bindPopup(html, { maxWidth: 260, maxHeight: 380 });
 }
 
 // ---- FEMA FLOOD ZONES OVERLAY ----
@@ -1046,7 +1064,7 @@ function loadParcels(){
 // Refreshes on pan/zoom while the overlay is enabled.
 
 const FEMA_URL     = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
-const FEMA_MIN_ZOOM = 13;  // don't fetch below this zoom — more focused tiles
+const FEMA_MIN_ZOOM = 12;  // don't fetch below this zoom
 const FEMA_CACHE = new Map(); // cache fetched results by bbox key
 
 const FEMA_ZONE_STYLE = {
