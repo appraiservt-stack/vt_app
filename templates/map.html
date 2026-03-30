@@ -979,7 +979,7 @@ if(!map.getPane('femaPane')){
 }
 
 const femaFloodLayer = L.tileLayer.wms(
-  PROXY('https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer/WMSServer'), {
+  'https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer/WMSServer', {
   layers: '16,18',
   format: 'image/png',
   transparent: true,
@@ -1001,7 +1001,7 @@ if(!map.getPane('wetlandsPane')){
 }
 
 const wetlandsLayer = L.tileLayer.wms(
-  PROXY('https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer/WMSServer'), {
+  'https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer/WMSServer', {
   layers: '14,15',
   format: 'image/png',
   transparent: true,
@@ -1022,7 +1022,7 @@ if(!map.getPane('protectedPane')){
 }
 
 const protectedLandsLayer = L.tileLayer.wms(
-  PROXY('https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/WMSServer'), {
+  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/WMSServer', {
   layers: '39',
   format: 'image/png',
   transparent: true,
@@ -1652,8 +1652,8 @@ function applyFilters(){
 
   // If exactly one county is selected, zoom to it automatically
   const checkedCounties = [];
-  document.querySelectorAll('#countyContainer input[type=checkbox]:checked').forEach(cb => {
-    checkedCounties.push(cb.dataset.code);
+  document.querySelectorAll('#countyContainer .county-header input[type=checkbox]:checked').forEach(cb => {
+    checkedCounties.push(cb.value);
   });
   // County center coordinates for auto-zoom
   const COUNTY_CENTERS = {
