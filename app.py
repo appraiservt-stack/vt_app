@@ -918,9 +918,11 @@ def data():
         filters.get("street"),        filters.get("span"),
     ]
     has_name_filter = any(v for v in name_fields)
+    has_town_filter = bool(filters.get("towns", "").strip())
 
-    if has_name_filter:
-        # No geometry restriction — search the full dataset
+    if has_name_filter or has_town_filter:
+        # No geometry restriction — let SQL filters do all the work
+        # so all matching records statewide are returned regardless of viewport
         features = fetch_all_features(where)
     else:
         geo_params = {

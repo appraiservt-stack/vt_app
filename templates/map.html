@@ -1308,6 +1308,16 @@ function loadCodes(){
   .then(data => {
     CODES = data;
     TOWN_CENTROIDS = data.town_centroids || {};
+    // Pre-populate town lists from centroids so they're available before data loads
+    Object.entries(TOWN_CENTROIDS).forEach(([town, info]) => {
+      const code = String(info.county).padStart(2, '0');
+      if(!townsByCounty[code]) townsByCounty[code] = new Set();
+      townsByCounty[code].add(town);
+    });
+    // Rebuild all town flyouts with pre-populated towns
+    for(const code of Object.keys(townsByCounty)){
+      rebuildTownListForCounty(code);
+    }
     // Build checkbox lists — default = ONE item checked per group
     buildCheckboxList('buildingList',  CODES.building_types);
     buildCheckboxList('interestList',  CODES.interest_types);
