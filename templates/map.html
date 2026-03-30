@@ -1659,24 +1659,42 @@ function applyFilters(){
   document.getElementById("statusBar").textContent = "Loading...";
 
   // If exactly one county is selected, zoom to it automatically
-  const checkedCounties = [];
-  document.querySelectorAll('#countyContainer .county-header input[type=checkbox]:checked').forEach(cb => {
-    checkedCounties.push(cb.value);
-  });
-  // County center coordinates for auto-zoom
-  const COUNTY_CENTERS = {
-    "01":[44.03,-73.15],"02":[43.03,-73.10],"03":[44.48,-72.08],
-    "04":[44.47,-73.07],"05":[44.72,-71.73],"06":[44.78,-72.92],
-    "07":[44.72,-73.28],"08":[44.55,-72.57],"09":[43.97,-72.33],
-    "10":[44.82,-72.28],"11":[43.62,-72.97],"12":[44.27,-72.58],
-    "13":[43.03,-72.63],"14":[43.58,-72.53]
+  // Use selectedCounties Set which is the authoritative source of checked counties
+  const checkedCounties = Array.from(selectedCounties);
+  // County bounding boxes [minLat, minLon, maxLat, maxLon] for auto-zoom
+  const COUNTY_BOUNDS = {
+    "01":[43.7531,-73.4379,44.3038,-72.7422],  // Addison
+    "02":[42.7392,-73.2909,43.3145,-72.8196],  // Bennington
+    "03":[44.1560,-72.4347,44.7695,-71.8371],  // Caledonia
+    "04":[44.1614,-73.3620,44.7228,-72.8024],  // Chittenden
+    "05":[44.3480,-71.9748,45.0137,-71.4654],  // Essex
+    "06":[44.6332,-73.2590,45.0167,-72.5333],  // Franklin
+    "07":[44.5645,-73.3902,45.0135,-73.1913],  // Grand Isle
+    "08":[44.3983,-72.9273,44.8040,-72.3684],  // Lamoille
+    "09":[43.7713,-72.7918,44.2208,-72.0307],  // Orange
+    "10":[44.5425,-72.5791,45.0088,-71.8779],  // Orleans
+    "11":[43.2906,-73.4313,43.8581,-72.6998],  // Rutland
+    "12":[44.0128,-72.9522,44.5052,-72.2171],  // Washington
+    "13":[42.7270,-73.0081,43.2629,-72.4325],  // Windham
+    "14":[43.2226,-72.9802,43.9623,-72.2054]   // Windsor
   };
-  if(checkedCounties.length === 1){
-    const centroid = COUNTY_CENTERS[checkedCounties[0]];
-    if(centroid){
+  if(checkedCounties.length >= 1){
+    // Build combined bounding box of all selected counties
+    let minLat=90, minLon=180, maxLat=-90, maxLon=-180;
+    let found = false;
+    checkedCounties.forEach(code => {
+      const b = COUNTY_BOUNDS[code];
+      if(b){
+        found = true;
+        minLat = Math.min(minLat, b[0]); minLon = Math.min(minLon, b[1]);
+        maxLat = Math.max(maxLat, b[2]); maxLon = Math.max(maxLon, b[3]);
+      }
+    });
+    if(found){
+      const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
       map.off("moveend", onMoveEnd);
       map.off("zoomend", onZoomEnd);
-      map.setView([centroid[0], centroid[1]], 10, { animate: true });
+      map.fitBounds(bounds, { padding: [30, 30], animate: true });
       setTimeout(() => {
         map.on("moveend", onMoveEnd);
         map.on("zoomend", onZoomEnd);
