@@ -752,6 +752,7 @@ let nameSearchCache       = null;  // null when no cache; array of records when 
 
 // Code lookup tables (loaded from /codes)
 let CODES = {};
+let TOWN_CENTROIDS = {}; // populated when codes load
 
 // filterApplied tracks whether the user has clicked Apply at least once.
 // Checkbox groups are always active (all checked by default on startup).
@@ -1306,6 +1307,7 @@ function loadCodes(){
   .then(r => r.json())
   .then(data => {
     CODES = data;
+    TOWN_CENTROIDS = data.town_centroids || {};
     // Build checkbox lists — default = ONE item checked per group
     buildCheckboxList('buildingList',  CODES.building_types);
     buildCheckboxList('interestList',  CODES.interest_types);
@@ -1659,6 +1661,38 @@ function applyFilters(){
   document.getElementById("statusBar").textContent = "Loading...";
 
   // If exactly one county is selected, zoom to it automatically
+  // --- Town zoom: if any specific towns are selected, zoom to fit them ---
+  const allSelectedTowns = [];
+  Object.values(selectedTownsByCounty).forEach(townSet => {
+    townSet.forEach(t => allSelectedTowns.push(t));
+  });
+  if(allSelectedTowns.length > 0){
+    // Use a ~0.05 degree radius around each centroid (~3.5 miles) as town extent
+    let minLat=90, minLon=180, maxLat=-90, maxLon=-180;
+    let found = false;
+    allSelectedTowns.forEach(town => {
+      const c = TOWN_CENTROIDS[town.toUpperCase()];
+      if(c){
+        found = true;
+        const pad = 0.05;
+        minLat = Math.min(minLat, c.lat - pad); minLon = Math.min(minLon, c.lon - pad);
+        maxLat = Math.max(maxLat, c.lat + pad); maxLon = Math.max(maxLon, c.lon + pad);
+      }
+    });
+    if(found){
+      const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+      map.off("moveend", onMoveEnd);
+      map.off("zoomend", onZoomEnd);
+      map.fitBounds(bounds, { padding: [30, 30], animate: true });
+      setTimeout(() => {
+        map.on("moveend", onMoveEnd);
+        map.on("zoomend", onZoomEnd);
+        loadData();
+      }, 600);
+      return;
+    }
+  }
+
   // Use selectedCounties Set which is the authoritative source of checked counties
   const checkedCounties = Array.from(selectedCounties);
   // County bounding boxes [minLat, minLon, maxLat, maxLon] for auto-zoom

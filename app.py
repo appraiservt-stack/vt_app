@@ -885,6 +885,7 @@ def codes():
         "use_of_property":          VT_CODES.get("use_of_property", {}),
         "grand_list_categories":    VT_CODES.get("grand_list_categories", {}),
         "withholding_exemption_codes": VT_CODES.get("withholding_exemption_codes", {}),
+        "town_centroids":           VT_CODES.get("town_centroids", {}),
     })
 
 
@@ -2316,6 +2317,40 @@ Sent via VT Property Sales contact form"""
     except Exception as e:
         app.logger.error(f"Contact form error: {e}")
         return jsonify({"error": "Failed to send message. Please try again."}), 500
+
+
+# ── WMS Proxy ─────────────────────────────────────────────────────────────────
+# Forwards WMS tile requests server-side to bypass browser CORS restrictions.
+# Usage: /proxy/wms?url=<encoded_wms_url>&<wms_params>
+WMS_ALLOWED = [
+    'anrmaps.vermont.gov',
+    'maps.vcgi.vermont.gov',
+    'hazards.fema.gov',
+    'services1.arcgis.com',
+]
+
+@app.route("/proxy/wms")
+def proxy_wms():
+    from urllib.parse import urlparse, urlencode
+    target_url = request.args.get('url', '')
+    if not target_url:
+        return '', 400
+    parsed = urlparse(target_url)
+    if not any(allowed in parsed.netloc for allowed in WMS_ALLOWED):
+        return 'Forbidden', 403
+    # Forward all query params except 'url'
+    params = {k: v for k, v in request.args.items() if k != 'url'}
+    try:
+        resp = requests.get(target_url, params=params, timeout=15,
+                           headers={'User-Agent': 'VTPropertyTool/1.0'})
+        return resp.content, resp.status_code, {
+            'Content-Type': resp.headers.get('Content-Type', 'image/png'),
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=3600'
+        }
+    except Exception as e:
+        app.logger.error(f'WMS proxy error: {e}')
+        return '', 502
 
 
 if __name__ == "__main__":
