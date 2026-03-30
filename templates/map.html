@@ -685,11 +685,11 @@
         <div style="display:flex; align-items:center; gap:6px;">
           <label style="font-size:11px; min-width:40px;">Color:</label>
           <input type="color" id="parcelColor" value="#1a7a1a"
-            oninput="if(activeBase!=='satellite' && parcelsOn) parcelLayer.setStyle(getParcelStyle())"
+            oninput="if(activeBase!=='satellite' && parcelsOn) parcelLayer.setStyle(getParcelStyle()); saveBdySettings()"
             style="width:36px; height:24px; padding:1px; border:1px solid #ccc; cursor:pointer;">
           <label style="font-size:11px;">Width:</label>
           <input type="range" id="parcelWidth" min="1" max="5" value="2" step="0.5"
-            oninput="if(parcelsOn) parcelLayer.setStyle(getParcelStyle()); document.getElementById('parcelWidthVal').textContent=this.value"
+            oninput="if(parcelsOn) parcelLayer.setStyle(getParcelStyle()); document.getElementById('parcelWidthVal').textContent=this.value; saveBdySettings()"
             style="flex:1;">
           <span id="parcelWidthVal" style="font-size:11px; min-width:20px;">2</span>
         </div>
@@ -1046,7 +1046,8 @@ function loadParcels(){
 // Refreshes on pan/zoom while the overlay is enabled.
 
 const FEMA_URL     = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
-const FEMA_MIN_ZOOM = 12;  // don't fetch statewide polygons below this zoom
+const FEMA_MIN_ZOOM = 13;  // don't fetch below this zoom — more focused tiles
+const FEMA_CACHE = new Map(); // cache fetched results by bbox key
 
 const FEMA_ZONE_STYLE = {
   'A':        { color: '#e07000', fillColor: '#ffb347', fillOpacity: 0.35, weight: 1 },
@@ -1092,6 +1093,16 @@ function loadFema(){
   if(!femaOn) return;
   if(map.getZoom() < FEMA_MIN_ZOOM){ femaGeoLayer.clearLayers(); return; }
   const b  = map.getBounds();
+  // Round bbox to 2 decimal places (~1km grid) for cache key
+  const r = v => Math.round(v * 50) / 50;
+  const cacheKey = `${r(b.getWest())},${r(b.getSouth())},${r(b.getEast())},${r(b.getNorth())}`;
+  // Serve from cache if available
+  if(FEMA_CACHE.has(cacheKey)){
+    femaGeoLayer.clearLayers();
+    const cached = FEMA_CACHE.get(cacheKey);
+    if(cached.features) femaGeoLayer.addData(cached);
+    return;
+  }
   const bb = `${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
   if(femaXhr) femaXhr.abort();
   const ctrl = new AbortController();
@@ -1105,11 +1116,13 @@ function loadFema(){
     returnGeometry: 'true',
     outSR:        '4326',
     f:            'geojson',
-    resultRecordCount: '200'
+    resultRecordCount: '300'
   });
   fetch(FEMA_URL + '?' + params.toString(), { signal: ctrl.signal })
   .then(r => r.json())
   .then(data => {
+    if(FEMA_CACHE.size > 40) FEMA_CACHE.delete(FEMA_CACHE.keys().next().value); // limit cache size
+    FEMA_CACHE.set(cacheKey, data);
     femaGeoLayer.clearLayers();
     if(data.features) femaGeoLayer.addData(data);
   })
@@ -1143,7 +1156,7 @@ function getBdyStyle(which){
   const color = document.getElementById(which + 'BdyColor').value;
   const width = parseFloat(document.getElementById(which + 'BdyWidth').value);
   const dash  = document.getElementById(which + 'BdyDash').value;
-  const dashArray = dash === 'dashed' ? '8,6' : dash === 'dotted' ? '2,4' : null;
+  const dashArray = dash === 'dashed' ? '12,8' : dash === 'dotted' ? '3,6' : null;
   return { color, weight: width, fillOpacity: 0, dashArray, opacity: 0.85 };
 }
 
@@ -1162,6 +1175,40 @@ function updateBoundaryStyle(which){
     const el = l.getElement && l.getElement();
     if(el) el.style.display = showLabels ? '' : 'none';
   });
+  saveBdySettings();
+}
+
+// ---- Persist boundary + parcel style settings in localStorage ----
+function saveBdySettings(){
+  const s = {
+    townColor:  document.getElementById('townBdyColor').value,
+    townWidth:  document.getElementById('townBdyWidth').value,
+    townDash:   document.getElementById('townBdyDash').value,
+    townLabels: document.getElementById('townBdyLabels').checked,
+    cntyColor:  document.getElementById('cntyBdyColor').value,
+    cntyWidth:  document.getElementById('cntyBdyWidth').value,
+    cntyDash:   document.getElementById('cntyBdyDash').value,
+    cntyLabels: document.getElementById('cntyBdyLabels').checked,
+    parcelColor: document.getElementById('parcelColor').value,
+    parcelWidth: document.getElementById('parcelWidth').value,
+  };
+  try{ localStorage.setItem('vtpt_bdy_settings', JSON.stringify(s)); }catch(e){}
+}
+
+function restoreBdySettings(){
+  let s;
+  try{ s = JSON.parse(localStorage.getItem('vtpt_bdy_settings')); }catch(e){}
+  if(!s) return;
+  if(s.townColor)  { document.getElementById('townBdyColor').value  = s.townColor; }
+  if(s.townWidth)  { document.getElementById('townBdyWidth').value  = s.townWidth;  document.getElementById('townBdyWidthVal').textContent = s.townWidth; }
+  if(s.townDash)   { document.getElementById('townBdyDash').value   = s.townDash; }
+  if(s.townLabels !== undefined){ document.getElementById('townBdyLabels').checked = s.townLabels; }
+  if(s.cntyColor)  { document.getElementById('cntyBdyColor').value  = s.cntyColor; }
+  if(s.cntyWidth)  { document.getElementById('cntyBdyWidth').value  = s.cntyWidth;  document.getElementById('cntyBdyWidthVal').textContent = s.cntyWidth; }
+  if(s.cntyDash)   { document.getElementById('cntyBdyDash').value   = s.cntyDash; }
+  if(s.cntyLabels !== undefined){ document.getElementById('cntyBdyLabels').checked = s.cntyLabels; }
+  if(s.parcelColor){ document.getElementById('parcelColor').value   = s.parcelColor; }
+  if(s.parcelWidth){ document.getElementById('parcelWidth').value   = s.parcelWidth; document.getElementById('parcelWidthVal').textContent = s.parcelWidth; }
 }
 
 // ---- Fetch and render boundary polygons + labels ----
@@ -2122,6 +2169,7 @@ function onMoveEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(
 function onZoomEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
 
 function initMapEvents(){
+  restoreBdySettings();
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
   loadData();
