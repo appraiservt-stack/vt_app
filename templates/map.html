@@ -881,7 +881,9 @@ if(!map.getPane('parcelPane')){
   pp.style.pointerEvents = 'none';
 }
 
-const parcelWmsLayer = L.tileLayer.wms(PARCEL_WMS_URL, {
+const PROXY = (url) => `/proxy/wms?url=${encodeURIComponent(url)}`;
+
+const parcelWmsLayer = L.tileLayer.wms(PROXY(PARCEL_WMS_URL), {
   layers: '0',
   format: 'image/png',
   transparent: true,
@@ -983,7 +985,7 @@ if(!map.getPane('femaPane')){
 }
 
 const femaFloodLayer = L.tileLayer.wms(
-  'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/WMSServer', {
+  PROXY('https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/WMSServer'), {
   layers: '28',
   format: 'image/png',
   transparent: true,
@@ -1005,7 +1007,7 @@ if(!map.getPane('wetlandsPane')){
 }
 
 const wetlandsLayer = L.tileLayer.wms(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer/WMSServer', {
+  PROXY('https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer/WMSServer'), {
   layers: '14,15',
   format: 'image/png',
   transparent: true,
@@ -1026,7 +1028,7 @@ if(!map.getPane('protectedPane')){
 }
 
 const protectedLandsLayer = L.tileLayer.wms(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/WMSServer', {
+  PROXY('https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/WMSServer'), {
   layers: '39',
   format: 'image/png',
   transparent: true,
