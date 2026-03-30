@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- v2.1-wms -->
+<!DOCTYPE html>
 <html>
 <head>
     <title>VT Property Transfer Tool</title>
@@ -679,6 +679,22 @@
         </div>
       </div>
 
+      <!-- Parcel boundaries -->
+      <div style="margin-bottom:6px;">
+        <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">VT Parcels</div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="font-size:11px; min-width:40px;">Color:</label>
+          <input type="color" id="parcelColor" value="#1a7a1a"
+            oninput="if(activeBase!=='satellite' && parcelsOn) parcelLayer.setStyle(getParcelStyle())"
+            style="width:36px; height:24px; padding:1px; border:1px solid #ccc; cursor:pointer;">
+          <label style="font-size:11px;">Width:</label>
+          <input type="range" id="parcelWidth" min="1" max="5" value="2" step="0.5"
+            oninput="if(parcelsOn) parcelLayer.setStyle(getParcelStyle()); document.getElementById('parcelWidthVal').textContent=this.value"
+            style="flex:1;">
+          <span id="parcelWidthVal" style="font-size:11px; min-width:20px;">2</span>
+        </div>
+      </div>
+
       <!-- County boundaries -->
       <div>
         <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
@@ -865,225 +881,243 @@ map.on("baselayerchange", function(e){
   const eLower = e.name.toLowerCase();
   activeBase = (eLower.indexOf("satellite") >= 0 || eLower.indexOf("imagery") >= 0) ? "satellite" : "other";
   loadData();
+  // Re-style parcel layer to match the new basemap (green vs white)
+  if(parcelsOn){
+    const style = getParcelStyle();
+    parcelLayer.setStyle(style);
+  }
 });
 
-// ============================================================
-// VT PARCELS — WMS tile overlay + click-to-query popup
-// ============================================================
-const PARCEL_WMS_URL  = 'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/WMSServer';
-const PARCEL_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
-const PARCEL_MIN_ZOOM = 14;
+// ---- VERMONT PARCEL OVERLAY ----
+// Loaded on demand from VCGI FeatureServer (layer 1 = active parcels).
+// Only fetches when zoom >= 14 to avoid loading statewide polygon data.
+// Drawn as a GeoJSON layer; refreshes on every map move/zoom while enabled.
+// Parcel style switches between user-chosen color (non-satellite) and
+// white (satellite) so the boundaries remain visible against vegetation.
+function getParcelStyle(){
+  if(activeBase === 'satellite'){
+    return { color: '#ffffff', weight: parseFloat(document.getElementById('parcelWidth')?.value || 2), fillOpacity: 0 };
+  }
+  const color = document.getElementById('parcelColor')?.value || '#1a7a1a';
+  const weight = parseFloat(document.getElementById('parcelWidth')?.value || 2);
+  return { color, weight, fillOpacity: 0 };
+}
 
-// Create pane so WMS tiles sit below markers
+// Custom pane for parcels — sits below marker pane so clicks reach markers.
 if(!map.getPane('parcelPane')){
   const pp = map.createPane('parcelPane');
-  pp.style.zIndex = 360;
+  pp.style.zIndex = 360;  // above femaPane(350), below overlayPane(400)
   pp.style.pointerEvents = 'none';
 }
 
-const PROXY = (url) => `/proxy/wms?url=${encodeURIComponent(url)}`;
+let parcelLayer  = L.geoJSON(null, {
+  style: getParcelStyle(),
+  pane: 'parcelPane',
+  interactive: false,          // don't intercept clicks — let them reach markers
+  bubblingMouseEvents: true
+});
+let parcelsOn    = false;   // controlled by the overlay checkbox
+let parcelXhr    = null;    // cancel in-flight request on new move
 
-// Parcel outlines: ANR WMS is too slow (~37s) for tile overlay.
-// Visual outlines removed; click-to-query popup still works at zoom 14+.
-const parcelWmsLayer = L.layerGroup(); // empty placeholder kept for legend toggle
+const PARCEL_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
+const PARCEL_MIN_ZOOM = 14;
 
-let parcelsOn = false;
-let parcelXhr = null;
-let parcelLayer = parcelWmsLayer; // alias so existing refs don't break
-
-// Click handler — query parcel data at click location
-function onParcelClick(e){
+function loadParcels(){
   if(!parcelsOn) return;
-  if(map.getZoom() < PARCEL_MIN_ZOOM) return;
-  const toMerc = (lng, lat) => [
-    lng * 20037508.34 / 180,
-    Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180
-  ];
-  const pt = toMerc(e.latlng.lng, e.latlng.lat);
-  const d = 5; // small buffer in meters
-  const env = `${pt[0]-d},${pt[1]-d},${pt[0]+d},${pt[1]+d}`;
+  if(map.getZoom() < PARCEL_MIN_ZOOM){
+    parcelLayer.clearLayers();
+    return;
+  }
+  const b = map.getBounds();
+  // Convert Leaflet LatLngBounds to Web Mercator (EPSG:3857 / wkid 102100)
+  // VCGI FeatureServer requires inSR=102100 when using envelope geometry
+  const toMerc = (lng, lat) => {
+    const x = lng * 20037508.34 / 180;
+    const y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180;
+    return [x, y];
+  };
+  const sw = toMerc(b.getWest(),  b.getSouth());
+  const ne = toMerc(b.getEast(),  b.getNorth());
+  const env = `${sw[0]},${sw[1]},${ne[0]},${ne[1]}`;
+
+  if(parcelXhr) parcelXhr.abort();
+  const ctrl = new AbortController();
+  parcelXhr = ctrl;
+
   const params = new URLSearchParams({
-    where: '1=1',
-    geometry: env,
-    geometryType: 'esriGeometryEnvelope',
-    inSR: '102100',
-    spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,GLYEAR,CAT,MUNGL1PCT',
-    returnGeometry: 'false',
-    outSR: '4326',
-    f: 'json',
-    resultRecordCount: '1'
+    where:           '1=1',
+    geometryType:    'esriGeometryEnvelope',
+    geometry:        env,
+    inSR:            '102100',
+    spatialRel:      'esriSpatialRelIntersects',
+    outFields:       'SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,GLYEAR,CAT,MUNGL1PCT',
+    returnGeometry:  'true',
+    outSR:           '4326',
+    f:               'json',
+    resultRecordCount: '500'
   });
-  fetch(PARCEL_QUERY_URL + '?' + params.toString())
+
+  fetch(PARCEL_URL + '?' + params.toString(), { signal: ctrl.signal })
   .then(r => r.json())
   .then(data => {
-    const feats = data.features || [];
-    if(!feats.length) return;
-    const p = feats[0].attributes;
-    const fmt$ = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
-    const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
-    const addr   = p.E911ADDR  || '';
-    const town   = p.TNAME     || '';
-    const span   = p.SPAN      || '';
-    const owner1 = p.OWNER1    || '';
-    const owner2 = p.OWNER2    || '';
-    const ptype  = p.PROPTYPE  || '';
-    const cat    = p.CAT       || '';
-    const glyear = p.GLYEAR    || '';
-    const acres  = fmtA(p.ACRESGL);
-    const realFLV  = fmt$(p.REAL_FLV);
-    const landLV   = fmt$(p.LAND_LV);
-    const imprvLV  = fmt$(p.IMPRV_LV);
-    const hstedFLV = fmt$(p.HSTED_FLV);
-    const munGL    = fmt$(p.MUNGL1PCT);
-    const hsdecl   = (p.HSDECL === 'Y' || p.HSDECL === true) ? 'Yes' : (p.HSDECL ? p.HSDECL : '—');
-    const html = `
-      <div style="font-size:12px; min-width:220px;">
-        <div style="background:#1a7a1a; color:white; font-weight:bold; padding:4px 8px;
-                    border-radius:3px 3px 0 0; margin-bottom:4px;">
-          &#x1F4CB; Grand List Data
-        </div>
-        <b>${addr}</b>${addr && town ? ', ' : ''}${town}<br>
-        ${owner1 ? `<span style="font-size:11px;">${owner1}${owner2 ? '<br>' + owner2 : ''}</span><br>` : ''}
-        <table style="font-size:11px; border-collapse:collapse; width:100%; margin-top:4px;">
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">SPAN:</td><td style="font-weight:bold;">${span}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Type:</td><td>${ptype}${cat ? ' / ' + cat : ''}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">GL Year:</td><td>${glyear}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Acres (GL):</td><td>${acres}</td></tr>
-          <tr style="border-top:1px solid #eee;">
-              <td style="color:#555; padding:3px 4px 1px 0;">Listed Value:</td>
-              <td style="font-weight:bold;">${realFLV}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Land:</td><td>${landLV}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Improvements:</td><td>${imprvLV}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Val:</td><td>${hstedFLV}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Mun. 1% GL:</td><td>${munGL}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Decl:</td><td>${hsdecl}</td></tr>
-        </table>
-      </div>`;
-    L.popup({ maxWidth: 280 }).setLatLng(e.latlng).setContent(html).openOn(map);
+    if(data.error){ console.warn('Parcel query error:', data.error.message); return; }
+    parcelLayer.clearLayers();
+    (data.features || []).forEach(feat => {
+      if(!feat.geometry || !feat.geometry.rings) return;
+      // Convert esriGeometryPolygon to GeoJSON
+      const gj = {
+        type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: feat.geometry.rings },
+        properties: feat.attributes
+      };
+      parcelLayer.addData(gj);
+    });
+    // Apply current basemap-aware style then bind popups
+    parcelLayer.setStyle(getParcelStyle());
+    parcelLayer.eachLayer(l => {
+      const p = l.feature.properties;
+      const fmt$ = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
+      const fmtN = v => (v != null && v !== '') ? Number(v).toLocaleString() : '—';
+      const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
+
+      const addr   = p.E911ADDR  || '';
+      const town   = p.TNAME     || '';
+      const span   = p.SPAN      || '';
+      const owner1 = p.OWNER1    || '';
+      const owner2 = p.OWNER2    || '';
+      const ptype  = p.PROPTYPE  || '';
+      const cat    = p.CAT       || '';
+      const glyear = p.GLYEAR    || '';
+      const acres  = fmtA(p.ACRESGL);
+      const realFLV  = fmt$(p.REAL_FLV);
+      const landLV   = fmt$(p.LAND_LV);
+      const imprvLV  = fmt$(p.IMPRV_LV);
+      const hstedFLV = fmt$(p.HSTED_FLV);
+      const munGL    = fmt$(p.MUNGL1PCT);
+      const hsdecl   = (p.HSDECL === 'Y' || p.HSDECL === true) ? 'Yes' : (p.HSDECL ? p.HSDECL : '—');
+
+      const html = `
+        <div style="font-size:12px; min-width:220px;">
+          <div style="background:#1a7a1a; color:white; font-weight:bold; padding:4px 8px;
+                      border-radius:3px 3px 0 0; margin-bottom:4px;">
+            &#x1F4CB; Grand List Data
+          </div>
+          <b>${addr}</b>${addr && town ? ', ' : ''}${town}<br>
+          ${owner1 ? `<span style="font-size:11px;">${owner1}${owner2 ? '<br>' + owner2 : ''}</span><br>` : ''}
+          <table style="font-size:11px; border-collapse:collapse; width:100%; margin-top:4px;">
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">SPAN:</td>
+                <td style="font-weight:bold;">${span}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Type:</td>
+                <td>${ptype}${cat ? ' / ' + cat : ''}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">GL Year:</td>
+                <td>${glyear}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Acres (GL):</td>
+                <td>${acres}</td></tr>
+            <tr style="border-top:1px solid #eee;">
+                <td style="color:#555; padding:3px 4px 1px 0;">Listed Value:</td>
+                <td style="font-weight:bold;">${realFLV}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Land:</td>
+                <td>${landLV}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Improvements:</td>
+                <td>${imprvLV}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Val:</td>
+                <td>${hstedFLV}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Mun. 1% GL:</td>
+                <td>${munGL}</td></tr>
+            <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Decl:</td>
+                <td>${hsdecl}</td></tr>
+          </table>
+        </div>`;
+
+      l.bindPopup(html, { maxWidth: 260, maxHeight: 380 });
+    });
   })
-  .catch(err => console.warn('Parcel click query error:', err));
+  .catch(e => { if(e.name !== 'AbortError') console.warn('Parcel fetch error:', e); });
 }
-map.on('click', onParcelClick);
 
-// loadParcels stub — WMS tiles handle display automatically
-function loadParcels(){}
+// ---- FEMA FLOOD ZONES OVERLAY ----
+// Fetches flood zone polygons from the FEMA NFHL MapServer (layer 28) as
+// GeoJSON for the current map view. Colored by zone type:
+//   Zone A   — light orange  (high risk, no BFE established)
+//   Zone AE  — light blue    (high risk, BFE established)
+//   Floodway — light red     (AE subtype, most restricted)
+//   Zone X (500yr) — light yellow  (moderate risk)
+//   Zone X (minimal) — transparent (minimal risk, no fill)
+// Refreshes on pan/zoom while the overlay is enabled.
 
-// ============================================================
-// FEMA FLOOD ZONES — WMS tile overlay
-// ============================================================
+const FEMA_URL     = 'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query';
+const FEMA_MIN_ZOOM = 12;  // don't fetch statewide polygons below this zoom
+
+const FEMA_ZONE_STYLE = {
+  'A':        { color: '#e07000', fillColor: '#ffb347', fillOpacity: 0.35, weight: 1 },
+  'AE':       { color: '#1a6fa8', fillColor: '#a8d8f0', fillOpacity: 0.35, weight: 1 },
+  'FLOODWAY': { color: '#b00000', fillColor: '#f08080', fillOpacity: 0.40, weight: 1.5 },
+  'X_500':    { color: '#b8a000', fillColor: '#fff176', fillOpacity: 0.30, weight: 1 },
+  'X_MIN':    { color: '#aaaaaa', fillColor: '#ffffff', fillOpacity: 0,    weight: 0.5 },
+  'DEFAULT':  { color: '#888888', fillColor: '#cccccc', fillOpacity: 0.20, weight: 1 },
+};
+
+function getFemaStyle(props){
+  const zone = (props.FLD_ZONE || '').toUpperCase();
+  const sub  = (props.ZONE_SUBTY || '').toUpperCase();
+  if(zone === 'AE' && sub.includes('FLOODWAY')) return FEMA_ZONE_STYLE['FLOODWAY'];
+  if(zone === 'AE')  return FEMA_ZONE_STYLE['AE'];
+  if(zone === 'A')   return FEMA_ZONE_STYLE['A'];
+  if(zone === 'X' && sub.includes('0.2')) return FEMA_ZONE_STYLE['X_500'];
+  if(zone === 'X')   return FEMA_ZONE_STYLE['X_MIN'];
+  return FEMA_ZONE_STYLE['DEFAULT'];
+}
+
+// Create a custom pane below the marker pane so FEMA polygons
+// never intercept clicks meant for sale markers.
 if(!map.getPane('femaPane')){
   const fp = map.createPane('femaPane');
-  fp.style.zIndex = 350;
-  fp.style.pointerEvents = 'none';
+  fp.style.zIndex = 350;   // overlay pane=400, marker pane=600
+  fp.style.pointerEvents = 'none';  // pass all clicks through
 }
 
-// Helper: build a WMS-style tile layer using ArcGIS dynamic MapServer export.
-// Routes through Flask proxy to avoid ad-blocker blocking of third-party requests.
-function esriDynamicLayer(serviceUrl, layers, pane, opacity){
-  const ProxyWMS = L.TileLayer.WMS.extend({
-    getTileUrl: function(coords){
-      const tileBounds = this._tileCoordsToBounds(coords);
-      const sw = L.CRS.EPSG3857.project(tileBounds.getSouthWest());
-      const ne = L.CRS.EPSG3857.project(tileBounds.getNorthEast());
-      const bbox = sw.x + ',' + sw.y + ',' + ne.x + ',' + ne.y;
-      const exportUrl = serviceUrl + '/export' +
-        '?bbox=' + bbox +
-        '&bboxSR=3857&layers=show:' + layers +
-        '&size=256,256&imageSR=3857&format=png32&transparent=true&f=image';
-      return '/proxy/wms?url=' + encodeURIComponent(exportUrl);
-    }
-  });
-  return new ProxyWMS('https://placeholder', {
-    layers: layers,
-    format: 'image/png',
-    transparent: true,
-    pane: pane,
-    opacity: opacity,
-    attribution: 'VT ANR / FEMA'
-  });
-}
+let femaGeoLayer = L.geoJSON(null, {
+  style: f => getFemaStyle(f.properties),
+  pane: 'femaPane',
+  interactive: false,         // don't intercept clicks
+  bubblingMouseEvents: true
+  // Tooltips removed since interactive:false prevents hover events.
+  // Zone info is visible from the color legend.
+});
 
-const femaFloodLayer = esriDynamicLayer(
-  'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer',
-  '28', 'femaPane', 0.7
-);
-let femaOn = false;
-function loadFema(){} // no-op — tiles load automatically
+let femaOn  = false;
+let femaXhr = null;
 
-// ============================================================
-// WETLANDS (VT VSWI) — WMS tile overlay
-// ============================================================
-if(!map.getPane('wetlandsPane')){
-  const wp = map.createPane('wetlandsPane');
-  wp.style.zIndex = 345;
-  wp.style.pointerEvents = 'none';
-}
-
-const wetlandsLayer = esriDynamicLayer(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer',
-  '14,15', 'wetlandsPane', 0.7
-);
-let wetlandsOn = false;
-
-// ============================================================
-// VT PROTECTED LANDS — WMS tile overlay + click-to-query
-// ============================================================
-if(!map.getPane('protectedPane')){
-  const pp2 = map.createPane('protectedPane');
-  pp2.style.zIndex = 340;
-  pp2.style.pointerEvents = 'none';
-}
-
-const protectedLandsLayer = esriDynamicLayer(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer',
-  '39', 'protectedPane', 0.6
-);
-let protectedOn = false;
-
-const PROTECTED_QUERY_URL = 'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/39/query';
-
-function onProtectedClick(e){
-  if(!protectedOn) return;
-  const b = 0.001; // ~100m buffer in degrees
-  const env = `${e.latlng.lng-b},${e.latlng.lat-b},${e.latlng.lng+b},${e.latlng.lat+b}`;
+function loadFema(){
+  if(!femaOn) return;
+  if(map.getZoom() < FEMA_MIN_ZOOM){ femaGeoLayer.clearLayers(); return; }
+  const b  = map.getBounds();
+  const bb = `${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+  if(femaXhr) femaXhr.abort();
+  const ctrl = new AbortController();
+  femaXhr = ctrl;
   const params = new URLSearchParams({
-    where: '1=1',
-    geometry: env,
+    geometry:     bb,
     geometryType: 'esriGeometryEnvelope',
-    inSR: '4326',
-    spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'NAME,ANRUnit,ANRDept,GISACRES,SOVInterest',
-    returnGeometry: 'false',
-    f: 'json',
-    resultRecordCount: '1'
+    inSR:         '4326',
+    spatialRel:   'esriSpatialRelIntersects',
+    outFields:    'FLD_ZONE,ZONE_SUBTY,SFHA_TF',
+    returnGeometry: 'true',
+    outSR:        '4326',
+    f:            'geojson',
+    resultRecordCount: '200'
   });
-  fetch(PROTECTED_QUERY_URL + '?' + params.toString())
+  fetch(FEMA_URL + '?' + params.toString(), { signal: ctrl.signal })
   .then(r => r.json())
   .then(data => {
-    const feats = data.features || [];
-    if(!feats.length) return;
-    const p = feats[0].attributes;
-    const acres = p.GISACRES ? Number(p.GISACRES).toFixed(1) + ' ac' : '—';
-    const html = `
-      <div style="font-size:12px; min-width:200px;">
-        <div style="background:#2d6a2d; color:white; font-weight:bold; padding:4px 8px;
-                    border-radius:3px 3px 0 0; margin-bottom:4px;">
-          &#x1F332; VT Protected Land
-        </div>
-        <table style="font-size:11px; border-collapse:collapse; width:100%;">
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Name:</td><td style="font-weight:bold;">${p.NAME||'—'}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">ANR Unit:</td><td>${p.ANRUnit||'—'}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Dept:</td><td>${p.ANRDept||'—'}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Interest:</td><td>${p.SOVInterest||'—'}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Acres:</td><td>${acres}</td></tr>
-        </table>
-      </div>`;
-    L.popup({ maxWidth: 280 }).setLatLng(e.latlng).setContent(html).openOn(map);
+    femaGeoLayer.clearLayers();
+    if(data.features) femaGeoLayer.addData(data);
   })
-  .catch(err => console.warn('Protected lands click error:', err));
+  .catch(e => { if(e.name !== 'AbortError') console.warn('FEMA fetch error:', e); });
 }
-map.on('click', onProtectedClick);
+
+// femaFloodLayer is what gets registered in the layers control
+const femaFloodLayer = femaGeoLayer;
 
 // ============================================================
 // TOWN & COUNTY BOUNDARY LAYERS
@@ -1109,7 +1143,7 @@ function getBdyStyle(which){
   const color = document.getElementById(which + 'BdyColor').value;
   const width = parseFloat(document.getElementById(which + 'BdyWidth').value);
   const dash  = document.getElementById(which + 'BdyDash').value;
-  const dashArray = dash === 'dashed' ? '12,8' : dash === 'dotted' ? '3,6' : null;
+  const dashArray = dash === 'dashed' ? '8,6' : dash === 'dotted' ? '2,4' : null;
   return { color, weight: width, fillOpacity: 0, dashArray, opacity: 0.85 };
 }
 
@@ -1128,36 +1162,6 @@ function updateBoundaryStyle(which){
     const el = l.getElement && l.getElement();
     if(el) el.style.display = showLabels ? '' : 'none';
   });
-  saveBdySettings();
-}
-
-// ---- Persist boundary + parcel style settings in localStorage ----
-function saveBdySettings(){
-  const s = {
-    townColor:  document.getElementById('townBdyColor').value,
-    townWidth:  document.getElementById('townBdyWidth').value,
-    townDash:   document.getElementById('townBdyDash').value,
-    townLabels: document.getElementById('townBdyLabels').checked,
-    cntyColor:  document.getElementById('cntyBdyColor').value,
-    cntyWidth:  document.getElementById('cntyBdyWidth').value,
-    cntyDash:   document.getElementById('cntyBdyDash').value,
-    cntyLabels: document.getElementById('cntyBdyLabels').checked,
-  };
-  try{ localStorage.setItem('vtpt_bdy_settings', JSON.stringify(s)); }catch(e){}
-}
-
-function restoreBdySettings(){
-  let s;
-  try{ s = JSON.parse(localStorage.getItem('vtpt_bdy_settings')); }catch(e){}
-  if(!s) return;
-  if(s.townColor)  { document.getElementById('townBdyColor').value  = s.townColor; }
-  if(s.townWidth)  { document.getElementById('townBdyWidth').value  = s.townWidth;  document.getElementById('townBdyWidthVal').textContent = s.townWidth; }
-  if(s.townDash)   { document.getElementById('townBdyDash').value   = s.townDash; }
-  if(s.townLabels !== undefined){ document.getElementById('townBdyLabels').checked = s.townLabels; }
-  if(s.cntyColor)  { document.getElementById('cntyBdyColor').value  = s.cntyColor; }
-  if(s.cntyWidth)  { document.getElementById('cntyBdyWidth').value  = s.cntyWidth;  document.getElementById('cntyBdyWidthVal').textContent = s.cntyWidth; }
-  if(s.cntyDash)   { document.getElementById('cntyBdyDash').value   = s.cntyDash; }
-  if(s.cntyLabels !== undefined){ document.getElementById('cntyBdyLabels').checked = s.cntyLabels; }
 }
 
 // ---- Fetch and render boundary polygons + labels ----
@@ -1266,31 +1270,51 @@ L.control.layers(
   },
   {
     // Overlays — toggle independently of the basemap
-    "VT Parcels (zoom 14+)": parcelWmsLayer,
+    "VT Parcels (zoom 14+)": parcelLayer,
     "FEMA Flood Zones":      femaFloodLayer,
-    "Wetlands (VSWI)":       wetlandsLayer,
-    "Protected Lands":       protectedLandsLayer,
     "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
     "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
   }
 ).addTo(map);
 
-// Listen for overlay add/remove
+// Listen for overlay add/remove to know when parcels are toggled
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn   = true; }
-  if(e.name === 'FEMA Flood Zones')        { femaOn      = true; }
-  if(e.name === 'Wetlands (VSWI)')         { wetlandsOn  = true; }
-  if(e.name === 'Protected Lands')         { protectedOn = true; }
-  if(e.name === 'Town Boundaries')         { townBdyOn   = true; loadTownBoundaries(); }
-  if(e.name === 'County Boundaries')       { cntyBdyOn   = true; loadCntyBoundaries(); }
+  if(e.name === 'VT Parcels (zoom 14+)'){
+    parcelsOn = true;
+    loadParcels();
+  }
+  if(e.name === 'FEMA Flood Zones'){
+    femaOn = true;
+    loadFema();
+  }
+  if(e.name === 'Town Boundaries'){
+    townBdyOn = true;
+    loadTownBoundaries();
+  }
+  if(e.name === 'County Boundaries'){
+    cntyBdyOn = true;
+    loadCntyBoundaries();
+  }
 });
 map.on('overlayremove', function(e){
-  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn   = false; }
-  if(e.name === 'FEMA Flood Zones')        { femaOn      = false; }
-  if(e.name === 'Wetlands (VSWI)')         { wetlandsOn  = false; }
-  if(e.name === 'Protected Lands')         { protectedOn = false; }
-  if(e.name === 'Town Boundaries')         { townBdyOn   = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
-  if(e.name === 'County Boundaries')       { cntyBdyOn   = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
+  if(e.name === 'VT Parcels (zoom 14+)'){
+    parcelsOn = false;
+    parcelLayer.clearLayers();
+  }
+  if(e.name === 'FEMA Flood Zones'){
+    femaOn = false;
+    femaGeoLayer.clearLayers();
+  }
+  if(e.name === 'Town Boundaries'){
+    townBdyOn = false;
+    townBdyLayer.clearLayers();
+    townLblLayer.clearLayers();
+  }
+  if(e.name === 'County Boundaries'){
+    cntyBdyOn = false;
+    cntyBdyLayer.clearLayers();
+    cntyLblLayer.clearLayers();
+  }
 });
 
 let markersLayer = L.layerGroup().addTo(map);
@@ -1654,48 +1678,14 @@ function applyFilters(){
     return;
   }
 
-  // Clear existing dots immediately so old data doesn't linger
-  markersLayer.clearLayers();
-  document.getElementById("statusBar").textContent = "Loading...";
-
-  // If exactly one county is selected, zoom to it automatically
-  const checkedCounties = [];
-  document.querySelectorAll('#countyContainer .county-header input[type=checkbox]:checked').forEach(cb => {
-    checkedCounties.push(cb.value);
-  });
-  // County center coordinates for auto-zoom
-  const COUNTY_CENTERS = {
-    "01":[44.03,-73.15],"02":[43.03,-73.10],"03":[44.48,-72.08],
-    "04":[44.47,-73.07],"05":[44.72,-71.73],"06":[44.78,-72.92],
-    "07":[44.72,-73.28],"08":[44.55,-72.57],"09":[43.97,-72.33],
-    "10":[44.82,-72.28],"11":[43.62,-72.97],"12":[44.27,-72.58],
-    "13":[43.03,-72.63],"14":[43.58,-72.53]
-  };
-  if(checkedCounties.length === 1){
-    const centroid = COUNTY_CENTERS[checkedCounties[0]];
-    if(centroid){
-      map.off("moveend", onMoveEnd);
-      map.off("zoomend", onZoomEnd);
-      map.setView([centroid[0], centroid[1]], 10, { animate: true });
-      setTimeout(() => {
-        map.on("moveend", onMoveEnd);
-        map.on("zoomend", onZoomEnd);
-        loadData();
-      }, 600);
-      return;
-    }
-  }
-
   // All other filters: just reload data in the current map view.
+  // The map stays exactly where it is — no fitBounds, no repositioning.
   loadData();
 }
 
 // ===================================================
 // LOAD DATA (MAP) — viewport-bounded fetch
 // ===================================================
-let _dataXhr = null;  // cancel in-flight data request on new move
-let _loadDataTimer = null; // debounce timer
-
 function loadData(){
   // If a name search cache is active, just re-render from it (no new fetch)
   if(nameSearchCache !== null){
@@ -1703,32 +1693,22 @@ function loadData(){
     return;
   }
 
-  // Debounce: cancel pending timer and abort in-flight request
-  if(_loadDataTimer) clearTimeout(_loadDataTimer);
-  if(_dataXhr){ _dataXhr.abort(); _dataXhr = null; }
+  const b      = map.getBounds();
+  const params = buildFilterParams();
+  // Expand bounds by ~10% so approximate markers (town centroids near the
+  // viewport edge) don't get clipped out of the fetch at certain zoom levels.
+  const latPad = (b.getNorth() - b.getSouth()) * 0.10;
+  const lonPad = (b.getEast()  - b.getWest())  * 0.10;
+  params.set("xmin", b.getWest()  - lonPad);
+  params.set("ymin", b.getSouth() - latPad);
+  params.set("xmax", b.getEast()  + lonPad);
+  params.set("ymax", b.getNorth() + latPad);
 
-  _loadDataTimer = setTimeout(() => {
-    const b      = map.getBounds();
-    const params = buildFilterParams();
-    // Expand bounds by ~10% so approximate markers (town centroids near the
-    // viewport edge) don't get clipped out of the fetch at certain zoom levels.
-    const latPad = (b.getNorth() - b.getSouth()) * 0.10;
-    const lonPad = (b.getEast()  - b.getWest())  * 0.10;
-    params.set("xmin", b.getWest()  - lonPad);
-    params.set("ymin", b.getSouth() - latPad);
-    params.set("xmax", b.getEast()  + lonPad);
-    params.set("ymax", b.getNorth() + latPad);
+  document.getElementById("statusBar").textContent = "Loading...";
 
-    document.getElementById("statusBar").textContent = "Loading...";
-
-    const ctrl = new AbortController();
-    _dataXhr = ctrl;
-
-    fetch("/data?" + params.toString(), { signal: ctrl.signal })
-    .then(r => r.json())
-    .then(data => { _dataXhr = null; renderData(data.data || []); })
-    .catch(e => { if(e.name !== 'AbortError') console.warn('Data fetch error:', e); });
-  }, 150); // 150ms debounce
+  fetch("/data?" + params.toString())
+  .then(r => r.json())
+  .then(data => { renderData(data.data || []); });
 }
 
 // ===================================================
@@ -2142,23 +2122,9 @@ function onMoveEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(
 function onZoomEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
 
 function initMapEvents(){
-  restoreBdySettings();
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
-  // Fire initial load immediately (no debounce)
-  if(_loadDataTimer) clearTimeout(_loadDataTimer);
-  const b = map.getBounds();
-  const params = buildFilterParams();
-  const latPad = (b.getNorth() - b.getSouth()) * 0.10;
-  const lonPad = (b.getEast()  - b.getWest())  * 0.10;
-  params.set("xmin", b.getWest()  - lonPad);
-  params.set("ymin", b.getSouth() - latPad);
-  params.set("xmax", b.getEast()  + lonPad);
-  params.set("ymax", b.getNorth() + latPad);
-  document.getElementById("statusBar").textContent = "Loading...";
-  fetch("/data?" + params.toString())
-  .then(r => r.json())
-  .then(data => { renderData(data.data || []); });
+  loadData();
 }
 
 loadCodes();
