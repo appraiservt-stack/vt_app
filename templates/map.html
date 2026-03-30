@@ -979,14 +979,14 @@ if(!map.getPane('femaPane')){
 }
 
 const femaFloodLayer = L.tileLayer.wms(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer/WMSServer', {
-  layers: '16,18',
+  'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/WMSServer', {
+  layers: '28',
   format: 'image/png',
   transparent: true,
   version: '1.3.0',
   pane: 'femaPane',
   opacity: 0.7,
-  attribution: 'VT ANR / FEMA'
+  attribution: 'FEMA NFHL'
 });
 let femaOn = false;
 function loadFema(){} // no-op — WMS tiles load automatically
