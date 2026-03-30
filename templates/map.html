@@ -679,6 +679,22 @@
         </div>
       </div>
 
+      <!-- Parcel boundaries -->
+      <div style="margin-bottom:6px;">
+        <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">VT Parcels</div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="font-size:11px; min-width:40px;">Color:</label>
+          <input type="color" id="parcelColor" value="#1a7a1a"
+            oninput="if(activeBase!=='satellite' && parcelsOn) parcelLayer.setStyle(getParcelStyle())"
+            style="width:36px; height:24px; padding:1px; border:1px solid #ccc; cursor:pointer;">
+          <label style="font-size:11px;">Width:</label>
+          <input type="range" id="parcelWidth" min="1" max="5" value="2" step="0.5"
+            oninput="if(parcelsOn) parcelLayer.setStyle(getParcelStyle()); document.getElementById('parcelWidthVal').textContent=this.value"
+            style="flex:1;">
+          <span id="parcelWidthVal" style="font-size:11px; min-width:20px;">2</span>
+        </div>
+      </div>
+
       <!-- County boundaries -->
       <div>
         <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
@@ -876,13 +892,15 @@ map.on("baselayerchange", function(e){
 // Loaded on demand from VCGI FeatureServer (layer 1 = active parcels).
 // Only fetches when zoom >= 14 to avoid loading statewide polygon data.
 // Drawn as a GeoJSON layer; refreshes on every map move/zoom while enabled.
-// Parcel style switches between green (all non-satellite basemaps) and
+// Parcel style switches between user-chosen color (non-satellite) and
 // white (satellite) so the boundaries remain visible against vegetation.
 function getParcelStyle(){
   if(activeBase === 'satellite'){
-    return { color: '#ffffff', weight: 2, fillOpacity: 0 };
+    return { color: '#ffffff', weight: parseFloat(document.getElementById('parcelWidth')?.value || 2), fillOpacity: 0 };
   }
-  return { color: '#1a7a1a', weight: 2, fillOpacity: 0 };
+  const color = document.getElementById('parcelColor')?.value || '#1a7a1a';
+  const weight = parseFloat(document.getElementById('parcelWidth')?.value || 2);
+  return { color, weight, fillOpacity: 0 };
 }
 
 // Custom pane for parcels — sits below marker pane so clicks reach markers.
@@ -1087,7 +1105,7 @@ function loadFema(){
     returnGeometry: 'true',
     outSR:        '4326',
     f:            'geojson',
-    resultRecordCount: '1000'
+    resultRecordCount: '200'
   });
   fetch(FEMA_URL + '?' + params.toString(), { signal: ctrl.signal })
   .then(r => r.json())
@@ -1104,8 +1122,8 @@ const femaFloodLayer = femaGeoLayer;
 // ============================================================
 // TOWN & COUNTY BOUNDARY LAYERS
 // ============================================================
-const TOWN_BDY_URL  = 'https://maps.vcgi.vermont.gov/arcgis/rest/services/VCGI_services/VCGI_BASEMAP_WM_CACHE_v2/MapServer/20/query';
-const CNTY_BDY_URL  = 'https://maps.vcgi.vermont.gov/arcgis/rest/services/VCGI_services/VCGI_BASEMAP_WM_CACHE_v2/MapServer/22/query';
+const TOWN_BDY_URL  = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query';
+const CNTY_BDY_URL  = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_counties_SP_v1/FeatureServer/0/query';
 const TOWN_BDY_MIN_ZOOM = 8;
 const CNTY_BDY_MIN_ZOOM = 6;
 
@@ -1178,7 +1196,7 @@ function _loadBoundaryLayer(which){
 
   const params = new URLSearchParams(Object.assign({
     where:          whereClause,
-    outFields:      which === 'town' ? 'TOWNNAME,CNTY' : 'CNTYNAME',
+    outFields:      which === 'town' ? 'TOWNNAME,TOWNNAMEMC,CNTY' : 'CNTYNAME',
     returnGeometry: 'true',
     outSR:          '4326',
     f:              'geojson',
@@ -1203,6 +1221,7 @@ function _loadBoundaryLayer(which){
     data.features.forEach(function(feat){
       if(!feat.geometry) return;
       const name = feat.properties[nameField] ||
+                   feat.properties['TOWNNAMEMC'] ||
                    feat.properties['TOWNNAME'] ||
                    feat.properties['CNTYNAME'] || '';
       if(!name) return;
