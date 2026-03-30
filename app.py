@@ -482,8 +482,15 @@ def fetch_all_features(where):
             "resultRecordCount": page_size,
             "resultOffset":      offset,
         }
-        r = requests.get(ARCGIS_URL, params=params)
-        data = r.json()
+        try:
+            r = requests.get(ARCGIS_URL, params=params, timeout=25)
+            data = r.json()
+        except Exception as e:
+            app.logger.error(f"fetch_all_features error at offset {offset}: {e}")
+            break
+        if data.get("error"):
+            app.logger.error(f"ArcGIS error in fetch_all_features: {data['error']}")
+            break
         features = data.get("features", [])
         all_features.extend(features)
 
@@ -2336,6 +2343,16 @@ WMS_ALLOWED = [
     'hazards.fema.gov',
     'services1.arcgis.com',
 ]
+
+@app.route("/debug/where")
+def debug_where():
+    """Temporary debug endpoint to show the WHERE clause for a given filter set."""
+    from flask import request as req
+    filters = parse_filters(req.args)
+    where = build_where_clause(filters)
+    has_town = bool(filters.get('towns','').strip())
+    return jsonify({'where': where, 'has_town_filter': has_town, 'filters': {k:v for k,v in filters.items() if v}})
+
 
 @app.route("/proxy/wms")
 def proxy_wms():
