@@ -245,9 +245,15 @@ def build_where_clause(filters):
     clauses = ["1=1"]
 
     # County filter
+    # ArcGIS has inconsistent countyCode padding — some records use '9', others '09'.
+    # Include both padded and unpadded forms to catch all records.
     if filters["counties"]:
         codes = filters["counties"].split(",")
-        codes_sql = ",".join([f"'{c}'" for c in codes])
+        all_codes = set()
+        for c in codes:
+            all_codes.add(c)                    # e.g. '09'
+            all_codes.add(str(int(c)))          # e.g. '9'
+        codes_sql = ",".join([f"'{c}'" for c in sorted(all_codes)])
         clauses.append(f"countyCode IN ({codes_sql})")
 
     # Date range — ArcGIS requires DATE 'YYYY-MM-DD' format
