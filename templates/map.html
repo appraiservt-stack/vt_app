@@ -683,9 +683,9 @@
       <div id="fema-legend" style="display:none; margin-bottom:6px; padding:5px 6px; background:#f5f9ff; border:1px solid #b8d0f0; border-radius:3px;">
         <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">FEMA Flood Zones</div>
         <div style="font-size:10px; line-height:1.8;">
-          <span style="display:inline-block; width:14px; height:10px; background:#a8d8f0; border:1px solid #1a6fa8; margin-right:4px; vertical-align:middle;"></span>Zone AE &mdash; High risk (BFE established)<br>
-          <span style="display:inline-block; width:14px; height:10px; background:#ffb347; border:1px solid #e07000; margin-right:4px; vertical-align:middle;"></span>Zone A &mdash; High risk (no BFE)<br>
-          <span style="display:inline-block; width:14px; height:10px; background:#f08080; border:1px solid #b00000; margin-right:4px; vertical-align:middle;"></span>Floodway &mdash; Highest restriction
+          <span style="display:inline-block; width:14px; height:10px; background:#a8d4e6; border:1px solid #5a9ab5; margin-right:4px; vertical-align:middle;"></span>Zone AE &mdash; High risk (BFE established)<br>
+          <span style="display:inline-block; width:14px; height:10px; background:#f0c8a0; border:1px solid #c87040; margin-right:4px; vertical-align:middle;"></span>Zone A &mdash; High risk (no BFE)<br>
+          <span style="display:inline-block; width:14px; height:10px; background:#e87878; border:1px solid #b03030; margin-right:4px; vertical-align:middle;"></span>Floodway &mdash; Highest restriction
         </div>
       </div>
 
@@ -1882,7 +1882,6 @@ function buildSaleRow(s, dimmed){
   <div style="border-top:1px solid #eee; padding:3px 0; ${style}">
     <div style="display:flex; align-items:center; justify-content:space-between;">
       <div>
-        <input type="checkbox" ${checked} onclick="event.stopPropagation(); toggleSale('${s.id}', this)">
         <b>${price}</b> &nbsp; ${dateStr}
       </div>
       <a id="ptt172-link-${s.id}" href="/ptt172/preview?id=${s.id}" target="_blank"
@@ -1925,7 +1924,7 @@ function buildPopupHTML(p, sales, historySales){
     </a><br>`;
   }
 
-  header += `<b>Sales — check to select for export:</b>`;
+  header += `<b>Click PTT-172 to view or export:</b>`;
 
   // Sales rows (scrollable)
   let rows = '';
