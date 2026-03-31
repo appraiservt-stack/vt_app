@@ -1003,6 +1003,8 @@ function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
   function load(){
     if(!isOn) return;
     if(map.getZoom() < (minZoom||8)){ if(overlay){ group.removeLayer(overlay); overlay=null; } return; }
+    // Remove stale overlay immediately so stretched image doesn't show during load
+    if(overlay){ group.removeLayer(overlay); overlay=null; }
     const b = map.getBounds();
     const sw = L.CRS.EPSG3857.project(b.getSouthWest());
     const ne = L.CRS.EPSG3857.project(b.getNorthEast());
@@ -1016,13 +1018,13 @@ function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
     const url = serviceUrl.includes('fema.gov')
       ? exportUrl
       : CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
-    if(pending) pending = null;
+    pending = null;
     const img = new Image();
     pending = img;
+    const snapBounds = b; // capture bounds at request time
     img.onload = function(){
       if(img !== pending) return;
-      if(overlay) group.removeLayer(overlay);
-      overlay = L.imageOverlay(url, b, { opacity: opacity, pane: pane, interactive: false });
+      overlay = L.imageOverlay(url, snapBounds, { opacity: opacity, pane: pane, interactive: false });
       group.addLayer(overlay);
     };
     img.src = url;
