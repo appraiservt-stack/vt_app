@@ -1005,10 +1005,13 @@ const ProxyExportLayer = L.TileLayer.WMS.extend({
     const b = this._tileCoordsToBounds(coords);
     const sw = L.CRS.EPSG3857.project(b.getSouthWest());
     const ne = L.CRS.EPSG3857.project(b.getNorthEast());
-    const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
-    const exportUrl = this._serviceUrl + '/export?bbox=' + bbox +
+    // Add 10% buffer to each side to eliminate tile seam gaps
+    const bw = (ne.x - sw.x) * 0.1;
+    const bh = (ne.y - sw.y) * 0.1;
+    const bufferedBbox = (sw.x-bw)+','+(sw.y-bh)+','+(ne.x+bw)+','+(ne.y+bh);
+    const exportUrl = this._serviceUrl + '/export?bbox=' + bufferedBbox +
       '&bboxSR=3857&layers=show:' + this._layerIds +
-      '&size=256,256&imageSR=3857&format=png32&transparent=true&f=image';
+      '&size=282,282&imageSR=3857&format=png32&transparent=true&f=image';
     return CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
   }
 });
@@ -1017,6 +1020,8 @@ const femaFloodLayer = new ProxyExportLayer(
   'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer',
   '28', 'femaPane', 0.7
 );
+femaFloodLayer.options.maxZoom = 19;
+femaFloodLayer.options.minZoom = 10;
 let femaOn = false;
 function loadFema(){} // no-op — tiles load automatically
 
