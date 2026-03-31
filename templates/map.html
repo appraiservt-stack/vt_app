@@ -1511,6 +1511,17 @@ function rebuildTownListForCounty(code){
 }
 
 function rebuildAllTownLists(){
+  // Re-normalize all entries in townsByCounty to title case before rebuilding
+  // This eliminates any uppercase duplicates that crept in from sales data
+  const normalized = {};
+  for(const [code, townSet] of Object.entries(townsByCounty)){
+    normalized[code] = new Set();
+    townSet.forEach(t => {
+      const n = t.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+      normalized[code].add(n);
+    });
+  }
+  townsByCounty = normalized;
   for(const code of Object.keys(townsByCounty)){
     rebuildTownListForCounty(code);
   }
