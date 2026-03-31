@@ -892,7 +892,8 @@ if(!map.getPane('parcelPane')){
   pp.style.pointerEvents = 'none';
 }
 
-const PROXY = (url) => `/proxy/wms?url=${encodeURIComponent(url)}`;
+const CF_WORKER = 'https://vt-map-proxy.quiet-scene-a739.workers.dev/';
+const PROXY = (url) => CF_WORKER + '?url=' + encodeURIComponent(url);
 
 // Parcel outlines: ANR WMS is too slow (~37s) for tile overlay.
 // Visual outlines removed; click-to-query popup still works at zoom 14+.
@@ -1008,7 +1009,7 @@ const ProxyExportLayer = L.TileLayer.WMS.extend({
     const exportUrl = this._serviceUrl + '/export?bbox=' + bbox +
       '&bboxSR=3857&layers=show:' + this._layerIds +
       '&size=256,256&imageSR=3857&format=png32&transparent=true&f=image';
-    return '/proxy/wms?url=' + encodeURIComponent(exportUrl);
+    return CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
   }
 });
 
