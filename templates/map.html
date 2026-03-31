@@ -679,6 +679,16 @@
         </div>
       </div>
 
+      <!-- FEMA legend (hidden until layer is enabled) -->
+      <div id="fema-legend" style="display:none; margin-bottom:6px; padding:5px 6px; background:#f5f9ff; border:1px solid #b8d0f0; border-radius:3px;">
+        <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">FEMA Flood Zones</div>
+        <div style="font-size:10px; line-height:1.8;">
+          <span style="display:inline-block; width:14px; height:10px; background:#a8d8f0; border:1px solid #1a6fa8; margin-right:4px; vertical-align:middle;"></span>Zone AE &mdash; High risk (BFE established)<br>
+          <span style="display:inline-block; width:14px; height:10px; background:#ffb347; border:1px solid #e07000; margin-right:4px; vertical-align:middle;"></span>Zone A &mdash; High risk (no BFE)<br>
+          <span style="display:inline-block; width:14px; height:10px; background:#f08080; border:1px solid #b00000; margin-right:4px; vertical-align:middle;"></span>Floodway &mdash; Highest restriction
+        </div>
+      </div>
+
       <!-- County boundaries -->
       <div>
         <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
@@ -971,7 +981,9 @@ map.on('click', onParcelClick);
 function loadParcels(){}
 
 // ============================================================
-// FEMA FLOOD ZONES — WMS tile overlay
+// FEMA FLOOD ZONES — via Flask proxy + Esri MapServer export
+// Confirmed working: loads PNG tiles instantly, no CORS issues
+// Only shows AE, A, Floodway (excludes Zone X to avoid covering whole map)
 // ============================================================
 if(!map.getPane('femaPane')){
   const fp = map.createPane('femaPane');
@@ -979,112 +991,33 @@ if(!map.getPane('femaPane')){
   fp.style.pointerEvents = 'none';
 }
 
-// Helper: build a WMS-style tile layer using ArcGIS dynamic MapServer export.
-// Routes through Flask proxy to avoid ad-blocker blocking of third-party requests.
-function esriDynamicLayer(serviceUrl, layers, pane, opacity){
-  const ProxyWMS = L.TileLayer.WMS.extend({
-    getTileUrl: function(coords){
-      const tileBounds = this._tileCoordsToBounds(coords);
-      const sw = L.CRS.EPSG3857.project(tileBounds.getSouthWest());
-      const ne = L.CRS.EPSG3857.project(tileBounds.getNorthEast());
-      const bbox = sw.x + ',' + sw.y + ',' + ne.x + ',' + ne.y;
-      const exportUrl = serviceUrl + '/export' +
-        '?bbox=' + bbox +
-        '&bboxSR=3857&layers=show:' + layers +
-        '&size=256,256&imageSR=3857&format=png32&transparent=true&f=image';
-      return '/proxy/wms?url=' + encodeURIComponent(exportUrl);
-    }
-  });
-  return new ProxyWMS('https://placeholder', {
-    layers: layers,
-    format: 'image/png',
-    transparent: true,
-    pane: pane,
-    opacity: opacity,
-    attribution: 'VT ANR / FEMA'
-  });
-}
+const ProxyExportLayer = L.TileLayer.WMS.extend({
+  initialize: function(serviceUrl, layerIds, pane, opacity){
+    this._serviceUrl = serviceUrl;
+    this._layerIds = layerIds;
+    L.TileLayer.WMS.prototype.initialize.call(this, 'https://placeholder', {
+      layers: layerIds, format: 'image/png', transparent: true,
+      pane: pane, opacity: opacity, attribution: 'FEMA / VT ANR'
+    });
+  },
+  getTileUrl: function(coords){
+    const b = this._tileCoordsToBounds(coords);
+    const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+    const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+    const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
+    const exportUrl = this._serviceUrl + '/export?bbox=' + bbox +
+      '&bboxSR=3857&layers=show:' + this._layerIds +
+      '&size=256,256&imageSR=3857&format=png32&transparent=true&f=image';
+    return '/proxy/wms?url=' + encodeURIComponent(exportUrl);
+  }
+});
 
-const femaFloodLayer = esriDynamicLayer(
+const femaFloodLayer = new ProxyExportLayer(
   'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer',
   '28', 'femaPane', 0.7
 );
 let femaOn = false;
 function loadFema(){} // no-op — tiles load automatically
-
-// ============================================================
-// WETLANDS (VT VSWI) — WMS tile overlay
-// ============================================================
-if(!map.getPane('wetlandsPane')){
-  const wp = map.createPane('wetlandsPane');
-  wp.style.zIndex = 345;
-  wp.style.pointerEvents = 'none';
-}
-
-const wetlandsLayer = esriDynamicLayer(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/map_services/MAP_ANR_WETLANDPROJECTS_WM_NOCACHE/MapServer',
-  '14,15', 'wetlandsPane', 0.7
-);
-let wetlandsOn = false;
-
-// ============================================================
-// VT PROTECTED LANDS — WMS tile overlay + click-to-query
-// ============================================================
-if(!map.getPane('protectedPane')){
-  const pp2 = map.createPane('protectedPane');
-  pp2.style.zIndex = 340;
-  pp2.style.pointerEvents = 'none';
-}
-
-const protectedLandsLayer = esriDynamicLayer(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer',
-  '39', 'protectedPane', 0.6
-);
-let protectedOn = false;
-
-const PROTECTED_QUERY_URL = 'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/39/query';
-
-function onProtectedClick(e){
-  if(!protectedOn) return;
-  const b = 0.001; // ~100m buffer in degrees
-  const env = `${e.latlng.lng-b},${e.latlng.lat-b},${e.latlng.lng+b},${e.latlng.lat+b}`;
-  const params = new URLSearchParams({
-    where: '1=1',
-    geometry: env,
-    geometryType: 'esriGeometryEnvelope',
-    inSR: '4326',
-    spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'NAME,ANRUnit,ANRDept,GISACRES,SOVInterest',
-    returnGeometry: 'false',
-    f: 'json',
-    resultRecordCount: '1'
-  });
-  fetch(PROTECTED_QUERY_URL + '?' + params.toString())
-  .then(r => r.json())
-  .then(data => {
-    const feats = data.features || [];
-    if(!feats.length) return;
-    const p = feats[0].attributes;
-    const acres = p.GISACRES ? Number(p.GISACRES).toFixed(1) + ' ac' : '—';
-    const html = `
-      <div style="font-size:12px; min-width:200px;">
-        <div style="background:#2d6a2d; color:white; font-weight:bold; padding:4px 8px;
-                    border-radius:3px 3px 0 0; margin-bottom:4px;">
-          &#x1F332; VT Protected Land
-        </div>
-        <table style="font-size:11px; border-collapse:collapse; width:100%;">
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Name:</td><td style="font-weight:bold;">${p.NAME||'—'}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">ANR Unit:</td><td>${p.ANRUnit||'—'}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Dept:</td><td>${p.ANRDept||'—'}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Interest:</td><td>${p.SOVInterest||'—'}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Acres:</td><td>${acres}</td></tr>
-        </table>
-      </div>`;
-    L.popup({ maxWidth: 280 }).setLatLng(e.latlng).setContent(html).openOn(map);
-  })
-  .catch(err => console.warn('Protected lands click error:', err));
-}
-map.on('click', onProtectedClick);
 
 // ============================================================
 // TOWN & COUNTY BOUNDARY LAYERS
@@ -1269,8 +1202,6 @@ L.control.layers(
     // Overlays — toggle independently of the basemap
     "VT Parcels (zoom 14+)": parcelWmsLayer,
     "FEMA Flood Zones":      femaFloodLayer,
-    "Wetlands (VSWI)":       wetlandsLayer,
-    "Protected Lands":       protectedLandsLayer,
     "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
     "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
   }
@@ -1278,20 +1209,16 @@ L.control.layers(
 
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn   = true; }
-  if(e.name === 'FEMA Flood Zones')        { femaOn      = true; }
-  if(e.name === 'Wetlands (VSWI)')         { wetlandsOn  = true; }
-  if(e.name === 'Protected Lands')         { protectedOn = true; }
-  if(e.name === 'Town Boundaries')         { townBdyOn   = true; loadTownBoundaries(); }
-  if(e.name === 'County Boundaries')       { cntyBdyOn   = true; loadCntyBoundaries(); }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; document.getElementById('fema-legend').style.display=''; }
+  if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
+  if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
 });
 map.on('overlayremove', function(e){
-  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn   = false; }
-  if(e.name === 'FEMA Flood Zones')        { femaOn      = false; }
-  if(e.name === 'Wetlands (VSWI)')         { wetlandsOn  = false; }
-  if(e.name === 'Protected Lands')         { protectedOn = false; }
-  if(e.name === 'Town Boundaries')         { townBdyOn   = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
-  if(e.name === 'County Boundaries')       { cntyBdyOn   = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = false; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; document.getElementById('fema-legend').style.display='none'; }
+  if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
+  if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
 });
 
 let markersLayer = L.layerGroup().addTo(map);
@@ -1991,13 +1918,6 @@ function buildPopupHTML(p, sales, historySales){
       &#x1F5FA; View in Google Maps / Street View
     </a><br>`;
   }
-
-  // Download checkbox — controls whether PTT-172 opens inline or downloads
-  header += `<div style="margin:3px 0 4px 0; font-size:10px; display:flex; align-items:center; gap:4px;">
-    <input type="checkbox" id="ptt172-dl-chk" onchange="_ptt172DlMode=this.checked"
-           style="cursor:pointer;">
-    <label for="ptt172-dl-chk" style="cursor:pointer;">Download PTT-172 form (save to disk)</label>
-  </div>`;
 
   header += `<b>Sales — check to select for export:</b>`;
 
