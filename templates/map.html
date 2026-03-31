@@ -1011,9 +1011,9 @@ function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
     const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
     const size = map.getSize();
     const exportUrl = serviceUrl + '/export?bbox=' + bbox +
-      '&bboxSR=3857&layers=show:' + layerIds +
+      '&bboxSR=102100&layers=show:' + layerIds +
       '&size=' + size.x + ',' + size.y +
-      '&imageSR=3857&format=png32&transparent=true&f=image';
+      '&imageSR=102100&dpi=96&format=png32&transparent=true&f=image';
     // Use direct URL for FEMA (CORS allowed), Cloudflare Worker for ANR servers
     const url = serviceUrl.includes('fema.gov')
       ? exportUrl
