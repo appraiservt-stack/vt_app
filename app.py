@@ -79,52 +79,34 @@ BUILDING_TYPE_LOOKUP = VT_CODES.get("building_types", {})
 # Used when a record's ArcGIS coordinates fail the county bounds check.
 TOWN_CENTROIDS = VT_CODES.get("town_centroids", {})
 
-# Approximate bounding boxes for each Vermont county (lat_min, lat_max, lon_min, lon_max)
-# Used to validate that a record's ArcGIS coordinates actually fall in the county it reports.
-# Records whose coordinates land outside their county's box are treated as null-coordinate
-# (no map marker plotted) to prevent them from appearing in the wrong county.
-COUNTY_BOUNDS = {
-    "01": (43.70, 44.40, -73.50, -72.75),  # Addison
-    "02": (42.70, 43.35, -73.50, -72.75),  # Bennington
-    "03": (44.25, 45.05, -72.40, -71.40),  # Caledonia
-    "04": (44.25, 45.05, -73.35, -72.65),  # Chittenden
-    "05": (44.35, 45.05, -72.20, -71.40),  # Essex
-    "06": (44.55, 45.05, -73.35, -72.45),  # Franklin
-    "07": (44.55, 45.10, -73.50, -73.05),  # Grand Isle
-    "08": (44.35, 44.85, -73.05, -72.25),  # Lamoille
-    "09": (43.65, 44.40, -72.75, -71.95),  # Orange
-    "10": (44.45, 45.05, -72.60, -71.85),  # Orleans
-    "11": (43.25, 43.95, -73.50, -72.45),  # Rutland
-    "12": (43.95, 44.65, -73.00, -72.20),  # Washington
-    "13": (42.70, 43.35, -72.90, -71.95),  # Windham
-    "14": (43.25, 44.15, -72.80, -72.05),  # Windsor
-}
+# Vermont state bounding box — only reject coordinates that are clearly outside VT.
+# We no longer check per-county because ArcGIS TOWNNAME assignments are sometimes
+# wrong (e.g. a Readsboro property tagged as Rutland City) which caused valid
+# coordinates to be rejected and replaced with town centroid fallbacks.
+VT_LAT_MIN, VT_LAT_MAX =  42.7,  45.1
+VT_LON_MIN, VT_LON_MAX = -73.5, -71.5
 
 
-def coords_valid_for_county(lat, lon, county_code):
-    """Return True if (lat, lon) falls within the expected bounding box for county_code."""
+def coords_valid_for_vt(lat, lon):
+    """Return True if (lat, lon) is non-null, non-zero, and inside Vermont."""
     if lat is None or lon is None:
         return False
-    code = str(county_code).strip().zfill(2)
-    bounds = COUNTY_BOUNDS.get(code)
-    if bounds is None:
-        return True   # Unknown county — don't discard
-    lat_min, lat_max, lon_min, lon_max = bounds
-    return lat_min <= lat <= lat_max and lon_min <= lon <= lon_max
+    if lat == 0 and lon == 0:
+        return False
+    return VT_LAT_MIN <= lat <= VT_LAT_MAX and VT_LON_MIN <= lon <= VT_LON_MAX
 
 
 def resolve_coordinates(raw_lat, raw_lon, county_code, trusted_town):
     """Return (lat, lon, approx) for a record.
 
-    - If ArcGIS coordinates are valid for the county: return them, approx=False.
-    - If invalid (geocoding error in source data): fall back to the town centroid,
-      approx=True so the front-end can show a distinct marker style.
-    - If no centroid available: return (None, None, False).
+    - If coordinates are valid Vermont coords: use them as-is, approx=False.
+    - If null, zero, or outside Vermont: fall back to the town centroid, approx=True.
+    - If no centroid available either: return (None, None, False) — not plotted.
     """
-    if coords_valid_for_county(raw_lat, raw_lon, county_code):
+    if coords_valid_for_vt(raw_lat, raw_lon):
         return raw_lat, raw_lon, False
 
-    # Bad coordinates — look up the town centroid as a fallback
+    # Bad/missing coordinates — fall back to town centroid
     town_key = (trusted_town or "").strip().upper()
     centroid  = TOWN_CENTROIDS.get(town_key)
     if centroid:
@@ -1025,6 +1007,82 @@ def data():
                 "buyerFirstName":   rec["buyerFirstName"],
                 "buyerEntityName":  rec["buyerEntityName"],
             })
+
+    return jsonify({"data": results})
+
+
+@app.route("/data/approx")
+@login_required
+def data_approx():
+    """Return only approxLocation=True records matching the current filters.
+
+    No viewport bbox — always searches the full dataset so centroid-placed
+    markers are never missed due to pan/zoom position. The front-end keeps
+    these in a separate layer that only refreshes on filter changes, not on
+    every pan/zoom.
+    """
+    filters = parse_filters(request.args)
+    where   = build_where_clause(filters)
+    requested_counties = set(filters["counties"].split(",")) if filters["counties"] else set()
+
+    features = fetch_all_features(where)
+
+    results = []
+    for f in features:
+        rec = feature_to_record(f, filters)
+        if rec is None:
+            continue
+        # Only include approx (centroid-placed) records
+        if not rec.get("approxLocation"):
+            continue
+        # County cross-check same as /data
+        if requested_counties:
+            town_name = (f.get("attributes", {}).get("TOWNNAME") or "").strip().title()
+            actual_county = TOWN_TO_COUNTY.get(town_name)
+            if actual_county and actual_county not in requested_counties:
+                continue
+        results.append({
+            "id":               rec["id"],
+            "address":          rec["address"],
+            "city":             rec["city"],
+            "price":            rec["ValuePaidOrTransferred"],
+            "date":             rec["closingDate"],
+            "lat":              rec["lat"],
+            "lon":              rec["lon"],
+            "trustedCountyCode": rec["trustedCountyCode"],
+            "trustedCountyName": rec["trustedCountyName"],
+            "trustedTown":       rec["trustedTown"],
+            "schoolCode":        rec["schoolCode"],
+            "span":              rec["span"],
+            "correctedCounty":   rec["correctedCounty"],
+            "interestUndivPercentDesc": rec["interestUndivPercentDesc"],
+            "buildingConstruction1Desc": rec["buildingConstruction1Desc"],
+            "sellerUseOfPropertyDesc": rec["sellerUseOfPropertyDesc"],
+            "buyerUseOfPropertyDesc":  rec["buyerUseOfPropertyDesc"],
+            "propertyTaxExemption":    rec["propertyTaxExemption"],
+            "propertyTaxExemptionDesc": rec["propertyTaxExemptionDesc"],
+            "familyMember":            rec["familyMember"],
+            "familyMemberDesc":        rec["familyMemberDesc"],
+            "LGTExemption":            rec["LGTExemption"],
+            "LGTExemptionDesc":        rec["LGTExemptionDesc"],
+            "sellerAcquire":           rec["sellerAcquire"],
+            "sellerAcquireDesc":       rec["sellerAcquireDesc"],
+            "interestPropertyType":    rec["interestPropertyType"],
+            "buildingConstruction1":   rec["buildingConstruction1"],
+            "buildingConstruction2":   rec["buildingConstruction2"],
+            "buildingConstruction2Desc": rec["buildingConstruction2Desc"],
+            "buildingConstruction3":   rec["buildingConstruction3"],
+            "buildingConstruction3Desc": rec["buildingConstruction3Desc"],
+            "sellerUseOfProperty":     rec["sellerUseOfProperty"],
+            "buyerUseOfProperty":      rec["buyerUseOfProperty"],
+            "approxLocation":          True,
+            "sellerLastName":   rec["sellerLastName"],
+            "sellerFirstName":  rec["sellerFirstName"],
+            "sellerEntityName": rec["sellerEntityName"],
+            "buyerLastName":    rec["buyerLastName"],
+            "buyerFirstName":   rec["buyerFirstName"],
+            "buyerEntityName":  rec["buyerEntityName"],
+        })
 
     return jsonify({"data": results})
 

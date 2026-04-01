@@ -1259,6 +1259,11 @@ map.on('overlayremove', function(e){
 });
 
 let markersLayer = L.layerGroup().addTo(map);
+// Approx markers (town-centroid fallbacks) live in a separate layer.
+// This layer is only refreshed when filters change — never on pan/zoom —
+// so centroid-placed dots stay visible regardless of viewport position.
+let approxLayer  = L.layerGroup().addTo(map);
+let _approxXhr   = null;  // in-flight abort controller for /data/approx
 let popupTimer      = null;
 let hoverTimer      = null;
 let hoverEnabled    = true;
@@ -1642,6 +1647,7 @@ function applyFilters(){
         renderData(nameSearchCache);
       }
     });
+    loadApproxData();
     return;
   }
 
@@ -1677,6 +1683,7 @@ function applyFilters(){
         map.on("moveend", onMoveEnd);
         map.on("zoomend", onZoomEnd);
         loadData();
+        loadApproxData();
       }, 600);
       return;
     }
@@ -1722,6 +1729,7 @@ function applyFilters(){
         map.on("moveend", onMoveEnd);
         map.on("zoomend", onZoomEnd);
         loadData();
+        loadApproxData();
       }, 600);
       return;
     }
@@ -1729,6 +1737,7 @@ function applyFilters(){
 
   // All other filters: just reload data in the current map view.
   loadData();
+  loadApproxData();
 }
 
 // ===================================================
@@ -1773,6 +1782,89 @@ function loadData(){
 }
 
 // ===================================================
+// LOAD APPROX DATA — filter-triggered only, never on pan/zoom
+// Fetches centroid-placed (ungeocoded) records for the current filter
+// and renders them into approxLayer which persists across pan/zoom.
+// ===================================================
+function loadApproxData(){
+  if(_approxXhr){ _approxXhr.abort(); _approxXhr = null; }
+  approxLayer.clearLayers();
+
+  const params = buildFilterParams();
+  const ctrl = new AbortController();
+  _approxXhr = ctrl;
+
+  fetch("/data/approx?" + params.toString(), { signal: ctrl.signal })
+  .then(r => r.json())
+  .then(data => {
+    _approxXhr = null;
+    renderApproxData(data.data || []);
+  })
+  .catch(e => { if(e.name !== 'AbortError') console.warn('Approx fetch error:', e); });
+}
+
+function renderApproxData(records){
+  approxLayer.clearLayers();
+  if(!records.length) return;
+
+  // Group by centroid coordinates (all records for same town share same lat/lon)
+  let grouped = {};
+  records.forEach(p => {
+    if(p.trustedTown && p.trustedCountyCode)
+      addKnownTown(p.trustedTown, p.trustedCountyCode);
+    const key = (p.lat != null && p.lon != null)
+      ? (Math.round(p.lat * 10000) / 10000) + "|" + (Math.round(p.lon * 10000) / 10000)
+      : (p.address || "") + "_" + (p.city || "");
+    if(!grouped[key]) grouped[key] = [];
+    grouped[key].push(p);
+  });
+
+  Object.keys(grouped).forEach(key => {
+    const sales = grouped[key];
+    const p     = sales[0];
+    const lat   = (p.lat || 0) + 0.00005;
+    const lon   = (p.lon || 0) + 0.00005;
+
+    const isSelected  = sales.some(s => selectedSales[s.id]);
+    const markerColor = isSelected ? "#0066ff" : "#e65c00";
+
+    const marker = L.circleMarker([lat, lon], {
+      radius:      6,
+      color:       markerColor,
+      fillColor:   markerColor,
+      fillOpacity: isSelected ? 1 : 0,
+      weight:      2.5,
+      dashArray:   "4 3"
+    });
+
+    sales.forEach(s => {
+      markerRefs[s.id] = { marker, sales, prop: p };
+    });
+
+    marker.bindPopup(buildPopupHTML(p, sales, null), {
+      maxWidth:   280,
+      maxHeight:  420,
+      autoPan:    false,
+      keepInView: false
+    });
+
+    marker.on('mouseover', function(){
+      if(!hoverEnabled) return;
+      hoverTimer = setTimeout(() => openPopupWithHistory(marker, p, sales), 700);
+    });
+    marker.on('mouseout', function(){
+      if(hoverTimer) clearTimeout(hoverTimer);
+    });
+    marker.on('click', function(){
+      if(hoverTimer) clearTimeout(hoverTimer);
+      openPopupWithHistory(marker, p, sales);
+    });
+
+    approxLayer.addLayer(marker);
+  });
+}
+
+// ===================================================
 // RENDER DATA — place markers for a given records array
 // ===================================================
 function renderData(records){
@@ -1781,6 +1873,10 @@ function renderData(records){
 
   let grouped = {};
   records.forEach(p => {
+    // Approx records are handled by approxLayer — skip them here so they
+    // don’t get cleared/redrawn on every pan/zoom.
+    if(p.approxLocation) return;
+
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
 
@@ -2165,6 +2261,8 @@ function clearAllCheckboxes(){
   });
   // Invalidate any name search cache since fields are now cleared
   nameSearchCache = null;
+  // Clear approx layer since filters are being reset
+  approxLayer.clearLayers();
 }
 
 // ===================================================
@@ -2192,6 +2290,9 @@ function initMapEvents(){
   fetch("/data?" + params.toString())
   .then(r => r.json())
   .then(data => { renderData(data.data || []); });
+
+  // Load approx (centroid-placed) markers for initial statewide view
+  loadApproxData();
 }
 
 loadCodes();
