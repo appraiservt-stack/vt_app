@@ -1783,71 +1783,74 @@ function loadData(){
 
 // ===================================================
 // APPROX DATA CACHE
-// All ~7,800 ungeocoded records are fetched ONCE at page load and stored here.
-// Pan/zoom/filter events filter this cache client-side — no repeated fetches.
+// Approx records for the active county/town filter are fetched from the server
+// and cached in approxCache. Pan/zoom re-filters the cache client-side so
+// dots stay visible as the user moves around without repeated fetches.
+// When no county/town filter is active, approx dots are not shown
+// (a statewide fetch of 200k+ records would be too slow).
 // ===================================================
-let approxCache      = null;   // null = not yet loaded; [] = loaded but empty
-let approxCacheReady = false;
+let approxCache        = [];    // records for the current filter
+let approxCacheKey     = '';    // tracks what filter the cache was built for
+let _approxXhr         = null;
 
-function initApproxCache(){
-  // Fetch all approx records once. Runs in the background — doesn’t block
-  // the main map load. When done, immediately render for current viewport.
-  fetch('/data/approx/all')
-  .then(r => r.json())
-  .then(data => {
-    approxCache = data.data || [];
-    approxCacheReady = true;
-    loadApproxData(); // render immediately for current view
-  })
-  .catch(e => console.warn('Approx cache load error:', e));
+function _approxFilterKey(){
+  const p = buildFilterParams();
+  // Key on the fields that require a server refetch
+  return [
+    p.get('counties') || '',
+    p.get('towns')    || '',
+    p.get('date_from') || '',
+    p.get('date_to')   || '',
+    p.get('price_low') || '',
+    p.get('price_high') || ''
+  ].join('|');
 }
 
 function loadApproxData(){
-  if(!approxCacheReady) return; // cache not ready yet — initApproxCache will call us
+  const params   = buildFilterParams();
+  const counties = (params.get('counties') || '').trim();
+  const towns    = (params.get('towns')    || '').trim();
 
-  const b       = map.getBounds();
-  const params  = buildFilterParams();
-  const counties = (params.get('counties') || '').split(',').filter(Boolean);
-  const towns    = (params.get('towns')    || '').split(',').filter(Boolean).map(t => t.toUpperCase());
-  const dateFrom = params.get('date_from') || '';
-  const dateTo   = params.get('date_to')   || '';
-  const priceLow  = parseFloat(params.get('price_low'))  || 0;
-  const priceHigh = parseFloat(params.get('price_high')) || Infinity;
+  // No county or town filter — skip (statewide fetch is too slow)
+  if(!counties && !towns){
+    approxLayer.clearLayers();
+    approxCache    = [];
+    approxCacheKey = '';
+    return;
+  }
 
-  // Filter cache client-side
-  const visible = approxCache.filter(p => {
-    // Must have a centroid lat/lon
-    if(p.lat == null || p.lon == null) return false;
+  const newKey = _approxFilterKey();
 
-    // Viewport check — centroid must be inside current map bounds
-    if(!b.contains([p.lat, p.lon])) return false;
+  if(newKey === approxCacheKey){
+    // Same filter as before — just re-render for current viewport
+    _renderApproxFromCache();
+    return;
+  }
 
-    // County filter
-    if(counties.length && p.trustedCountyCode){
-      if(!counties.includes(String(p.trustedCountyCode).padStart(2,'0'))) return false;
-    }
+  // Filter changed — fetch fresh data from server
+  if(_approxXhr){ _approxXhr.abort(); _approxXhr = null; }
+  approxLayer.clearLayers();
 
-    // Town filter
-    if(towns.length && p.trustedTown){
-      if(!towns.includes(p.trustedTown.toUpperCase())) return false;
-    }
+  const ctrl = new AbortController();
+  _approxXhr = ctrl;
 
-    // Date filter
-    if(dateFrom || dateTo){
-      const d = p.date ? new Date(p.date) : null;
-      if(!d) return false;
-      if(dateFrom && d < new Date(dateFrom)) return false;
-      if(dateTo   && d > new Date(dateTo))   return false;
-    }
+  fetch('/data/approx?' + params.toString(), { signal: ctrl.signal })
+  .then(r => r.json())
+  .then(data => {
+    _approxXhr     = null;
+    approxCache    = data.data || [];
+    approxCacheKey = newKey;
+    _renderApproxFromCache();
+  })
+  .catch(e => { if(e.name !== 'AbortError') console.warn('Approx fetch error:', e); });
+}
 
-    // Price filter
-    const price = p.price || 0;
-    if(price < priceLow)  return false;
-    if(price > priceHigh) return false;
-
-    return true;
-  });
-
+function _renderApproxFromCache(){
+  // Filter cached records by current viewport bounds
+  const b = map.getBounds();
+  const visible = approxCache.filter(p =>
+    p.lat != null && p.lon != null && b.contains([p.lat, p.lon])
+  );
   renderApproxData(visible);
 }
 
@@ -2339,9 +2342,8 @@ function initMapEvents(){
   .then(r => r.json())
   .then(data => { renderData(data.data || []); });
 
-  // Fetch all ~7,800 approx records once in the background.
-  // When ready, renders immediately for current viewport.
-  initApproxCache();
+  // Load approx dots for initial view (no-op if no county/town filter active)
+  loadApproxData();
 }
 
 loadCodes();
