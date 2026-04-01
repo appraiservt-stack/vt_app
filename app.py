@@ -79,6 +79,16 @@ BUILDING_TYPE_LOOKUP = VT_CODES.get("building_types", {})
 # Used when a record's ArcGIS coordinates fail the county bounds check.
 TOWN_CENTROIDS = VT_CODES.get("town_centroids", {})
 
+# Pre-geocoded approx records: OBJECTID (str) → {lat, lon}
+# Built by geocode_approx.py, updated weekly.
+# Records here get plotted as precise black dots instead of town centroid red circles.
+_GEOCODED_APPROX_PATH = Path(__file__).with_name("geocoded_approx.json")
+try:
+    with _GEOCODED_APPROX_PATH.open() as _f:
+        GEOCODED_APPROX = json.load(_f)
+except (FileNotFoundError, json.JSONDecodeError):
+    GEOCODED_APPROX = {}
+
 # Vermont state bounding box — outer limit for any coordinate check.
 VT_LAT_MIN, VT_LAT_MAX =  42.7,  45.1
 VT_LON_MIN, VT_LON_MAX = -73.5, -71.5
@@ -119,17 +129,21 @@ def coords_in_county(lat, lon, county_code):
     return lat_min <= lat <= lat_max and lon_min <= lon <= lon_max
 
 
-def resolve_coordinates(raw_lat, raw_lon, county_code, trusted_town):
+def resolve_coordinates(raw_lat, raw_lon, county_code, trusted_town, object_id=None):
     """Return (lat, lon, approx) for a record.
 
-    Three-tier check using the TRUSTED county (from schoolCode), not the
-    self-reported countyCode or the unreliable ArcGIS TOWNNAME field:
-
-    1. Coords are null/zero/outside Vermont      → approx (town centroid)
-    2. Coords are in Vermont but wrong county    → approx (town centroid)
-       e.g. 1543 Potter Hill Rd Readsboro has geometry in Rutland area
-    3. Coords are in Vermont and right county    → black dot at real location
+    Checks in order:
+    0. Pre-geocoded lookup (geocoded_approx.json) — precise coords from Nominatim
+    1. Coords null/zero/outside Vermont           → approx (town centroid)
+    2. Coords in Vermont but wrong county bbox    → approx (town centroid)
+    3. Coords in Vermont and right county         → black dot at real location
     """
+    # Tier 0: check pre-geocoded lookup by OBJECTID
+    if object_id is not None:
+        entry = GEOCODED_APPROX.get(str(object_id))
+        if entry and entry.get("lat") and entry.get("lon"):
+            return entry["lat"], entry["lon"], False  # precise black dot
+
     # Tier 1: null, zero, or outside Vermont entirely
     if (raw_lat is None or raw_lon is None or
             (raw_lat == 0 and raw_lon == 0) or
@@ -147,7 +161,6 @@ def resolve_coordinates(raw_lat, raw_lon, county_code, trusted_town):
         centroid = TOWN_CENTROIDS.get(town_key)
         if centroid:
             return centroid["lat"], centroid["lon"], True
-        # No centroid — use the raw coords as a last resort (still approx)
         return raw_lat, raw_lon, True
 
     # Tier 3: coords look correct — plot as a normal black dot
@@ -575,8 +588,9 @@ def feature_to_record(f, filters):
             ("lat", "lon", "approxLocation"),
             resolve_coordinates(
                 attr.get("Latitude"), attr.get("Longitude"),
-                loc_info["rawCountyCode"],
-                loc_info["trustedTown"]
+                loc_info["trustedCountyCode"],
+                loc_info["trustedTown"],
+                object_id=attr.get("OBJECTID")
             )
         )),
 
