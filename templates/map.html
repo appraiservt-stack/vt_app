@@ -827,7 +827,7 @@ function getScreenFrame(){
 // ===================================================
 // Use canvas renderer for all circle markers — much faster than SVG for 500-2000 dots
 const canvasRenderer = L.canvas({ padding: 0.5 });
-let map = L.map('map', { preferCanvas: true }).setView([44, -72.7], 8);
+let map = L.map('map').setView([44, -72.7], 8);
 
 // ---- BASEMAPS (6) ----
 let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1061,8 +1061,9 @@ let townBdyOn = false, cntyBdyOn = false;
 let townBdyXhr = null, cntyBdyXhr = null;
 
 // GeoJSON layers for polygons
-let townBdyLayer = L.geoJSON(null);
-let cntyBdyLayer = L.geoJSON(null);
+// Boundary layers must be non-interactive so mouse events reach sale dot markers below
+let townBdyLayer = L.geoJSON(null, { interactive: false, bubblingMouseEvents: true });
+let cntyBdyLayer = L.geoJSON(null, { interactive: false, bubblingMouseEvents: true });
 
 // Label layers (L.layerGroup of L.markers with divIcons)
 let townLblLayer = L.layerGroup();
