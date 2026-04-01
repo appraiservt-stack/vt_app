@@ -1050,6 +1050,78 @@ def data():
     return jsonify({"data": results})
 
 
+@app.route("/data/approx/all")
+@login_required
+def data_approx_all():
+    """Return ALL approxLocation=True records statewide with no filters.
+
+    Called once at page load. The front-end caches the result and filters
+    it client-side by viewport/filters — no repeated server calls needed.
+    Only ~7,800 records so response is fast and small enough to cache.
+    """
+    features = fetch_all_features("ValPdOrTrn > 0")
+    results = []
+    for f in features:
+        rec = feature_to_record(f, {
+            "counties": "", "towns": "", "date_from": "", "date_to": "",
+            "price_low": "", "price_high": "", "land_low": "", "land_high": "",
+            "building_types": "", "interest_types": "", "seller_use": "",
+            "buyer_use": "", "grand_list": "", "ptt_exemptions": "",
+            "seller_entity": "", "seller_last": "", "seller_first": "",
+            "buyer_entity": "", "buyer_last": "", "buyer_first": "",
+            "street": "", "span": "",
+            "enrolled_current_use": "", "dev_prev_conv": "",
+            "buyer_adjoining": "", "foreclosed": "",
+        })
+        if rec is None:
+            continue
+        if not rec.get("approxLocation"):
+            continue
+        results.append({
+            "id":                rec["id"],
+            "address":           rec["address"],
+            "city":              rec["city"],
+            "price":             rec["ValuePaidOrTransferred"],
+            "date":              rec["closingDate"],
+            "lat":               rec["lat"],
+            "lon":               rec["lon"],
+            "trustedCountyCode": rec["trustedCountyCode"],
+            "trustedCountyName": rec["trustedCountyName"],
+            "trustedTown":       rec["trustedTown"],
+            "schoolCode":        rec["schoolCode"],
+            "span":              rec["span"],
+            "correctedCounty":   rec["correctedCounty"],
+            "interestUndivPercentDesc":  rec["interestUndivPercentDesc"],
+            "buildingConstruction1Desc": rec["buildingConstruction1Desc"],
+            "sellerUseOfPropertyDesc":   rec["sellerUseOfPropertyDesc"],
+            "buyerUseOfPropertyDesc":    rec["buyerUseOfPropertyDesc"],
+            "propertyTaxExemption":      rec["propertyTaxExemption"],
+            "propertyTaxExemptionDesc":  rec["propertyTaxExemptionDesc"],
+            "familyMember":              rec["familyMember"],
+            "familyMemberDesc":          rec["familyMemberDesc"],
+            "LGTExemption":              rec["LGTExemption"],
+            "LGTExemptionDesc":          rec["LGTExemptionDesc"],
+            "sellerAcquire":             rec["sellerAcquire"],
+            "sellerAcquireDesc":         rec["sellerAcquireDesc"],
+            "interestPropertyType":      rec["interestPropertyType"],
+            "buildingConstruction1":     rec["buildingConstruction1"],
+            "buildingConstruction2":     rec["buildingConstruction2"],
+            "buildingConstruction2Desc": rec["buildingConstruction2Desc"],
+            "buildingConstruction3":     rec["buildingConstruction3"],
+            "buildingConstruction3Desc": rec["buildingConstruction3Desc"],
+            "sellerUseOfProperty":       rec["sellerUseOfProperty"],
+            "buyerUseOfProperty":        rec["buyerUseOfProperty"],
+            "approxLocation":            True,
+            "sellerLastName":    rec["sellerLastName"],
+            "sellerFirstName":   rec["sellerFirstName"],
+            "sellerEntityName":  rec["sellerEntityName"],
+            "buyerLastName":     rec["buyerLastName"],
+            "buyerFirstName":    rec["buyerFirstName"],
+            "buyerEntityName":   rec["buyerEntityName"],
+        })
+    return jsonify({"data": results})
+
+
 @app.route("/data/approx")
 @login_required
 def data_approx():
