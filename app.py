@@ -7,6 +7,11 @@ import math
 import re
 import os
 from pathlib import Path
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not installed — env vars must be set manually
 from datetime import datetime, timezone
 from functools import wraps
 
@@ -25,11 +30,17 @@ app.register_blueprint(auth_bp)
 init_db()   # create users table if it doesn't exist
 
 # ── Login required decorator ──────────────────────────────────────────────────
+ADMIN_EMAIL_LOCAL   = os.environ.get("ADMIN_EMAIL", "appraiservt@gmail.com").lower()
+ADMIN_PASSWORD_SET  = bool(os.environ.get("ADMIN_PASSWORD"))  # True only when env var exists
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("auth.login"))
+        # Admin bypass — only active when ADMIN_PASSWORD env var is set (local dev only)
+        if ADMIN_PASSWORD_SET and session.get("user_email", "").lower() == ADMIN_EMAIL_LOCAL:
+            return f(*args, **kwargs)
         user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
         if not user:
             # Account deleted or session stale — go to login
@@ -877,6 +888,12 @@ def index():
     return home()
 
 def home():
+    # Admin bypass — only active when ADMIN_PASSWORD env var is set (local dev only)
+    if ADMIN_PASSWORD_SET and session.get("user_email", "").lower() == ADMIN_EMAIL_LOCAL:
+        return render_template("map.html",
+                               user_email=session["user_email"],
+                               subscription_status="active",
+                               trial_days=0)
     user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
     trial_days = days_left_in_trial(user) if user["subscription_status"] in ("trial", "trialing") else 0
     return render_template("map.html",
@@ -2380,4 +2397,3 @@ def proxy_wms():
 
 if __name__ == "__main__":
     app.run(debug=True)
- 

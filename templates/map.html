@@ -1065,8 +1065,8 @@ if(!map.getPane('bdyPane')){
   bp.style.zIndex = 390;  // below overlayPane(400) where markers live
   bp.style.pointerEvents = 'none';
 }
-let townBdyLayer = L.geoJSON(null, { pane: 'bdyPane', interactive: false, bubblingMouseEvents: true });
-let cntyBdyLayer = L.geoJSON(null, { pane: 'bdyPane', interactive: false, bubblingMouseEvents: true });
+let townBdyLayer = L.geoJSON(null, { pane: 'bdyPane', interactive: false, bubblingMouseEvents: true, style: function(){ return getBdyStyle('town'); } });
+let cntyBdyLayer = L.geoJSON(null, { pane: 'bdyPane', interactive: false, bubblingMouseEvents: true, style: function(){ return getBdyStyle('cnty'); } });
 
 // Label layers (L.layerGroup of L.markers with divIcons)
 let townLblLayer = L.layerGroup();
@@ -1177,9 +1177,12 @@ function _loadBoundaryLayer(which){
     const style = getBdyStyle(which);
     const showLabels = getBdyLabels(which);
 
-    // Add polygons
+    // Add polygons — style is applied via the constructor's style function during addData().
+    // Do NOT call polyLayer.setStyle() after addData(): in Leaflet, setStyle() on a GeoJSON layer
+    // calls Path.setStyle() on each child which triggers setOptions() and can interfere with the
+    // pane-specific renderer assigned in beforeAdd(). Passing style via the constructor option
+    // ensures the correct bdyPane renderer is used and mouse events pass through as expected.
     polyLayer.addData(data);
-    polyLayer.setStyle(style);
 
     // Add name labels at centroid of each polygon
     data.features.forEach(function(feat){

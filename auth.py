@@ -202,6 +202,21 @@ def login():
     if request.method == "POST":
         email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
+
+        # ── Admin bypass: only active when ADMIN_PASSWORD is set in environment ─
+        # Railway does NOT have this variable so bypass is disabled in production.
+        admin_password = os.environ.get("ADMIN_PASSWORD")  # None if not set
+        admin_email    = os.environ.get("ADMIN_EMAIL", "appraiservt@gmail.com").lower()
+        if admin_password and email == admin_email and password == admin_password:
+            session["user_id"]    = 0
+            session["user_email"] = email
+            resp = make_response(redirect(url_for("index")))
+            resp.set_cookie("remembered_email", email,
+                            max_age=60*60*24*365,
+                            httponly=False, samesite="Lax")
+            return resp
+        # ─────────────────────────────────────────────────────────────────────
+
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if not user or not check_password(user["password_hash"], password):
             flash("Invalid email or password.", "error")
