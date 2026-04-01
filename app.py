@@ -79,41 +79,79 @@ BUILDING_TYPE_LOOKUP = VT_CODES.get("building_types", {})
 # Used when a record's ArcGIS coordinates fail the county bounds check.
 TOWN_CENTROIDS = VT_CODES.get("town_centroids", {})
 
-# Vermont state bounding box — only reject coordinates that are clearly outside VT.
-# We no longer check per-county because ArcGIS TOWNNAME assignments are sometimes
-# wrong (e.g. a Readsboro property tagged as Rutland City) which caused valid
-# coordinates to be rejected and replaced with town centroid fallbacks.
+# Vermont state bounding box — outer limit for any coordinate check.
 VT_LAT_MIN, VT_LAT_MAX =  42.7,  45.1
 VT_LON_MIN, VT_LON_MAX = -73.5, -71.5
 
+# Per-county bounding boxes keyed by zero-padded county code.
+# Used to validate that a record’s ArcGIS coordinates land in the right county.
+# The key insight: we check against the TRUSTED county (from schoolCode), not
+# the self-reported countyCode on the form or the ArcGIS TOWNNAME field.
+# A generous padding of ~0.15 degrees (~10 miles) handles records near county
+# borders whose geocoded point lands just across the line.
+COUNTY_BOUNDS = {
+    "01": (43.60, 44.55, -73.50, -72.60),  # Addison
+    "02": (42.70, 43.50, -73.50, -72.70),  # Bennington
+    "03": (44.10, 45.05, -72.55, -71.40),  # Caledonia
+    "04": (44.10, 44.90, -73.50, -72.65),  # Chittenden
+    "05": (44.20, 45.05, -72.35, -71.40),  # Essex
+    "06": (44.45, 45.05, -73.40, -72.35),  # Franklin
+    "07": (44.45, 45.05, -73.55, -72.95),  # Grand Isle
+    "08": (44.25, 44.95, -73.15, -72.20),  # Lamoille
+    "09": (43.60, 44.40, -72.90, -71.80),  # Orange
+    "10": (44.40, 45.05, -72.75, -71.70),  # Orleans
+    "11": (43.10, 44.10, -73.55, -72.35),  # Rutland
+    "12": (43.85, 44.70, -73.10, -72.05),  # Washington
+    "13": (42.65, 43.50, -73.05, -71.85),  # Windham
+    "14": (43.10, 44.25, -72.95, -71.95),  # Windsor
+}
 
-def coords_valid_for_vt(lat, lon):
-    """Return True if (lat, lon) is non-null, non-zero, and inside Vermont."""
+
+def coords_in_county(lat, lon, county_code):
+    """Return True if (lat, lon) falls within the padded bbox of county_code."""
     if lat is None or lon is None:
         return False
-    if lat == 0 and lon == 0:
-        return False
-    return VT_LAT_MIN <= lat <= VT_LAT_MAX and VT_LON_MIN <= lon <= VT_LON_MAX
+    code = str(county_code).strip().zfill(2)
+    bounds = COUNTY_BOUNDS.get(code)
+    if bounds is None:
+        return True  # Unknown county — give it the benefit of the doubt
+    lat_min, lat_max, lon_min, lon_max = bounds
+    return lat_min <= lat <= lat_max and lon_min <= lon <= lon_max
 
 
 def resolve_coordinates(raw_lat, raw_lon, county_code, trusted_town):
     """Return (lat, lon, approx) for a record.
 
-    - If coordinates are valid Vermont coords: use them as-is, approx=False.
-    - If null, zero, or outside Vermont: fall back to the town centroid, approx=True.
-    - If no centroid available either: return (None, None, False) — not plotted.
+    Three-tier check using the TRUSTED county (from schoolCode), not the
+    self-reported countyCode or the unreliable ArcGIS TOWNNAME field:
+
+    1. Coords are null/zero/outside Vermont      → approx (town centroid)
+    2. Coords are in Vermont but wrong county    → approx (town centroid)
+       e.g. 1543 Potter Hill Rd Readsboro has geometry in Rutland area
+    3. Coords are in Vermont and right county    → black dot at real location
     """
-    if coords_valid_for_vt(raw_lat, raw_lon):
-        return raw_lat, raw_lon, False
+    # Tier 1: null, zero, or outside Vermont entirely
+    if (raw_lat is None or raw_lon is None or
+            (raw_lat == 0 and raw_lon == 0) or
+            not (VT_LAT_MIN <= raw_lat <= VT_LAT_MAX and
+                 VT_LON_MIN <= raw_lon <= VT_LON_MAX)):
+        town_key = (trusted_town or "").strip().upper()
+        centroid = TOWN_CENTROIDS.get(town_key)
+        if centroid:
+            return centroid["lat"], centroid["lon"], True
+        return None, None, False
 
-    # Bad/missing coordinates — fall back to town centroid
-    town_key = (trusted_town or "").strip().upper()
-    centroid  = TOWN_CENTROIDS.get(town_key)
-    if centroid:
-        return centroid["lat"], centroid["lon"], True
+    # Tier 2: coords are in Vermont but outside the trusted county’s bbox
+    if county_code and not coords_in_county(raw_lat, raw_lon, county_code):
+        town_key = (trusted_town or "").strip().upper()
+        centroid = TOWN_CENTROIDS.get(town_key)
+        if centroid:
+            return centroid["lat"], centroid["lon"], True
+        # No centroid — use the raw coords as a last resort (still approx)
+        return raw_lat, raw_lon, True
 
-    # No centroid found either — return null so no marker is plotted
-    return None, None, False
+    # Tier 3: coords look correct — plot as a normal black dot
+    return raw_lat, raw_lon, False
 
 
 def derive_trusted_location(attr):
