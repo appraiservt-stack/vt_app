@@ -946,10 +946,10 @@ def data():
         features = fetch_features(where, geo_params, max_records=2000)
 
     # Build a set of requested county codes for post-fetch validation.
-    # The countyCode field on the PTT-172 form is self-reported and often wrong
-    # (e.g. Pownal filed as Washington County). TOWNNAME is assigned by VCGI
-    # from actual GPS coordinates and is reliable. Drop any record whose
-    # TOWNNAME resolves to a different county than what was requested.
+    # Use trustedCountyCode (derived from schoolCode) — it is the most reliable
+    # county indicator. countyCode on the form is self-reported and often wrong.
+    # TOWNNAME is assigned by VCGI from GPS coordinates but is also unreliable
+    # (e.g. 1543 Potter Hill Rd Readsboro has TOWNNAME=Rutland City).
     requested_counties = set(filters["counties"].split(",")) if filters["counties"] else set()
 
     results = []
@@ -957,12 +957,11 @@ def data():
         rec = feature_to_record(f, filters)
         if rec is None:
             continue
-        # County cross-check: if a county filter is active, verify TOWNNAME
+        # County cross-check: use trustedCountyCode from schoolCode lookup
         if requested_counties:
-            town_name = (f.get("attributes", {}).get("TOWNNAME") or "").strip().title()
-            actual_county = TOWN_TO_COUNTY.get(town_name)
-            if actual_county and actual_county not in requested_counties:
-                continue   # Bad countyCode on the form — silently drop
+            actual_county = rec.get("trustedCountyCode")
+            if actual_county and str(actual_county).zfill(2) not in requested_counties:
+                continue   # Record belongs to a different county — drop
         results.append({
                 "id":               rec["id"],
                 "address":          rec["address"],
@@ -1035,11 +1034,10 @@ def data_approx():
         # Only include approx (centroid-placed) records
         if not rec.get("approxLocation"):
             continue
-        # County cross-check same as /data
+        # County cross-check: use trustedCountyCode from schoolCode lookup
         if requested_counties:
-            town_name = (f.get("attributes", {}).get("TOWNNAME") or "").strip().title()
-            actual_county = TOWN_TO_COUNTY.get(town_name)
-            if actual_county and actual_county not in requested_counties:
+            actual_county = rec.get("trustedCountyCode")
+            if actual_county and str(actual_county).zfill(2) not in requested_counties:
                 continue
         results.append({
             "id":               rec["id"],
