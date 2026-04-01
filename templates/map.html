@@ -825,8 +825,6 @@ function getScreenFrame(){
 // ===================================================
 // MAP INIT
 // ===================================================
-// Use canvas renderer for all circle markers — much faster than SVG for 500-2000 dots
-const canvasRenderer = L.canvas({ padding: 0.5 });
 let map = L.map('map').setView([44, -72.7], 8);
 
 // ---- BASEMAPS (6) ----
@@ -1061,9 +1059,14 @@ let townBdyOn = false, cntyBdyOn = false;
 let townBdyXhr = null, cntyBdyXhr = null;
 
 // GeoJSON layers for polygons
-// Boundary layers must be non-interactive so mouse events reach sale dot markers below
-let townBdyLayer = L.geoJSON(null, { interactive: false, bubblingMouseEvents: true });
-let cntyBdyLayer = L.geoJSON(null, { interactive: false, bubblingMouseEvents: true });
+// Boundary layers in dedicated pane below markers — non-interactive so events pass through
+if(!map.getPane('bdyPane')){
+  const bp = map.createPane('bdyPane');
+  bp.style.zIndex = 390;  // below overlayPane(400) where markers live
+  bp.style.pointerEvents = 'none';
+}
+let townBdyLayer = L.geoJSON(null, { pane: 'bdyPane', interactive: false, bubblingMouseEvents: true });
+let cntyBdyLayer = L.geoJSON(null, { pane: 'bdyPane', interactive: false, bubblingMouseEvents: true });
 
 // Label layers (L.layerGroup of L.markers with divIcons)
 let townLblLayer = L.layerGroup();
@@ -1819,8 +1822,7 @@ function renderData(records){
       fillColor:   markerColor,
       fillOpacity: isSelected ? 1 : isApprox ? 0 : 0,
       weight:      isApprox ? 2.5 : 2,
-      dashArray:   isApprox ? "4 3" : null,
-      renderer:    canvasRenderer
+      dashArray:   isApprox ? "4 3" : null
     });
 
     sales.forEach(s => {
