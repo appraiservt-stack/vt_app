@@ -929,12 +929,14 @@ def data():
         filters.get("buyer_last"),    filters.get("buyer_first"),
         filters.get("street"),        filters.get("span"),
     ]
-    has_name_filter = any(v for v in name_fields)
-    has_town_filter = bool(filters.get("towns", "").strip())
+    has_name_filter   = any(v for v in name_fields)
+    has_town_filter   = bool(filters.get("towns",    "").strip())
+    has_county_filter = bool(filters.get("counties", "").strip())
 
-    if has_name_filter or has_town_filter:
-        # No geometry restriction — let SQL filters do all the work
-        # so all matching records statewide are returned regardless of viewport
+    if has_name_filter or has_town_filter or has_county_filter:
+        # No geometry restriction — let SQL filters do all the work.
+        # This ensures misgeocoded records (wrong TOWNNAME/coordinates in ArcGIS)
+        # are still returned when a county or town filter is active.
         features = fetch_all_features(where)
     else:
         geo_params = {

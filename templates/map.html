@@ -1790,7 +1790,12 @@ function loadApproxData(){
   if(_approxXhr){ _approxXhr.abort(); _approxXhr = null; }
   approxLayer.clearLayers();
 
+  // Only fetch approx data when a county or town filter is active.
+  // A statewide approx fetch would page through 200k+ records and time out.
   const params = buildFilterParams();
+  const hasCounty = params.get('counties') && params.get('counties').trim();
+  const hasTown   = params.get('towns')    && params.get('towns').trim();
+  if(!hasCounty && !hasTown) return;
   const ctrl = new AbortController();
   _approxXhr = ctrl;
 
