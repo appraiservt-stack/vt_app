@@ -825,7 +825,9 @@ function getScreenFrame(){
 // ===================================================
 // MAP INIT
 // ===================================================
-let map = L.map('map').setView([44, -72.7], 8);
+// Use canvas renderer for all circle markers — much faster than SVG for 500-2000 dots
+const canvasRenderer = L.canvas({ padding: 0.5 });
+let map = L.map('map', { preferCanvas: true }).setView([44, -72.7], 8);
 
 // ---- BASEMAPS (6) ----
 let street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1816,7 +1818,8 @@ function renderData(records){
       fillColor:   markerColor,
       fillOpacity: isSelected ? 1 : isApprox ? 0 : 0,
       weight:      isApprox ? 2.5 : 2,
-      dashArray:   isApprox ? "4 3" : null
+      dashArray:   isApprox ? "4 3" : null,
+      renderer:    canvasRenderer
     });
 
     sales.forEach(s => {
