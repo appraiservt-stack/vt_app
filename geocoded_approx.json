@@ -4,6 +4,9 @@
     "lon": null,
     "address": "60 ACRE LOT",
     "city": "Montgomery",
+    "trustedTown": "Montgomery",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "151151": {
@@ -11,6 +14,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "152350": {
@@ -18,6 +24,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 9E ROTATION",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "152361": {
@@ -25,13 +34,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "152471": {
-    "lat": 42.7774317,
-    "lon": -72.6059303,
+    "lat": 44.223286,
+    "lon": -72.819806,
     "address": "390 STONY HILL ROAD",
     "city": "Warren",
+    "trustedTown": "Warren",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "152472": {
@@ -39,6 +54,9 @@
     "lon": -72.4125278,
     "address": "756 TIGERTOWN ROAD",
     "city": "Norwich",
+    "trustedTown": "Norwich",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "152475": {
@@ -46,6 +64,9 @@
     "lon": -73.1234931,
     "address": "1448 SUNDERLAND HILL ROAD",
     "city": "Sunderland",
+    "trustedTown": "Sunderland",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "152479": {
@@ -53,6 +74,9 @@
     "lon": null,
     "address": "30 MOUNTAINSIDE DRIVE, VILLAGE GATE",
     "city": "Warren",
+    "trustedTown": "Warren",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "152482": {
@@ -60,6 +84,9 @@
     "lon": -73.1920914,
     "address": "1403 EAST LAKESHORE DRIVE",
     "city": "Colchester",
+    "trustedTown": "Colchester",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "152486": {
@@ -67,6 +94,9 @@
     "lon": -72.601543,
     "address": "490 WRIGHT ORCHARD ROAD",
     "city": "Grafton",
+    "trustedTown": "Grafton",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "152488": {
@@ -74,6 +104,9 @@
     "lon": -72.2015076,
     "address": "1973 GREEN BAY LOOP",
     "city": "Peacham",
+    "trustedTown": "Peacham",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "152491": {
@@ -81,6 +114,9 @@
     "lon": -72.948985,
     "address": "1543 POTTER HILL ROAD",
     "city": "Readsboro",
+    "trustedTown": "Readsboro",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "152493": {
@@ -88,13 +124,19 @@
     "lon": -72.8217768,
     "address": "1719 STEBBINS ROAD",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "152494": {
-    "lat": 42.7269786,
-    "lon": -72.4584474,
+    "lat": 42.9038494,
+    "lon": -73.2042905,
     "address": "4145 COUNTY RD",
-    "city": "E MONTPELIER",
+    "city": "E Montpelier",
+    "trustedTown": "East Montpelier",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "152495": {
@@ -102,6 +144,9 @@
     "lon": -72.5848239,
     "address": "1941 WEIR ROAD",
     "city": "Williamstown",
+    "trustedTown": "Williamstown",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "152496": {
@@ -109,6 +154,9 @@
     "lon": -72.1558303,
     "address": "4338 HINMAN SETTLER ROAD",
     "city": "Brownington",
+    "trustedTown": "Brownington",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "152511": {
@@ -116,6 +164,9 @@
     "lon": null,
     "address": "2945 VERMONT ROUTE 105 EAST BERKSHI",
     "city": "Berkshire",
+    "trustedTown": "Berkshire",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "152551": {
@@ -123,6 +174,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "153219": {
@@ -130,6 +184,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD TWO TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "154228": {
@@ -137,6 +194,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "154355": {
@@ -144,6 +204,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "154415": {
@@ -151,6 +214,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "154426": {
@@ -158,6 +224,9 @@
     "lon": null,
     "address": "748 BALLGROUND ROAD",
     "city": "Albany",
+    "trustedTown": "Albany",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "154510": {
@@ -165,6 +234,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 8D ROTATION",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "155689": {
@@ -172,6 +244,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "155726": {
@@ -179,6 +254,9 @@
     "lon": -72.7294671,
     "address": "3726 WOODWARD NEIGHBORHOOD RD",
     "city": "Enosburg",
+    "trustedTown": "Enosburgh",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "155794": {
@@ -186,6 +264,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "156101": {
@@ -193,6 +274,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "156230": {
@@ -200,6 +284,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "156572": {
@@ -207,13 +294,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "156707": {
     "lat": null,
     "lon": null,
     "address": "68 WINDY HILL ACRES",
-    "city": "SPRINGFIELD",
+    "city": "Springfield",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "156959": {
@@ -221,6 +314,9 @@
     "lon": null,
     "address": "722 BABLING BROOK ROAD",
     "city": "Bakersfield",
+    "trustedTown": "Bakersfield",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "157678": {
@@ -228,20 +324,29 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "157932": {
     "lat": 42.7942697,
     "lon": -73.2594895,
     "address": "2681 RTE 346",
-    "city": "N POWNAL",
+    "city": "N Pownal",
+    "trustedTown": "Pownal",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "158246": {
     "lat": null,
     "lon": null,
     "address": "2477 US RTE 5 LOT C6",
-    "city": "DERBY",
+    "city": "Derby",
+    "trustedTown": "Braintree",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "158604": {
@@ -249,6 +354,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 14I ROTATIO",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "159025": {
@@ -256,6 +364,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "159108": {
@@ -263,6 +374,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "159533": {
@@ -270,6 +384,9 @@
     "lon": -72.5282315,
     "address": "818 VERMONT ROUTE 14",
     "city": "Williamstown",
+    "trustedTown": "Williamstown",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "160038": {
@@ -277,6 +394,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "160073": {
@@ -284,6 +404,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "160424": {
@@ -291,13 +414,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "160463": {
     "lat": 43.4657515,
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
-    "city": "BROWNVILLE",
+    "city": "Brownville",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "160500": {
@@ -305,6 +434,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "160941": {
@@ -312,6 +444,9 @@
     "lon": null,
     "address": "5963 VERMONT ROUTE 125 WEST",
     "city": "Bridport",
+    "trustedTown": "Bridport",
+    "trustedCountyCode": "01",
+    "trustedCountyName": "Addison",
     "geocoded_at": "2026-04-02"
   },
   "161408": {
@@ -319,6 +454,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "161724": {
@@ -326,6 +464,9 @@
     "lon": -72.3474524,
     "address": "2178 VERMONT ROUTE 105 EAST",
     "city": "Troy",
+    "trustedTown": "Troy",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "161832": {
@@ -333,6 +474,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "162064": {
@@ -340,6 +484,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "162802": {
@@ -347,13 +494,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "163317": {
-    "lat": 44.6007949,
-    "lon": -72.8080329,
+    "lat": null,
+    "lon": null,
     "address": "4323 ROUTE 108 SOUTH",
-    "city": "JERICHO",
+    "city": "Jericho",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "163338": {
@@ -361,6 +514,9 @@
     "lon": -72.5709691,
     "address": "2232 VERMONT ROUTE 14",
     "city": "Randolph",
+    "trustedTown": "Randolph",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "163830": {
@@ -368,6 +524,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "163893": {
@@ -375,6 +534,9 @@
     "lon": null,
     "address": "81 BOUTAH ROAD N/K/A 771 BOUTAH ROA",
     "city": "Alburgh",
+    "trustedTown": "Alburgh",
+    "trustedCountyCode": "07",
+    "trustedCountyName": "Grand Isle",
     "geocoded_at": "2026-04-02"
   },
   "163985": {
@@ -382,6 +544,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "164083": {
@@ -389,6 +554,9 @@
     "lon": null,
     "address": "13801 RIVERSIDE TOWNHOUSES UNIT 1",
     "city": "Manchester",
+    "trustedTown": "Manchester",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "164619": {
@@ -396,6 +564,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "164832": {
@@ -403,6 +574,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "166218": {
@@ -410,6 +584,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "166836": {
@@ -417,6 +594,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "167149": {
@@ -424,6 +604,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "167425": {
@@ -431,6 +614,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 9H ROTATION",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "167442": {
@@ -438,6 +624,9 @@
     "lon": null,
     "address": "700 TRAPP HIL ROAD, TRAPP FAMILY LO",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "167508": {
@@ -445,6 +634,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "167864": {
@@ -452,6 +644,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "168736": {
@@ -459,6 +654,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "168863": {
@@ -466,6 +664,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 8D ROTATION",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "169312": {
@@ -473,6 +674,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "169327": {
@@ -480,6 +684,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "169811": {
@@ -487,13 +694,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "169989": {
     "lat": 44.5882014,
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
-    "city": "SMUGGLERS NOTCH",
+    "city": "Smugglers Notch",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "170215": {
@@ -501,6 +714,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "170671": {
@@ -508,6 +724,9 @@
     "lon": null,
     "address": "135 SHOREDRIVE, LOT 41 1/2- ROY'S C",
     "city": "Barnet",
+    "trustedTown": "Barnet",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "170804": {
@@ -515,6 +734,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE 1 WEEK",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "171088": {
@@ -522,6 +744,9 @@
     "lon": null,
     "address": "2618 DUNMORE ACRES, CABIN 5",
     "city": "Leicester",
+    "trustedTown": "Leicester",
+    "trustedCountyCode": "01",
+    "trustedCountyName": "Addison",
     "geocoded_at": "2026-04-02"
   },
   "171141": {
@@ -529,6 +754,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "171963": {
@@ -536,6 +764,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "172250": {
@@ -543,6 +774,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "172283": {
@@ -550,6 +784,9 @@
     "lon": null,
     "address": "45 KOUNTRY TRAILER PARK",
     "city": "Bristol",
+    "trustedTown": "Bristol",
+    "trustedCountyCode": "01",
+    "trustedCountyName": "Addison",
     "geocoded_at": "2026-04-02"
   },
   "172400": {
@@ -557,13 +794,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 14I ROTATIO",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "172411": {
-    "lat": 44.5073515,
-    "lon": -71.8475389,
+    "lat": null,
+    "lon": null,
     "address": "7181 RIVER ROAD",
     "city": "Lemington",
+    "trustedTown": "Lemington",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "172442": {
@@ -571,6 +814,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "172710": {
@@ -578,13 +824,19 @@
     "lon": null,
     "address": "3 ACRE FIELD",
     "city": "Marlboro",
+    "trustedTown": "Marlboro",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "173443": {
     "lat": 43.7616448,
     "lon": -73.2650532,
     "address": "10 NORTH SHORE DR",
-    "city": "BELLOWS FALLS",
+    "city": "Bellows Falls",
+    "trustedTown": "Rockingham",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "173769": {
@@ -592,6 +844,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT14L ROTATION",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "174175": {
@@ -599,6 +854,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "174744": {
@@ -606,6 +864,9 @@
     "lon": -72.8278548,
     "address": "4323 VT-180",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "174816": {
@@ -613,13 +874,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "175305": {
     "lat": null,
     "lon": null,
     "address": "68 WINDY HILL ACRES",
-    "city": "SPRINGFIELD",
+    "city": "Springfield",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "175399": {
@@ -627,6 +894,9 @@
     "lon": null,
     "address": "1826 HILL STREET EXTENSION",
     "city": "Berlin",
+    "trustedTown": "Berlin",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "176580": {
@@ -634,6 +904,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "176705": {
@@ -641,6 +914,9 @@
     "lon": null,
     "address": "27 KETTLEPONE LANE, UNIT C-3-6, FIN",
     "city": "Williston",
+    "trustedTown": "Williston",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "177763": {
@@ -648,6 +924,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE 2 WEEK",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "178280": {
@@ -655,6 +934,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "178674": {
@@ -662,6 +944,9 @@
     "lon": -72.732413,
     "address": "2416 VERMONT ROUTE 15",
     "city": "Johnson",
+    "trustedTown": "Johnson",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "178725": {
@@ -669,6 +954,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "179700": {
@@ -676,6 +964,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 9E ROTATION",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "179792": {
@@ -683,13 +974,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "179822": {
     "lat": null,
     "lon": null,
     "address": "266 SESPJLE STREET H 26",
-    "city": "BRAINTREE",
+    "city": "Braintree",
+    "trustedTown": "Braintree",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "180047": {
@@ -697,6 +994,9 @@
     "lon": -72.5745059,
     "address": "200 VERMONT ROUTE 65 E",
     "city": "Brookfield",
+    "trustedTown": "Brookfield",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "180135": {
@@ -704,13 +1004,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD 14L ROTATION A",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "180137": {
-    "lat": 42.9497289,
-    "lon": -72.647575,
+    "lat": 44.2056585,
+    "lon": -72.4920949,
     "address": "22 ACRES",
     "city": "Marshfield",
+    "trustedTown": "Marshfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "180544": {
@@ -718,6 +1024,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "180561": {
@@ -725,20 +1034,29 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "182168": {
     "lat": null,
     "lon": null,
     "address": "200 BARENG HILL DR",
-    "city": "RANDOLPH",
+    "city": "Randolph",
+    "trustedTown": "Randolph",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "182313": {
     "lat": 44.3630884,
     "lon": -72.6375449,
     "address": "57 BEAR SWAMP ROAD",
-    "city": "MIDDLESEX",
+    "city": "Middlesex",
+    "trustedTown": "Bolton",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "182500": {
@@ -746,6 +1064,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "182597": {
@@ -753,13 +1074,19 @@
     "lon": null,
     "address": "66 PARISEAU DRIVE",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "183410": {
     "lat": 42.8501846,
     "lon": -72.5656503,
     "address": "210 ELLIOT STREET",
-    "city": "TOWN",
+    "city": "Town",
+    "trustedTown": "Brattleboro",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "183575": {
@@ -767,13 +1094,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "183639": {
     "lat": null,
     "lon": null,
     "address": "81 CRAMTON RD LOT 15",
-    "city": "CASTLETON",
+    "city": "Castleton",
+    "trustedTown": "Charleston",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "183825": {
@@ -781,13 +1114,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "184021": {
     "lat": 44.4993595,
     "lon": -72.7454617,
     "address": "4323 ROUTE 108",
-    "city": "SMUGGIERS NOTCH",
+    "city": "Smuggiers Notch",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "184642": {
@@ -795,6 +1134,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "184741": {
@@ -802,6 +1144,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "184754": {
@@ -809,13 +1154,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "184873": {
     "lat": 43.1905364,
     "lon": -72.4910059,
     "address": "35 MEETING HOUSE RD",
-    "city": "ROCKINGHAM",
+    "city": "Rockingham",
+    "trustedTown": "Readsboro",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "184980": {
@@ -823,6 +1174,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "186507": {
@@ -830,6 +1184,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "186647": {
@@ -837,6 +1194,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "186719": {
@@ -844,6 +1204,9 @@
     "lon": -73.2004003,
     "address": "3109 VERMONT ROUTE 30 SOUTH",
     "city": "Poultney",
+    "trustedTown": "Poultney",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "187055": {
@@ -851,6 +1214,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "188157": {
@@ -858,6 +1224,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "188957": {
@@ -865,6 +1234,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD TWO TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "189079": {
@@ -872,6 +1244,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "189483": {
@@ -879,6 +1254,9 @@
     "lon": -72.6933647,
     "address": "1068 VERMONT ROUTE 12A",
     "city": "Braintree",
+    "trustedTown": "Braintree",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "189771": {
@@ -886,6 +1264,9 @@
     "lon": null,
     "address": "1974 MOBILE HOME LOCATED AT 2668 PE",
     "city": "Brownington",
+    "trustedTown": "Brownington",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "190171": {
@@ -893,6 +1274,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 8B ROTATION",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "190408": {
@@ -900,6 +1284,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO & T",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "190601": {
@@ -907,13 +1294,19 @@
     "lon": null,
     "address": "5611 HERITAGE CONDO WAY 11D",
     "city": "Woodstock",
+    "trustedTown": "Woodstock",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "190764": {
-    "lat": 44.5082972,
-    "lon": -71.8468799,
+    "lat": null,
+    "lon": null,
     "address": "7098 RIVER ROAD",
     "city": "Lemington",
+    "trustedTown": "Lemington",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "191590": {
@@ -921,6 +1314,9 @@
     "lon": null,
     "address": "4621 MURRAY HILL HEIGHTS, CONDO #21",
     "city": "Manchester",
+    "trustedTown": "Manchester",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "191776": {
@@ -928,6 +1324,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "192508": {
@@ -935,6 +1334,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "192617": {
@@ -942,6 +1344,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "192633": {
@@ -949,6 +1354,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "193079": {
@@ -956,6 +1364,9 @@
     "lon": null,
     "address": "7560 BOURN BROOK UNIT #60",
     "city": "Manchester",
+    "trustedTown": "Manchester",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "193336": {
@@ -963,6 +1374,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "193671": {
@@ -970,6 +1384,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "193767": {
@@ -977,6 +1394,9 @@
     "lon": null,
     "address": "1993 MOBILE HOME LOCATED AT 2668 PE",
     "city": "Brownington",
+    "trustedTown": "Brownington",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "194283": {
@@ -984,6 +1404,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "195183": {
@@ -991,6 +1414,9 @@
     "lon": -72.4376262,
     "address": "1370 VERMONT ROUTE 14",
     "city": "Sharon",
+    "trustedTown": "Sharon",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "195497": {
@@ -998,6 +1424,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "196146": {
@@ -1005,6 +1434,9 @@
     "lon": null,
     "address": "18 NEW STREEET",
     "city": "Albany",
+    "trustedTown": "Albany",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "196181": {
@@ -1012,20 +1444,29 @@
     "lon": -72.4699437,
     "address": "568 VERMONT ROUTE 110",
     "city": "Tunbridge",
+    "trustedTown": "Tunbridge",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "196223": {
-    "lat": 44.6459828,
-    "lon": -72.8284444,
+    "lat": 44.4993595,
+    "lon": -72.7454617,
     "address": "4323 VERMONT RTE 108",
-    "city": "JEFFERSONVILLE",
+    "city": "Jeffersonville",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "196397": {
-    "lat": 44.9601544,
-    "lon": -72.2540301,
+    "lat": null,
+    "lon": null,
     "address": "8 KIMBERLY LANE",
     "city": "Orange",
+    "trustedTown": "Orange",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "196534": {
@@ -1033,6 +1474,9 @@
     "lon": null,
     "address": "2539 VERMONT ROUTE 14N",
     "city": "Albany",
+    "trustedTown": "Albany",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "196749": {
@@ -1040,6 +1484,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "196751": {
@@ -1047,20 +1494,29 @@
     "lon": null,
     "address": "5612 HERITAGE CONDO WAY 12D",
     "city": "Woodstock",
+    "trustedTown": "Woodstock",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "196905": {
     "lat": null,
     "lon": null,
     "address": "4323 VT ROUTE 108 S",
-    "city": "CAMBRIDGE",
+    "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "196946": {
     "lat": 43.9992022,
     "lon": -72.5588949,
     "address": "61 WHEATLEY FARM DRIVE",
-    "city": "EAST RANDOLPH",
+    "city": "East Randolph",
+    "trustedTown": "Brookfield",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "197247": {
@@ -1068,6 +1524,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "197381": {
@@ -1075,6 +1534,9 @@
     "lon": -72.4376308,
     "address": "1360 VERMONT ROUTE 14",
     "city": "Sharon",
+    "trustedTown": "Sharon",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "197658": {
@@ -1082,13 +1544,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "199053": {
     "lat": 44.155131,
     "lon": -72.6580781,
     "address": "73 FISKE DRIVE",
-    "city": "NORTHFIELD",
+    "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "199276": {
@@ -1096,13 +1564,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "199321": {
     "lat": null,
     "lon": null,
     "address": "9 WILLIE BIRCH TP",
-    "city": "BENNINGTON VT",
+    "city": "Bennington Vt",
+    "trustedTown": "Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "199614": {
@@ -1110,6 +1584,9 @@
     "lon": -72.8278548,
     "address": "4323 VT-180",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "200614": {
@@ -1117,6 +1594,9 @@
     "lon": -72.7029491,
     "address": "433 VT ROUTE 118",
     "city": "Berkshire",
+    "trustedTown": "Berkshire",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "200756": {
@@ -1124,6 +1604,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "200836": {
@@ -1131,6 +1614,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "201272": {
@@ -1138,13 +1624,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "201704": {
     "lat": null,
     "lon": null,
     "address": "3 BROOKSIDE MH PARK MURREY ST",
-    "city": "RUTLAND",
+    "city": "Rutland",
+    "trustedTown": "Rutland City",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "201745": {
@@ -1152,6 +1644,9 @@
     "lon": -72.7489588,
     "address": "5227 VERMONT ROUTE 12A",
     "city": "Braintree",
+    "trustedTown": "Braintree",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "201811": {
@@ -1159,6 +1654,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "201854": {
@@ -1166,6 +1664,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "202236": {
@@ -1173,6 +1674,9 @@
     "lon": null,
     "address": "286 RESEVIOR ROAD",
     "city": "Berkshire",
+    "trustedTown": "Berkshire",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "202338": {
@@ -1180,13 +1684,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "202807": {
-    "lat": 44.5074946,
-    "lon": -71.8476892,
+    "lat": null,
+    "lon": null,
     "address": "7168 RIVER ROAD",
     "city": "Lemington",
+    "trustedTown": "Lemington",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "203508": {
@@ -1194,6 +1704,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "203830": {
@@ -1201,13 +1714,19 @@
     "lon": null,
     "address": "657 ROUTE 7S",
     "city": "Bennington",
+    "trustedTown": "Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "204157": {
     "lat": 44.1775255,
     "lon": -72.5045043,
     "address": "59650 BARRE RD",
-    "city": "BARRE",
+    "city": "Barre",
+    "trustedTown": "Barre Town",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "204175": {
@@ -1215,6 +1734,9 @@
     "lon": -72.8838809,
     "address": "3064 ROOSEVELT HIGHWAY",
     "city": "Bolton",
+    "trustedTown": "Bolton",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "204358": {
@@ -1222,20 +1744,29 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "204626": {
     "lat": 44.6007949,
     "lon": -72.8080329,
     "address": "4323 ROUTE 108 SOUTH",
-    "city": "GROVELAND",
+    "city": "Groveland",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "204933": {
     "lat": null,
     "lon": null,
     "address": "15 AVON LANE",
-    "city": "STARKSBORO",
+    "city": "Starksboro",
+    "trustedTown": "Starksboro",
+    "trustedCountyCode": "01",
+    "trustedCountyName": "Addison",
     "geocoded_at": "2026-04-02"
   },
   "205851": {
@@ -1243,6 +1774,9 @@
     "lon": -72.9268102,
     "address": "1105 VERMONT ROUTE 15",
     "city": "Westford",
+    "trustedTown": "Westford",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "205880": {
@@ -1250,6 +1784,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "206096": {
@@ -1257,6 +1794,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "206425": {
@@ -1264,6 +1804,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "206469": {
@@ -1271,13 +1814,19 @@
     "lon": -72.8139343,
     "address": "1313 VERMONT ROUTE 108 SOUTH",
     "city": "Bakersfield",
+    "trustedTown": "Bakersfield",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "206935": {
     "lat": 43.4202551,
     "lon": -72.4052438,
     "address": "56 SKYLINE BOULEVARD",
-    "city": "ASCUTNEY",
+    "city": "Ascutney",
+    "trustedTown": "Weathersfield",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "207282": {
@@ -1285,6 +1834,9 @@
     "lon": null,
     "address": "1003 CAPE COD  ROAD 2 TYPE ONE & 1",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "207352": {
@@ -1292,13 +1844,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "207814": {
     "lat": null,
     "lon": null,
     "address": "200 BREENG HILL DR",
-    "city": "BARRE",
+    "city": "Barre",
+    "trustedTown": "Randolph",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "208471": {
@@ -1306,6 +1864,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "208922": {
@@ -1313,6 +1874,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "208991": {
@@ -1320,6 +1884,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE THREE W",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "209366": {
@@ -1327,6 +1894,9 @@
     "lon": -72.4316557,
     "address": "33 EDEN MOUNTAIN ROAD",
     "city": "Albany",
+    "trustedTown": "Albany",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "209493": {
@@ -1334,13 +1904,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "209758": {
-    "lat": 44.1682492,
-    "lon": -72.6533209,
+    "lat": 44.1737972,
+    "lon": -72.6466204,
     "address": "6869 VERMONT ROUTE 12 NORTH",
     "city": "Brookfield",
+    "trustedTown": "Brookfield",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "209863": {
@@ -1348,13 +1924,19 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "209943": {
-    "lat": 43.9378123,
-    "lon": -72.5530133,
+    "lat": 43.9187618,
+    "lon": -72.5554152,
     "address": "4990 VERMONT ROUTE 14 S",
     "city": "Brookfield",
+    "trustedTown": "Brookfield",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "209993": {
@@ -1362,6 +1944,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "210165": {
@@ -1369,6 +1954,9 @@
     "lon": null,
     "address": "91 ACRES +/- OFF VERMONT ROUTE 15",
     "city": "Westford",
+    "trustedTown": "Westford",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "210393": {
@@ -1376,6 +1964,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "210648": {
@@ -1383,6 +1974,9 @@
     "lon": null,
     "address": "438 ARUTHR JOHN ROAD",
     "city": "Brighton",
+    "trustedTown": "Brighton",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "210771": {
@@ -1390,6 +1984,9 @@
     "lon": -73.05372,
     "address": "2187 FOREST DALE RD",
     "city": "B D",
+    "trustedTown": "Brandon",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "211131": {
@@ -1397,6 +1994,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD UNIT 8B ROTATION",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "211284": {
@@ -1404,6 +2004,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "211299": {
@@ -1411,6 +2014,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "212647": {
@@ -1418,6 +2024,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD TWO TYPE 2 WEEKS",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "213103": {
@@ -1425,6 +2034,9 @@
     "lon": null,
     "address": "76 VERMONT ROUTE 12A, UNIT #6",
     "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "215562": {
@@ -1432,6 +2044,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "215575": {
@@ -1439,6 +2054,9 @@
     "lon": -72.8536079,
     "address": "127 VERMONT ROUTE 100",
     "city": "Dover",
+    "trustedTown": "Dover",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "216532": {
@@ -1446,6 +2064,9 @@
     "lon": null,
     "address": "127 MTNS EDGE RD 202",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "216778": {
@@ -1453,6 +2074,9 @@
     "lon": -72.7201959,
     "address": "3398 VERMONT ROUTE 12A",
     "city": "Braintree",
+    "trustedTown": "Braintree",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "217349": {
@@ -1460,6 +2084,9 @@
     "lon": null,
     "address": "170 ISLAND POND DRIVE",
     "city": "Brighton",
+    "trustedTown": "Brighton",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "218273": {
@@ -1467,6 +2094,9 @@
     "lon": null,
     "address": "100 AC LOT",
     "city": "Lowell",
+    "trustedTown": "Lowell",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "218278": {
@@ -1474,6 +2104,9 @@
     "lon": null,
     "address": "524 EOB, UNIT J-7",
     "city": "Manchester",
+    "trustedTown": "Manchester",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "218298": {
@@ -1481,13 +2114,19 @@
     "lon": null,
     "address": "1 OWLS AT SMUGGLERS NOTCH LANE",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "218603": {
     "lat": null,
     "lon": null,
     "address": "8 STRYHAS COURT",
-    "city": "LUDLOW",
+    "city": "Ludlow",
+    "trustedTown": "Ludlow",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "218672": {
@@ -1495,6 +2134,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "218697": {
@@ -1502,6 +2144,9 @@
     "lon": -72.8298355,
     "address": "4323 VT-108, JEFFERSONVILLE, VT 054",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "219976": {
@@ -1509,6 +2154,9 @@
     "lon": -73.422611,
     "address": "7176 VERMONT ROUTE 17 WEST",
     "city": "Addison",
+    "trustedTown": "Addison",
+    "trustedCountyCode": "01",
+    "trustedCountyName": "Addison",
     "geocoded_at": "2026-04-02"
   },
   "220088": {
@@ -1516,6 +2164,9 @@
     "lon": null,
     "address": "88 PARISEAU DRIVE",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "221390": {
@@ -1523,6 +2174,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "222016": {
@@ -1530,20 +2184,29 @@
     "lon": null,
     "address": "99 TRAILS EDGE DRIVE",
     "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "222982": {
     "lat": 43.4657515,
     "lon": -72.4707908,
     "address": "485 HOTEL ROAD",
-    "city": "BROWNSVILLE",
+    "city": "Brownsville",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "223741": {
     "lat": null,
     "lon": null,
     "address": "17 CENTER TRL PK RD",
-    "city": "WATERBURY VT",
+    "city": "Waterbury Vt",
+    "trustedTown": "Waterbury",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "227949": {
@@ -1551,6 +2214,9 @@
     "lon": -72.6354307,
     "address": "9774 VERMONT 12",
     "city": "Barnard",
+    "trustedTown": "Barnard",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "228787": {
@@ -1558,6 +2224,9 @@
     "lon": null,
     "address": "33 ACRES IN BETHEL",
     "city": "Bethel",
+    "trustedTown": "Bethel",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "228852": {
@@ -1565,6 +2234,9 @@
     "lon": -72.5978039,
     "address": "2504 VERMONT 12",
     "city": "Barnard",
+    "trustedTown": "Barnard",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "229108": {
@@ -1572,6 +2244,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "229792": {
@@ -1579,6 +2254,9 @@
     "lon": null,
     "address": "1051 STATE ROUTE 9",
     "city": "Woodford",
+    "trustedTown": "Woodford",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "230105": {
@@ -1586,6 +2264,9 @@
     "lon": null,
     "address": "88 PARISEAU DRIVE",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "230211": {
@@ -1593,20 +2274,29 @@
     "lon": null,
     "address": "3032 US ROUTE 5S",
     "city": "Barnet",
+    "trustedTown": "Barnet",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "230647": {
     "lat": null,
     "lon": null,
     "address": "294 LOT 16 EAST WING DRIVE",
-    "city": "WATERBURY CTR",
+    "city": "Waterbury Ctr",
+    "trustedTown": "Waterbury",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "230979": {
     "lat": 43.4657515,
     "lon": -72.4707908,
     "address": "485 HOTEL ROAD",
-    "city": "BROWNSVILLE",
+    "city": "Brownsville",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "231929": {
@@ -1614,6 +2304,9 @@
     "lon": -73.1722876,
     "address": "1027 VERMONT ROUTE 313 WEST",
     "city": "Arlington",
+    "trustedTown": "Arlington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "232274": {
@@ -1621,6 +2314,9 @@
     "lon": -72.5051803,
     "address": "144 US RT 302",
     "city": "Berlin",
+    "trustedTown": "Berlin",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "232699": {
@@ -1628,6 +2324,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "234415": {
@@ -1635,13 +2334,19 @@
     "lon": null,
     "address": "85 PARISEAU DRIVE",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "235014": {
     "lat": null,
     "lon": null,
     "address": "294 LOT 16 EAST WIND",
-    "city": "WATERBURY CTR",
+    "city": "Waterbury Ctr",
+    "trustedTown": "Waterbury",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "235291": {
@@ -1649,6 +2354,9 @@
     "lon": null,
     "address": "2680 HARTFORD 26, HARTFORD VT 05047",
     "city": "Hartford",
+    "trustedTown": "Hartford",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "235780": {
@@ -1656,6 +2364,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE TWO WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "236117": {
@@ -1663,13 +2374,19 @@
     "lon": null,
     "address": "113 TRAILSIDE CONDOMINIUM",
     "city": "Londonderry",
+    "trustedTown": "Londonderry",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "236581": {
-    "lat": 42.859091,
-    "lon": -72.8517208,
+    "lat": 42.9131912,
+    "lon": -72.6106395,
     "address": "2040 VT ROUTE 30",
-    "city": "JAM I",
+    "city": "Jam I",
+    "trustedTown": "Jamaica",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "237830": {
@@ -1677,13 +2394,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "238987": {
     "lat": null,
     "lon": null,
     "address": "1834 SIMIONVILLE RD",
-    "city": "AD",
+    "city": "Ad",
+    "trustedTown": "Andover",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "239793": {
@@ -1691,6 +2414,9 @@
     "lon": null,
     "address": "352 HALL STREAM ROAD",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "240485": {
@@ -1698,6 +2424,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "240548": {
@@ -1705,6 +2434,9 @@
     "lon": null,
     "address": "1003 CAPE COD ROAD ONE TYPE ONE WEE",
     "city": "Stowe",
+    "trustedTown": "Stowe",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "241379": {
@@ -1712,13 +2444,19 @@
     "lon": null,
     "address": "6754 BOURNE BROOK ROAD #54",
     "city": "Manchester",
+    "trustedTown": "Manchester",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "242479": {
     "lat": 43.4657515,
     "lon": -72.4707908,
     "address": "485 HOTEL ROAD",
-    "city": "BROWNSVILLE",
+    "city": "Brownsville",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "242754": {
@@ -1726,13 +2464,19 @@
     "lon": -72.7502051,
     "address": "8463 US-4, KILLINGTON, VT 05751",
     "city": "Bridgewater",
+    "trustedTown": "Bridgewater",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "244617": {
     "lat": null,
     "lon": null,
     "address": "112 BEAVER HOLLOW RD",
-    "city": "LONDONDERRY",
+    "city": "Londonderry",
+    "trustedTown": "Isle La Motte",
+    "trustedCountyCode": "07",
+    "trustedCountyName": "Grand Isle",
     "geocoded_at": "2026-04-02"
   },
   "246712": {
@@ -1740,6 +2484,9 @@
     "lon": -72.7019106,
     "address": "35 VERMONT ROUTE 15 WEST",
     "city": "Johnson",
+    "trustedTown": "Johnson",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "248679": {
@@ -1747,6 +2494,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "249035": {
@@ -1754,13 +2504,19 @@
     "lon": -72.8031472,
     "address": "317 VERMONT ROUTE 108 SOUTH",
     "city": "Bakersfield",
+    "trustedTown": "Bakersfield",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "250246": {
     "lat": 43.4067901,
     "lon": -72.5651156,
     "address": "621 TARBELL HILL ROAD",
-    "city": "CAVENDISH",
+    "city": "Cavendish",
+    "trustedTown": "Chelsea",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "250273": {
@@ -1768,6 +2524,9 @@
     "lon": -73.0798262,
     "address": "20 CENTER RD",
     "city": "Essex Jct.",
+    "trustedTown": "Essex Junction",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "250321": {
@@ -1775,6 +2534,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "251366": {
@@ -1782,13 +2544,19 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "251496": {
     "lat": null,
     "lon": null,
     "address": "13 CROSSING MANOR DRIVE LOT 3",
-    "city": "BERLIN",
+    "city": "Berlin",
+    "trustedTown": "Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "251866": {
@@ -1796,6 +2564,9 @@
     "lon": -73.1892634,
     "address": "2394 GEORGIA SHORE ROAD",
     "city": "Georgia",
+    "trustedTown": "Georgia",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "252201": {
@@ -1803,6 +2574,9 @@
     "lon": -72.7527705,
     "address": "6133 VERMONT ROUTE 12A",
     "city": "Braintree",
+    "trustedTown": "Braintree",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "252465": {
@@ -1810,6 +2584,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "254051": {
@@ -1817,6 +2594,9 @@
     "lon": null,
     "address": "5335 - B (UNIT 2) GEORGIA SHORE ROA",
     "city": "Georgia",
+    "trustedTown": "Georgia",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "254113": {
@@ -1824,6 +2604,9 @@
     "lon": null,
     "address": "202 HII STREET EXTENSION",
     "city": "Berlin",
+    "trustedTown": "Berlin",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "254472": {
@@ -1831,6 +2614,9 @@
     "lon": null,
     "address": "35 AMHERST INN",
     "city": "Plymouth",
+    "trustedTown": "Plymouth",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "254512": {
@@ -1838,6 +2624,9 @@
     "lon": -72.7247619,
     "address": "294 EAST WIND DRIVE",
     "city": "Waterbury",
+    "trustedTown": "Waterbury",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "254569": {
@@ -1845,6 +2634,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "254853": {
@@ -1852,6 +2644,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "255146": {
@@ -1859,6 +2654,9 @@
     "lon": -73.0806003,
     "address": "16 CENTER ROAD",
     "city": "Essex Jct.",
+    "trustedTown": "Essex Junction",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "255365": {
@@ -1866,34 +2664,49 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "256019": {
     "lat": 43.0591619,
     "lon": -72.6620765,
     "address": "948 GRAFTON ROAD",
-    "city": "TOWNSHEND",
+    "city": "Townshend",
+    "trustedTown": "Worcester",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "256053": {
-    "lat": 43.5741812,
-    "lon": -73.0315704,
+    "lat": null,
+    "lon": null,
     "address": "742 GORHAM ROAD",
     "city": "Bloomfield",
+    "trustedTown": "Bloomfield",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "256218": {
     "lat": null,
     "lon": null,
     "address": "283 VERDE MONT ROAD",
-    "city": "WAITSFIELD",
+    "city": "Waitsfield",
+    "trustedTown": "Waitsfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "256854": {
-    "lat": 43.1044405,
-    "lon": -73.2267921,
+    "lat": 43.0991209,
+    "lon": -73.2055305,
     "address": "0 VERMONT ROUTE 313 WEST",
     "city": "Arlington",
+    "trustedTown": "Arlington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "256872": {
@@ -1901,6 +2714,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "257004": {
@@ -1908,6 +2724,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "258603": {
@@ -1915,13 +2734,19 @@
     "lon": null,
     "address": "39 BLAISES PARK ROAD",
     "city": "Bristol",
+    "trustedTown": "Bristol",
+    "trustedCountyCode": "01",
+    "trustedCountyName": "Addison",
     "geocoded_at": "2026-04-02"
   },
   "258624": {
-    "lat": 45.0083479,
-    "lon": -71.5073703,
+    "lat": null,
+    "lon": null,
     "address": "517 RIVER ROAD",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "259664": {
@@ -1929,6 +2754,9 @@
     "lon": null,
     "address": "35 COVENANT SQ",
     "city": "Burlington",
+    "trustedTown": "Burlington",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "260032": {
@@ -1936,6 +2764,9 @@
     "lon": -72.8298355,
     "address": "4323 VT-108, JEFFERSONVILLE, VT 054",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "260586": {
@@ -1943,13 +2774,19 @@
     "lon": null,
     "address": "76 VERMONT ROUTE 12A, UNIT #4",
     "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "261429": {
-    "lat": 44.5069386,
-    "lon": -71.847892,
+    "lat": null,
+    "lon": null,
     "address": "7217 RIVER ROAD",
     "city": "Lemington",
+    "trustedTown": "Lemington",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "261640": {
@@ -1957,13 +2794,19 @@
     "lon": null,
     "address": "29 HERITAGE CONDOMINIUMS WAY",
     "city": "Woodstock",
+    "trustedTown": "Woodstock",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "261908": {
     "lat": null,
     "lon": null,
     "address": "101 CENTER TRL PRK RD",
-    "city": "WATERBURY",
+    "city": "Waterbury",
+    "trustedTown": "Waterbury",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "261919": {
@@ -1971,6 +2814,9 @@
     "lon": null,
     "address": "0 OLD TOWN ROAD (LOT #4 & 5)",
     "city": "Arlington",
+    "trustedTown": "Arlington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "262206": {
@@ -1978,6 +2824,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "262895": {
@@ -1985,6 +2834,9 @@
     "lon": null,
     "address": "691 INDIAN PAINT BRUSH ROAD LOT E14",
     "city": "Winhall",
+    "trustedTown": "Winhall",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "263333": {
@@ -1992,6 +2844,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "263542": {
@@ -1999,13 +2854,19 @@
     "lon": null,
     "address": "36 MAPLE GROVE ESTATES",
     "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "263594": {
-    "lat": 44.4999793,
-    "lon": -73.185526,
+    "lat": null,
+    "lon": null,
     "address": "340 WEAVER STREET",
     "city": "Lyndon",
+    "trustedTown": "Lyndon",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "264406": {
@@ -2013,6 +2874,9 @@
     "lon": null,
     "address": "120 ACRES RAW LAND",
     "city": "Bridgewater",
+    "trustedTown": "Bridgewater",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "264745": {
@@ -2020,6 +2884,9 @@
     "lon": -73.0649837,
     "address": "93 DUNMORE ACRES DRIVE",
     "city": "Leicester",
+    "trustedTown": "Leicester",
+    "trustedCountyCode": "01",
+    "trustedCountyName": "Addison",
     "geocoded_at": "2026-04-02"
   },
   "265185": {
@@ -2027,6 +2894,9 @@
     "lon": null,
     "address": "295 HOTEL ROAD UNIT #207, N/K/A UNI",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "266001": {
@@ -2034,6 +2904,9 @@
     "lon": null,
     "address": "113 TRAILSIDE 2-7",
     "city": "Londonderry",
+    "trustedTown": "Londonderry",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "266622": {
@@ -2041,6 +2914,9 @@
     "lon": -72.1125996,
     "address": "2915 RT. 122",
     "city": "Sheffield",
+    "trustedTown": "Sheffield",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "266711": {
@@ -2048,6 +2924,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "266943": {
@@ -2055,6 +2934,9 @@
     "lon": -72.5228215,
     "address": "89 USLE ROAD",
     "city": "Barre Town",
+    "trustedTown": "Barre Town",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "266969": {
@@ -2062,6 +2944,9 @@
     "lon": null,
     "address": "56 HERITAGE WAY 7L",
     "city": "Woodstock",
+    "trustedTown": "Woodstock",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "267001": {
@@ -2069,6 +2954,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "267695": {
@@ -2076,13 +2964,19 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "269455": {
     "lat": 43.5592611,
     "lon": -72.9663689,
     "address": "172 FIRE LANE",
-    "city": "CLARENDON",
+    "city": "Clarendon",
+    "trustedTown": "Clarendon",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "270616": {
@@ -2090,6 +2984,9 @@
     "lon": null,
     "address": "3034 US ROUTE 5S",
     "city": "Barnet",
+    "trustedTown": "Barnet",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "271861": {
@@ -2097,6 +2994,9 @@
     "lon": -72.7312393,
     "address": "0 WOODS ROAD, NORTHFIELD, VT 05663",
     "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "271939": {
@@ -2104,6 +3004,9 @@
     "lon": null,
     "address": "4323 VERMONTE ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "272409": {
@@ -2111,6 +3014,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "272562": {
@@ -2118,20 +3024,29 @@
     "lon": null,
     "address": "4780 US ROUTE 5N",
     "city": "Barnet",
+    "trustedTown": "Barnet",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "272915": {
     "lat": 44.9953966,
     "lon": -72.1899295,
     "address": "95 LAKE PARK ROAD",
-    "city": "DERBY",
+    "city": "Derby",
+    "trustedTown": "Danby",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "274793": {
-    "lat": 44.6239215,
-    "lon": -72.8259708,
+    "lat": 44.5882014,
+    "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
-    "city": "JEFFERSONVILLE",
+    "city": "Jeffersonville",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "275264": {
@@ -2139,6 +3054,9 @@
     "lon": null,
     "address": "602 MOUNTAINS EDGE CONDOMINIUMS",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "275414": {
@@ -2146,6 +3064,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "276430": {
@@ -2153,6 +3074,9 @@
     "lon": -72.7497855,
     "address": "5545 VERMONT ROUTE 12A",
     "city": "Braintree",
+    "trustedTown": "Braintree",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "277109": {
@@ -2160,6 +3084,9 @@
     "lon": null,
     "address": "300 TRAILS EDGE DRIVE",
     "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "277183": {
@@ -2167,6 +3094,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "278031": {
@@ -2174,27 +3104,39 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "278058": {
-    "lat": 45.0083479,
-    "lon": -71.5073703,
+    "lat": null,
+    "lon": null,
     "address": "526 RIVER ROAD",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "278896": {
     "lat": 42.8890991,
     "lon": -73.1842728,
     "address": "47 DUDLEY PLACE",
-    "city": "BENNINGTON",
+    "city": "Bennington",
+    "trustedTown": "Derby",
+    "trustedCountyCode": "10",
+    "trustedCountyName": "Orleans",
     "geocoded_at": "2026-04-02"
   },
   "279146": {
     "lat": 44.1139211,
     "lon": -72.7011473,
     "address": "3051 RTE 12A",
-    "city": "NORTHFIELD",
+    "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "280681": {
@@ -2202,6 +3144,9 @@
     "lon": null,
     "address": "1711 US ROUTE 5S",
     "city": "Barnet",
+    "trustedTown": "Barnet",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "280773": {
@@ -2209,6 +3154,9 @@
     "lon": null,
     "address": "0 CLAYBROOK ROAD (LOT 23)",
     "city": "Averill",
+    "trustedTown": "Averill",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "282970": {
@@ -2216,13 +3164,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "283398": {
     "lat": null,
     "lon": null,
     "address": "102 FOREST DR., CLAY BROOK 209, INT",
-    "city": "WARREN",
+    "city": "Warren",
+    "trustedTown": "Warren",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "283508": {
@@ -2230,6 +3184,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "283725": {
@@ -2237,6 +3194,9 @@
     "lon": null,
     "address": "145 BLUEBERRY LEDGE RD L48",
     "city": "Plymouth",
+    "trustedTown": "Plymouth",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "284732": {
@@ -2244,6 +3204,9 @@
     "lon": null,
     "address": "1981 SKYLINE MOBILE HOME LOCATED AT",
     "city": "Springfield",
+    "trustedTown": "Springfield",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "285048": {
@@ -2251,6 +3214,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "287061": {
@@ -2258,6 +3224,9 @@
     "lon": -72.8268271,
     "address": "4323 VERMONT ROUTE 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "288319": {
@@ -2265,6 +3234,9 @@
     "lon": -72.7184176,
     "address": "3090 VERMONT ROUTE 12A",
     "city": "Braintree",
+    "trustedTown": "Braintree",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "289997": {
@@ -2272,13 +3244,19 @@
     "lon": null,
     "address": "2 ACRES OPEN LAND ON OX CART ROAD",
     "city": "Vernon",
+    "trustedTown": "Vernon",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "290651": {
     "lat": null,
     "lon": null,
     "address": "35 FOOT WIDE R. O. W. FROM SOUTH MA",
-    "city": "ST. ALBANS TOWN",
+    "city": "St. Albans Town",
+    "trustedTown": "St. Albans Town",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "292366": {
@@ -2286,6 +3264,9 @@
     "lon": null,
     "address": "102 FOREST DR, CLAY BROOK #229, LO",
     "city": "Warren",
+    "trustedTown": "Warren",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "293261": {
@@ -2293,6 +3274,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "293933": {
@@ -2300,6 +3284,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL RD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "294051": {
@@ -2307,13 +3294,19 @@
     "lon": -72.4707908,
     "address": "485 HOTEL ROAD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "295252": {
-    "lat": 43.5130353,
-    "lon": -73.2332995,
+    "lat": null,
+    "lon": null,
     "address": "4125 MAIN STREET, UNIT 2",
     "city": "Waitsfield",
+    "trustedTown": "Waitsfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "296379": {
@@ -2321,6 +3314,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL ROAD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "296468": {
@@ -2328,6 +3324,9 @@
     "lon": -72.635869,
     "address": "1563 VT RTE",
     "city": "Berlin",
+    "trustedTown": "Berlin",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "297194": {
@@ -2335,6 +3334,9 @@
     "lon": -72.4707908,
     "address": "485 HOTEL ROAD",
     "city": "West Windsor",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "299773": {
@@ -2342,6 +3344,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "299868": {
@@ -2349,6 +3354,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "300006": {
@@ -2356,6 +3364,9 @@
     "lon": -72.7900317,
     "address": "4323 VT-108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "300097": {
@@ -2363,6 +3374,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "300187": {
@@ -2370,6 +3384,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "300424": {
@@ -2377,6 +3394,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "300526": {
@@ -2384,6 +3404,9 @@
     "lon": -72.8080329,
     "address": "4323 ROUTE 108 S.",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "300635": {
@@ -2391,6 +3414,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "300820": {
@@ -2398,6 +3424,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "300876": {
@@ -2405,6 +3434,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "301613": {
@@ -2412,6 +3444,9 @@
     "lon": null,
     "address": "11 UNDEVELOPED PUD LOTS AT JENNINGS",
     "city": "Bennington",
+    "trustedTown": "Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "301646": {
@@ -2419,6 +3454,9 @@
     "lon": -72.7900317,
     "address": "4323 VT-108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "301648": {
@@ -2426,6 +3464,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "301739": {
@@ -2433,6 +3474,9 @@
     "lon": null,
     "address": "44 BLARNEY RD (LOT 4)",
     "city": "Fairfax",
+    "trustedTown": "Fairfax",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "315897": {
@@ -2440,13 +3484,19 @@
     "lon": -72.6670164,
     "address": "122 TUCKER LANE",
     "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "315908": {
     "lat": 43.4504014,
     "lon": -72.7064589,
     "address": "12 NORTH SHORE DRIVE",
-    "city": "BELLOWS FALLS",
+    "city": "Bellows Falls",
+    "trustedTown": "Rockingham",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "321189": {
@@ -2454,6 +3504,9 @@
     "lon": null,
     "address": "2020 COLONY MOBILE HOME LOCATED AT",
     "city": "Ludlow",
+    "trustedTown": "Ludlow",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "321255": {
@@ -2461,6 +3514,9 @@
     "lon": null,
     "address": "119 TRAILS EDGE DRIVE",
     "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "322691": {
@@ -2468,6 +3524,9 @@
     "lon": -72.5978203,
     "address": "5659 VT 100",
     "city": "Hyde Park",
+    "trustedTown": "Hyde Park",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "326606": {
@@ -2475,6 +3534,9 @@
     "lon": null,
     "address": "38 TRAILS EDGE DRIVE -- LOT 1",
     "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "327080": {
@@ -2482,6 +3544,9 @@
     "lon": null,
     "address": "88 LORRAINE LANE",
     "city": "Hyde Park",
+    "trustedTown": "Hyde Park",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "328319": {
@@ -2489,6 +3554,9 @@
     "lon": null,
     "address": "423 LOT 5 4000 MAQUAM SHORE ROAD",
     "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "328561": {
@@ -2496,13 +3564,19 @@
     "lon": -73.1992432,
     "address": "121 BUTTERNUT LN",
     "city": "Colchester",
+    "trustedTown": "Colchester",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "329801": {
     "lat": null,
     "lon": null,
     "address": "221 NFTP",
-    "city": "NORTHFIELD",
+    "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "329803": {
@@ -2510,6 +3584,9 @@
     "lon": null,
     "address": "4323 VERMONT RT 108S",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "329804": {
@@ -2517,13 +3594,19 @@
     "lon": null,
     "address": "4323  VERMONT RT 108S",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "330415": {
     "lat": null,
     "lon": null,
     "address": "309 VERDMOND RD LOT 10",
-    "city": "WAITSFIELD",
+    "city": "Waitsfield",
+    "trustedTown": "Waitsfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "330426": {
@@ -2531,6 +3614,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332882": {
@@ -2538,6 +3624,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332883": {
@@ -2545,6 +3634,9 @@
     "lon": -72.8268271,
     "address": "4323 VERMONT ROUTE 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332884": {
@@ -2552,6 +3644,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332885": {
@@ -2559,6 +3654,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332887": {
@@ -2566,6 +3664,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332888": {
@@ -2573,6 +3674,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332889": {
@@ -2580,6 +3684,9 @@
     "lon": null,
     "address": "4323 VERMOUNT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332890": {
@@ -2587,6 +3694,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332891": {
@@ -2594,6 +3704,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332892": {
@@ -2601,6 +3714,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332893": {
@@ -2608,6 +3724,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332895": {
@@ -2615,6 +3734,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332896": {
@@ -2622,6 +3744,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332897": {
@@ -2629,6 +3754,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "332898": {
@@ -2636,20 +3764,29 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE SOUTH 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "333998": {
     "lat": 44.8866813,
     "lon": -73.2835321,
     "address": "25 ROUTE 129",
-    "city": "ALBURGH",
+    "city": "Alburgh",
+    "trustedTown": "St. Albans City",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "334009": {
     "lat": 44.8256243,
     "lon": -72.2535042,
     "address": "712 CAMPBELL RD",
-    "city": "IRASBURG",
+    "city": "Irasburg",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "334984": {
@@ -2657,13 +3794,19 @@
     "lon": null,
     "address": "90 VALHALLA DRIVE",
     "city": "Sheldon",
+    "trustedTown": "Sheldon",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "335004": {
     "lat": 43.9708458,
     "lon": -72.6483441,
     "address": "116 GREENE HILL DRIVE",
-    "city": "RANDOLPH",
+    "city": "Randolph",
+    "trustedTown": "Clarendon",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "335006": {
@@ -2671,6 +3814,9 @@
     "lon": null,
     "address": "69 J R WAY S (UNIT N)",
     "city": "Georgia",
+    "trustedTown": "Georgia",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "335019": {
@@ -2678,6 +3824,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "335021": {
@@ -2685,6 +3834,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "335022": {
@@ -2692,6 +3844,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "335024": {
@@ -2699,6 +3854,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "335025": {
@@ -2706,6 +3864,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "335026": {
@@ -2713,20 +3874,29 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "335027": {
     "lat": 42.7976653,
     "lon": -73.2224717,
     "address": "58 MOONRISE DRIVE",
-    "city": "POWNAL",
+    "city": "Pownal",
+    "trustedTown": "Pownal",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "335028": {
     "lat": 44.6007949,
     "lon": -72.8080329,
     "address": "4323 VT 108 S",
-    "city": "JEFFERSONVILLE",
+    "city": "Jeffersonville",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "336186": {
@@ -2734,6 +3904,9 @@
     "lon": -73.179833,
     "address": "4000 MAQUAM SHORE RD",
     "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "337297": {
@@ -2741,6 +3914,9 @@
     "lon": -73.1447415,
     "address": "0 BURGESS ROAD",
     "city": "Bennington",
+    "trustedTown": "Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "337298": {
@@ -2748,6 +3924,9 @@
     "lon": -73.1447415,
     "address": "0 BURGESS ROAD",
     "city": "Bennington",
+    "trustedTown": "Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "337299": {
@@ -2755,13 +3934,19 @@
     "lon": -72.5957079,
     "address": "5939 VT 100",
     "city": "Hyde Park",
+    "trustedTown": "Hyde Park",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "339394": {
     "lat": null,
     "lon": null,
     "address": "13 MALCOME STREET",
-    "city": "SWANTON",
+    "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "340034": {
@@ -2769,48 +3954,69 @@
     "lon": -72.4376308,
     "address": "1360 VERMONT ROUTE 14",
     "city": "Sharon",
+    "trustedTown": "Sharon",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "342497": {
     "lat": 44.2583004,
     "lon": -72.5678778,
     "address": "15 MARVIN STREET",
-    "city": "MONTPELLER",
+    "city": "Montpeller",
+    "trustedTown": "St. Johnsbury",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "342579": {
-    "lat": 45.0083479,
-    "lon": -71.5073703,
+    "lat": null,
+    "lon": null,
     "address": "526 RIVER ROAD",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "342758": {
     "lat": 44.2602044,
     "lon": -72.6077428,
     "address": "7 LAGUE DRIVE",
-    "city": "MONTPELIER",
+    "city": "Montpelier",
+    "trustedTown": "Montpelier",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "342763": {
     "lat": 44.3951271,
     "lon": -73.2184196,
     "address": "95 DREW LANE",
-    "city": "SHELBURNE",
+    "city": "Shelburne",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "342764": {
     "lat": 44.5269012,
     "lon": -73.271786,
     "address": "3122 NORTH AVENUE",
-    "city": "BURLINGTON",
+    "city": "Burlington",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "342769": {
     "lat": 44.5203609,
     "lon": -73.2526768,
     "address": "76 VENUS AVENUE",
-    "city": "BURLINGTON",
+    "city": "Burlington",
+    "trustedTown": "Burlington",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "342771": {
@@ -2818,13 +4024,19 @@
     "lon": null,
     "address": "3685 BUTLER ISLAND WEST",
     "city": "North Hero",
+    "trustedTown": "North Hero",
+    "trustedCountyCode": "07",
+    "trustedCountyName": "Grand Isle",
     "geocoded_at": "2026-04-02"
   },
   "343331": {
     "lat": 44.58078,
     "lon": -72.0860901,
     "address": "589 PEAK RD",
-    "city": "WHEELOCK VT",
+    "city": "Wheelock Vt",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "343897": {
@@ -2832,13 +4044,19 @@
     "lon": null,
     "address": "144 ROULEAU ROAD",
     "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "345059": {
     "lat": null,
     "lon": null,
     "address": "76 TRALLS EDGE DRIVE",
-    "city": "SWANTON",
+    "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "345088": {
@@ -2846,6 +4064,9 @@
     "lon": -73.0471446,
     "address": "44 MARION AVENUE",
     "city": "Essex Jct.",
+    "trustedTown": "Essex Junction",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "345090": {
@@ -2853,34 +4074,49 @@
     "lon": -73.0539126,
     "address": "19 SAXONHOLLOW DRIVE",
     "city": "Essex Jct.",
+    "trustedTown": "Essex Junction",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "345517": {
     "lat": null,
     "lon": null,
     "address": "374 CHICKADEE DR LOT 75",
-    "city": "POWNAL",
+    "city": "Pownal",
+    "trustedTown": "Pittsfield",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "346145": {
     "lat": 44.4856174,
     "lon": -73.0729636,
     "address": "2 KURK DRIVE",
-    "city": "ESSEX TOWN",
+    "city": "Essex Town",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "346860": {
     "lat": null,
     "lon": null,
     "address": "81 CRAMPTON RD LOT 10",
-    "city": "CASTLETON",
+    "city": "Castleton",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "346877": {
-    "lat": 44.658624,
-    "lon": -72.611686,
+    "lat": null,
+    "lon": null,
     "address": "181 PARK VIEW DR",
-    "city": "POWNAL",
+    "city": "Pownal",
+    "trustedTown": "Pownal",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "347389": {
@@ -2888,6 +4124,9 @@
     "lon": -72.9592745,
     "address": "261 VERMONT ROUTE 15",
     "city": "Jericho",
+    "trustedTown": "Jericho",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "348565": {
@@ -2895,20 +4134,29 @@
     "lon": -72.8390358,
     "address": "10105 VERMONT ROUTE 105",
     "city": "Sheldon",
+    "trustedTown": "Sheldon",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "348578": {
     "lat": 44.2988042,
     "lon": -72.1313616,
     "address": "99 SHORELINE DR",
-    "city": "BARNET VT",
+    "city": "Barnet Vt",
+    "trustedTown": "Barnet",
+    "trustedCountyCode": "03",
+    "trustedCountyName": "Caledonia",
     "geocoded_at": "2026-04-02"
   },
   "350567": {
     "lat": null,
     "lon": null,
     "address": "194 TONYS LANE",
-    "city": "JAMAICA",
+    "city": "Jamaica",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "350638": {
@@ -2916,6 +4164,9 @@
     "lon": -72.7900317,
     "address": "4323 VT-108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "350641": {
@@ -2923,6 +4174,9 @@
     "lon": -73.2010554,
     "address": "224 GREEN MOUNTAIN VILLAGE",
     "city": "Sudbury",
+    "trustedTown": "Sudbury",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "350643": {
@@ -2930,27 +4184,39 @@
     "lon": -73.0729588,
     "address": "3 RIVER VIEW DR",
     "city": "Essex Jct.",
+    "trustedTown": "Essex Junction",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "350758": {
     "lat": 42.8682979,
     "lon": -72.894182,
     "address": "34 SUMNER LANE",
-    "city": "WILMINGTON",
+    "city": "Wilmington",
+    "trustedTown": "Vershire",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
     "geocoded_at": "2026-04-02"
   },
   "353016": {
     "lat": 44.4459798,
     "lon": -73.1323433,
     "address": "32 BOYER CIRCLE",
-    "city": "WILLISTON",
+    "city": "Williston",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "353022": {
     "lat": 44.58078,
     "lon": -72.0860901,
     "address": "589 PEAK RD",
-    "city": "WHEELOCK",
+    "city": "Wheelock",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "353082": {
@@ -2958,6 +4224,9 @@
     "lon": -73.072084,
     "address": "3370 ROUTE 7A",
     "city": "Manchester",
+    "trustedTown": "Manchester",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "353096": {
@@ -2965,6 +4234,9 @@
     "lon": -72.7935857,
     "address": "423 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "353097": {
@@ -2972,6 +4244,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "353099": {
@@ -2979,6 +4254,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "353872": {
@@ -2986,13 +4264,19 @@
     "lon": null,
     "address": "00 CEMETERY ROAD - LOT #2",
     "city": "Springfield",
+    "trustedTown": "Springfield",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "354532": {
     "lat": 44.5283697,
     "lon": -72.6179894,
     "address": "95 PLANEVIEW ROAD",
-    "city": "MORRISTOWN",
+    "city": "Morristown",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "354939": {
@@ -3000,13 +4284,19 @@
     "lon": null,
     "address": "189 HILSIDE TERRACE",
     "city": "Hinesburg",
+    "trustedTown": "Hinesburg",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "354943": {
     "lat": 44.9520353,
     "lon": -72.1674652,
     "address": "224 SHATTUCK HILL",
-    "city": "DERBY",
+    "city": "Derby",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "355362": {
@@ -3014,27 +4304,39 @@
     "lon": -73.1097347,
     "address": "41 DEWEY DRIVE",
     "city": "Georgia",
+    "trustedTown": "Georgia",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "355803": {
     "lat": null,
     "lon": null,
     "address": "76 TRAILS EDGE DRIVE",
-    "city": "SWANTON",
+    "city": "Swanton",
+    "trustedTown": "Swanton",
+    "trustedCountyCode": "06",
+    "trustedCountyName": "Franklin",
     "geocoded_at": "2026-04-02"
   },
   "356743": {
-    "lat": 44.658624,
-    "lon": -72.611686,
+    "lat": null,
+    "lon": null,
     "address": "181 PARK VIEW DR",
-    "city": "POWNAL",
+    "city": "Pownal",
+    "trustedTown": "Pownal",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "357532": {
     "lat": 42.965523,
     "lon": -72.6524646,
     "address": "17 RIVER RD",
-    "city": "NEWFANE",
+    "city": "Newfane",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "357815": {
@@ -3042,13 +4344,19 @@
     "lon": -72.7900317,
     "address": "4323 VT-108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "359828": {
     "lat": 44.2999344,
     "lon": -72.1314316,
     "address": "42 HILLSIDE LANE",
-    "city": "BARNET",
+    "city": "Barnet",
+    "trustedTown": "Fair Haven",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "362535": {
@@ -3056,13 +4364,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "362870": {
     "lat": null,
     "lon": null,
     "address": "284 HALL STREAM RD",
-    "city": "CANAAN",
+    "city": "Canaan",
+    "trustedTown": "Canaan",
+    "trustedCountyCode": "05",
+    "trustedCountyName": "Essex",
     "geocoded_at": "2026-04-02"
   },
   "364500": {
@@ -3070,13 +4384,19 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "365122": {
     "lat": 42.9144305,
     "lon": -73.2357972,
     "address": "1639 NORTH BENNINGTON RD",
-    "city": "BENNINGTON",
+    "city": "Bennington",
+    "trustedTown": "Springfield",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "365133": {
@@ -3084,6 +4404,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "365134": {
@@ -3091,6 +4414,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "366089": {
@@ -3098,6 +4424,9 @@
     "lon": null,
     "address": "4323 VERMONT ROUTE 108S",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "367292": {
@@ -3105,13 +4434,19 @@
     "lon": -72.8292563,
     "address": "4323 VERMONT RT 108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "370664": {
     "lat": 43.4739944,
     "lon": -72.4026112,
     "address": "119 ASCUTNEY ST",
-    "city": "WINDSOR",
+    "city": "Windsor",
+    "trustedTown": "Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "370668": {
@@ -3119,6 +4454,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "370670": {
@@ -3126,6 +4464,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "371222": {
@@ -3133,6 +4474,9 @@
     "lon": null,
     "address": "19 O'NEIL DRIVE",
     "city": "Vernon",
+    "trustedTown": "Vernon",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
     "geocoded_at": "2026-04-02"
   },
   "371264": {
@@ -3140,6 +4484,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "371265": {
@@ -3147,6 +4494,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "371266": {
@@ -3154,6 +4504,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "371267": {
@@ -3161,6 +4514,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "371269": {
@@ -3168,6 +4524,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "374930": {
@@ -3175,6 +4534,9 @@
     "lon": -73.178554,
     "address": "29 DUSTIN DR",
     "city": "Bennington",
+    "trustedTown": "Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "374931": {
@@ -3182,6 +4544,9 @@
     "lon": null,
     "address": "0 WHITE PINE HILL #2",
     "city": "Mendon",
+    "trustedTown": "Mendon",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "375468": {
@@ -3189,20 +4554,29 @@
     "lon": -73.0746901,
     "address": "29 SAYBROOK ROAD",
     "city": "Essex Jct.",
+    "trustedTown": "Essex Junction",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "376079": {
     "lat": null,
     "lon": null,
     "address": "118 U24 KILLINGTON GATEWAY RT4",
-    "city": "MENDON",
+    "city": "Mendon",
+    "trustedTown": "Mendon",
+    "trustedCountyCode": "11",
+    "trustedCountyName": "Rutland",
     "geocoded_at": "2026-04-02"
   },
   "377412": {
-    "lat": 44.5032829,
-    "lon": -73.1459561,
+    "lat": 44.4930698,
+    "lon": -73.1167414,
     "address": "53 PEARL STREET",
     "city": "Essex Town",
+    "trustedTown": "Essex Town",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "379350": {
@@ -3210,6 +4584,9 @@
     "lon": -72.3602492,
     "address": "0 CHAPEL HILL ROAD",
     "city": "Sharon",
+    "trustedTown": "Sharon",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
     "geocoded_at": "2026-04-02"
   },
   "380810": {
@@ -3217,20 +4594,29 @@
     "lon": -73.1548568,
     "address": "0 OAK RIDGE LANE",
     "city": "Bennington",
+    "trustedTown": "Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
     "geocoded_at": "2026-04-02"
   },
   "382496": {
-    "lat": 44.5101825,
-    "lon": -73.1178814,
+    "lat": 44.5096171,
+    "lon": -73.1167961,
     "address": "865 OLD COLCHESTER ROAD",
     "city": "Essex Town",
+    "trustedTown": "Essex Town",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "382497": {
-    "lat": 44.5101825,
-    "lon": -73.1178814,
+    "lat": 44.5096171,
+    "lon": -73.1167961,
     "address": "866 OLD COLCHESTER ROAD",
     "city": "Essex Town",
+    "trustedTown": "Essex Town",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "382499": {
@@ -3238,6 +4624,9 @@
     "lon": -73.0876384,
     "address": "35 INDIAN BROOK ROAD",
     "city": "Essex Jct.",
+    "trustedTown": "Essex Junction",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "geocoded_at": "2026-04-02"
   },
   "386305": {
@@ -3245,6 +4634,9 @@
     "lon": -72.852455,
     "address": "1815 VERMONT RTE 100",
     "city": "Warren",
+    "trustedTown": "Warren",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "388176": {
@@ -3252,6 +4644,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT RT 108 S",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "390177": {
@@ -3259,6 +4654,9 @@
     "lon": -72.7900317,
     "address": "4323 VT-108",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "390685": {
@@ -3266,6 +4664,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "391644": {
@@ -3273,13 +4674,19 @@
     "lon": null,
     "address": "201 NFTP",
     "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "geocoded_at": "2026-04-02"
   },
   "391656": {
-    "lat": 45.0067678,
-    "lon": -73.0827134,
+    "lat": 44.2581941,
+    "lon": -72.5767337,
     "address": "1293 US RT 7",
-    "city": "LIECESTER",
+    "city": "Liecester",
+    "trustedTown": null,
+    "trustedCountyCode": null,
+    "trustedCountyName": null,
     "geocoded_at": "2026-04-02"
   },
   "392228": {
@@ -3287,6 +4694,9 @@
     "lon": null,
     "address": "4323 VERMONT RT 108S",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "392792": {
@@ -3294,6 +4704,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   },
   "392793": {
@@ -3301,6 +4714,9 @@
     "lon": -72.7900317,
     "address": "4323 VERMONT ROUTE 108 SOUTH",
     "city": "Cambridge",
+    "trustedTown": "Cambridge",
+    "trustedCountyCode": "08",
+    "trustedCountyName": "Lamoille",
     "geocoded_at": "2026-04-02"
   }
 }
