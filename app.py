@@ -1102,15 +1102,27 @@ def data_approx_all():
     for oid, entry in GEOCODED_APPROX.items():
         lat = entry.get("lat")
         lon = entry.get("lon")
-        if lat is None or lon is None:
-            continue  # skip null-coord entries (couldn't be geocoded)
+
+        if lat is not None and lon is not None:
+            # Successfully geocoded — already plotted as black dot by /data endpoint
+            # via resolve_coordinates Tier 0. Skip to avoid duplicate dots.
+            continue
+
+        # Null-coord record — couldn't be geocoded by SPAN or Nominatim.
+        # Fall back to town centroid so it shows as an orange circle.
+        trusted_town = entry.get("trustedTown") or entry.get("city") or ""
+        centroid = TOWN_CENTROIDS.get(trusted_town.strip().upper())
+        if not centroid:
+            continue  # no centroid available — skip
+        lat = centroid["lat"]
+        lon = centroid["lon"]
         # Use propLocCty (city field) for popup header — more accurate than
         # trustedTown which comes from schoolCode and can be miscoded.
-        city = entry.get("city") or entry.get("trustedTown") or ""
+        raw_city = (entry.get("city") or entry.get("trustedTown") or "").strip()
+        # Strip trailing state abbreviations like "Barnet Vt" -> "Barnet"
+        city = re.sub(r'\s+(VT|Vermont|Vt)\.?$', '', raw_city, flags=re.IGNORECASE).strip()
 
         # Derive county from propLocCty town name for accurate county display.
-        # schoolCode-derived county can be wrong (e.g. Barnet->Fair Haven->Rutland
-        # when property is actually in Barnet->Caledonia).
         city_upper   = city.strip().upper()
         city_county  = TOWN_TO_COUNTY.get(city.strip().title()) or TOWN_TO_COUNTY.get(city_upper.title())
         county_code2 = str(city_county).zfill(2) if city_county else entry.get("trustedCountyCode")
@@ -1123,7 +1135,7 @@ def data_approx_all():
             "lat":     lat,
             "lon":     lon,
             "approxLocation": True,
-            "isCentroid":     False,  # these are geocoded, not town centroid fallbacks
+            "isCentroid":     True,   # town centroid fallback — couldn't geocode
             # Minimal fields — popup will fetch full details on click via /ptt172
             "price":   None,
             "date":    None,
