@@ -1264,6 +1264,8 @@ let markersLayer = L.layerGroup().addTo(map);
 // so centroid-placed dots stay visible regardless of viewport position.
 let approxLayer  = L.layerGroup().addTo(map);
 // approxCache loaded once at startup via initApproxCache()
+// Address lookup: normalized "ADDRESS|TOWN" -> {lat, lon} for merging approx into black dots
+let addressDotLookup = {};
 let popupTimer      = null;
 let hoverTimer      = null;
 let hoverEnabled    = true;
@@ -1848,11 +1850,26 @@ function renderApproxData(records){
   approxLayer.clearLayers();
   if(!records.length) return;
 
-  // Group by centroid coordinates (all records for same town share same lat/lon)
+  // Group by coordinates. For centroid records, first check if a black dot
+  // already exists at the same address+town — if so, merge into it.
   let grouped = {};
   records.forEach(p => {
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
+
+    // Try to merge centroid records into existing black dots at same address
+    if(p.isCentroid === true && p.address && p.trustedTown){
+      const addrKey = (p.address.trim().toUpperCase() + '|' + p.trustedTown.trim().toUpperCase());
+      const existing = addressDotLookup[addrKey];
+      if(existing){
+        // Add this sale to the existing black dot's sales list and update popup
+        existing.sales.push(p);
+        markerRefs[p.id] = existing;
+        existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
+        return; // don't create a separate green circle
+      }
+    }
+
     const key = (p.lat != null && p.lon != null)
       ? (Math.round(p.lat * 10000) / 10000) + "|" + (Math.round(p.lon * 10000) / 10000)
       : (p.address || "") + "_" + (p.city || "");
@@ -1915,6 +1932,7 @@ function renderApproxData(records){
 function renderData(records){
   markersLayer.clearLayers();
   markerRefs = {};
+  addressDotLookup = {};  // reset address->coords lookup on each render
 
   let grouped = {};
   records.forEach(p => {
@@ -2002,6 +2020,16 @@ function renderData(records){
     });
 
     markersLayer.addLayer(marker);
+
+    // Populate address lookup so approx records can merge into this dot
+    sales.forEach(s => {
+      if(!s.approxLocation && s.address && s.trustedTown){
+        const addrKey = (s.address.trim().toUpperCase() + '|' + s.trustedTown.trim().toUpperCase());
+        if(!addressDotLookup[addrKey]){
+          addressDotLookup[addrKey] = { marker, sales, lat: p.lat, lon: p.lon };
+        }
+      }
+    });
   });
 
   const saleWord  = records.length === 1 ? "sale" : "sales";
@@ -2012,6 +2040,10 @@ function renderData(records){
 
   // Re-apply any persistent drawn shapes so filter changes update selection
   reapplyDrawnShapes();
+
+  // Re-render approx layer now that addressDotLookup is populated
+  // so centroid records can merge into the correct black dots
+  if(approxCacheReady) loadApproxData();
 }
 
 // ===================================================
