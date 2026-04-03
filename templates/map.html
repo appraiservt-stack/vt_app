@@ -1867,20 +1867,18 @@ function renderApproxData(records){
     const lon   = (p.lon || 0) + 0.00005;
 
     const isSelected  = sales.some(s => selectedSales[s.id]);
-    // isCentroid=true  -> orange dashed circle (town centroid, approximate)
-    // isCentroid=false -> black solid dot (geocoded via SPAN/Nominatim, precise)
-    const isCentroid  = sales.every(s => s.isCentroid !== false);
-    const baseColor   = '#e65c00';
-    const geocodedColor = activeBase === 'satellite' ? '#ffffff' : '#1a1a1a';
-    const markerColor = isSelected ? '#0066ff' : isCentroid ? baseColor : geocodedColor;
+    // All approx records show as orange dashed circles — flags them as
+    // approximate locations regardless of geocoding method used.
+    // Users will be able to correct positions in a future update.
+    const markerColor = isSelected ? '#0066ff' : '#e65c00';
 
     const marker = L.circleMarker([lat, lon], {
       radius:      6,
       color:       markerColor,
       fillColor:   markerColor,
-      fillOpacity: isSelected ? 1 : isCentroid ? 0 : 0.85,
+      fillOpacity: isSelected ? 1 : 0,
       weight:      2.5,
-      dashArray:   isCentroid ? '4 3' : null
+      dashArray:   '4 3'
     });
 
     sales.forEach(s => {
@@ -1922,6 +1920,8 @@ function renderData(records){
     // Approx records are handled by approxLayer — skip them here so they
     // don’t get cleared/redrawn on every pan/zoom.
     if(p.approxLocation) return;
+    // Skip records already in approx cache — cache serves them with correct coords.
+    if(approxCacheReady && approxCache && approxCache.some(a => a.id === p.id)) return;
 
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
