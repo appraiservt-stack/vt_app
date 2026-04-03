@@ -1864,15 +1864,19 @@ function renderApproxData(records){
     const lon   = (p.lon || 0) + 0.00005;
 
     const isSelected  = sales.some(s => selectedSales[s.id]);
-    const markerColor = isSelected ? "#0066ff" : "#e65c00";
+    // isCentroid=true -> orange circle (town centroid fallback)
+    // isCentroid=false (SPAN/Nominatim geocoded) -> black dot like normal sales
+    const isCentroid  = sales.some(s => s.isCentroid !== false);  // default true if missing
+    const baseColor   = activeBase === 'satellite' ? 'red' : '#1a1a1a';
+    const markerColor = isSelected ? '#0066ff' : isCentroid ? '#e65c00' : baseColor;
 
     const marker = L.circleMarker([lat, lon], {
       radius:      6,
       color:       markerColor,
       fillColor:   markerColor,
-      fillOpacity: isSelected ? 1 : 0,
+      fillOpacity: isSelected ? 1 : isCentroid ? 0 : 0,
       weight:      2.5,
-      dashArray:   "4 3"
+      dashArray:   isCentroid ? '4 3' : null
     });
 
     sales.forEach(s => {

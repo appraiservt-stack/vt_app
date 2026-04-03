@@ -1086,8 +1086,15 @@ def data_approx_all():
             continue  # skip null-coord entries (couldn't be geocoded)
         # Use propLocCty (city field) for popup header — more accurate than
         # trustedTown which comes from schoolCode and can be miscoded.
-        city        = entry.get("city") or entry.get("trustedTown") or ""
-        county_name = entry.get("trustedCountyName") or ""
+        city = entry.get("city") or entry.get("trustedTown") or ""
+
+        # Derive county from propLocCty town name for accurate county display.
+        # schoolCode-derived county can be wrong (e.g. Barnet->Fair Haven->Rutland
+        # when property is actually in Barnet->Caledonia).
+        city_upper   = city.strip().upper()
+        city_county  = TOWN_TO_COUNTY.get(city.strip().title()) or TOWN_TO_COUNTY.get(city_upper.title())
+        county_code2 = str(city_county).zfill(2) if city_county else entry.get("trustedCountyCode")
+        county_name  = COUNTY_CODE_TO_NAME.get(county_code2) or entry.get("trustedCountyName") or ""
 
         results.append({
             "id":      int(oid),
@@ -1100,7 +1107,7 @@ def data_approx_all():
             # Minimal fields — popup will fetch full details on click via /ptt172
             "price":   None,
             "date":    None,
-            "trustedCountyCode": entry.get("trustedCountyCode"),
+            "trustedCountyCode": county_code2 or entry.get("trustedCountyCode"),
             "trustedCountyName": county_name,
             "trustedTown":       city,  # use propLocCty for display
             "span":    None,
