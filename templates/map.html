@@ -1867,10 +1867,11 @@ function renderApproxData(records){
     const lon   = (p.lon || 0) + 0.00005;
 
     const isSelected  = sales.some(s => selectedSales[s.id]);
-    // All approx records show as orange dashed circles — flags them as
-    // approximate locations regardless of geocoding method used.
-    // Users will be able to correct positions in a future update.
-    const markerColor = isSelected ? '#0066ff' : '#e65c00';
+    // Two distinct approx marker styles:
+    // isCentroid=true  -> GREEN circle: parked at town center, no specific location known
+    // isCentroid=false -> ORANGE circle: geocoded to specific address (SPAN/Nominatim)
+    const isCentroid  = sales.some(s => s.isCentroid === true);
+    const markerColor = isSelected ? '#0066ff' : isCentroid ? '#2e7d32' : '#e65c00';
 
     const marker = L.circleMarker([lat, lon], {
       radius:      6,
@@ -2078,10 +2079,13 @@ function buildPopupHTML(p, sales, historySales){
   const headerTown = p.trustedTown || p.city || '';
   if(headerTown)
     header += `<i>${headerTown}, ${p.trustedCountyName || ''}</i><br>`;
-  // Only show centroid warning when coordinates are literally the town center.
-  // Geocoded records (SPAN/Nominatim) are approxLocation=true but isCentroid=false.
-  if(sales.some(s => s.isCentroid))
-    header += `<span style="font-size:10px;color:#e65c00;">&#9888; Approximate location (town center) &mdash; source coordinates were invalid.</span><br>`;
+  // Show appropriate warning based on location accuracy
+  const hasCentroid  = sales.some(s => s.isCentroid === true);
+  const hasGeocoded  = sales.some(s => s.approxLocation && s.isCentroid === false);
+  if(hasCentroid)
+    header += `<span style="font-size:10px;color:#2e7d32;">&#9888; Approximate location (town center) &mdash; could not determine specific address.</span><br>`;
+  else if(hasGeocoded)
+    header += `<span style="font-size:10px;color:#e65c00;">&#9888; Approximate location &mdash; source coordinates were invalid, address geocoded.</span><br>`;
 
   // Google Maps / Street View button — uses the property coordinates
   const lat = p.lat || (sales[0] && sales[0].lat);
