@@ -1266,6 +1266,22 @@ let approxLayer  = L.layerGroup().addTo(map);
 // approxCache loaded once at startup via initApproxCache()
 // Address lookup: normalized "ADDRESS|TOWN" -> {lat, lon} for merging approx into black dots
 let addressDotLookup = {};
+
+function normalizeAddr(addr){
+  if(!addr) return '';
+  let s = addr.toUpperCase().trim();
+  // Remove unit/apt/lot suffixes
+  s = s.replace(/,?\s*(UNIT|APT|SUITE|STE|LOT)\s*#?\s*\S*/g, '');
+  s = s.replace(/\s+#\s*\S+/g, '');
+  // Strip VT/VERMONT prefix from road names
+  s = s.replace(/\bVERMONT\s+/g, '');
+  s = s.replace(/\bVT\s+/g, '');
+  // Normalize ROUTE -> RT
+  s = s.replace(/\bROUTE\b/g, 'RT');
+  // Remove punctuation and extra spaces
+  s = s.replace(/[,#]/g, '').replace(/\s+/g, ' ').trim();
+  return s;
+}
 let popupTimer      = null;
 let hoverTimer      = null;
 let hoverEnabled    = true;
@@ -1859,7 +1875,7 @@ function renderApproxData(records){
 
     // Try to merge centroid records into existing black dots at same address
     if(p.isCentroid === true && p.address && p.trustedTown){
-      const addrKey = (p.address.trim().toUpperCase() + '|' + p.trustedTown.trim().toUpperCase());
+      const addrKey = (normalizeAddr(p.address) + '|' + p.trustedTown.trim().toUpperCase());
       const existing = addressDotLookup[addrKey];
       if(existing){
         // Add this sale to the existing black dot's sales list and update popup
@@ -2024,7 +2040,7 @@ function renderData(records){
     // Populate address lookup so approx records can merge into this dot
     sales.forEach(s => {
       if(!s.approxLocation && s.address && s.trustedTown){
-        const addrKey = (s.address.trim().toUpperCase() + '|' + s.trustedTown.trim().toUpperCase());
+        const addrKey = (normalizeAddr(s.address) + '|' + s.trustedTown.trim().toUpperCase());
         if(!addressDotLookup[addrKey]){
           addressDotLookup[addrKey] = { marker, sales, lat: p.lat, lon: p.lon };
         }
