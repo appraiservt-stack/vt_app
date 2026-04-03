@@ -130,19 +130,22 @@ def coords_in_county(lat, lon, county_code):
 
 
 def resolve_coordinates(raw_lat, raw_lon, county_code, trusted_town, object_id=None):
-    """Return (lat, lon, approx) for a record.
+    """Return (lat, lon, approx, is_centroid) for a record.
 
     Checks in order:
-    0. Pre-geocoded lookup (geocoded_approx.json) — precise coords from Nominatim
-    1. Coords null/zero/outside Vermont           → approx (town centroid)
-    2. Coords in Vermont but wrong county bbox    → approx (town centroid)
-    3. Coords in Vermont and right county         → black dot at real location
+    0. Pre-geocoded lookup (geocoded_approx.json) — SPAN/Nominatim coords
+    1. Coords null/zero/outside Vermont           → town centroid fallback
+    2. Coords in Vermont but wrong county bbox    → town centroid fallback
+    3. Coords in Vermont and right county         → real coordinates
+
+    is_centroid=True only when coordinates are the literal town centroid.
+    approx=True for any record with bad/missing source coordinates.
     """
     # Tier 0: check pre-geocoded lookup by OBJECTID
     if object_id is not None:
         entry = GEOCODED_APPROX.get(str(object_id))
         if entry and entry.get("lat") and entry.get("lon"):
-            return entry["lat"], entry["lon"], False  # precise black dot
+            return entry["lat"], entry["lon"], False, False  # precise black dot
 
     # Tier 1: null, zero, or outside Vermont entirely
     if (raw_lat is None or raw_lon is None or
@@ -152,19 +155,19 @@ def resolve_coordinates(raw_lat, raw_lon, county_code, trusted_town, object_id=N
         town_key = (trusted_town or "").strip().upper()
         centroid = TOWN_CENTROIDS.get(town_key)
         if centroid:
-            return centroid["lat"], centroid["lon"], True
-        return None, None, False
+            return centroid["lat"], centroid["lon"], True, True   # centroid fallback
+        return None, None, False, False
 
     # Tier 2: coords are in Vermont but outside the trusted county’s bbox
     if county_code and not coords_in_county(raw_lat, raw_lon, county_code):
         town_key = (trusted_town or "").strip().upper()
         centroid = TOWN_CENTROIDS.get(town_key)
         if centroid:
-            return centroid["lat"], centroid["lon"], True
-        return raw_lat, raw_lon, True
+            return centroid["lat"], centroid["lon"], True, True   # centroid fallback
+        return raw_lat, raw_lon, True, False
 
     # Tier 3: coords look correct — plot as a normal black dot
-    return raw_lat, raw_lon, False
+    return raw_lat, raw_lon, False, False
 
 
 def derive_trusted_location(attr):
@@ -585,7 +588,7 @@ def feature_to_record(f, filters):
         "price":   attr.get("ValPdOrTrn") or 0,
         "date":    attr.get("closeDate"),
         **dict(zip(
-            ("lat", "lon", "approxLocation"),
+            ("lat", "lon", "approxLocation", "isCentroid"),
             resolve_coordinates(
                 attr.get("Latitude"), attr.get("Longitude"),
                 loc_info["trustedCountyCode"],
@@ -1053,6 +1056,7 @@ def data():
                 "sellerUseOfProperty":     rec["sellerUseOfProperty"],
                 "buyerUseOfProperty":      rec["buyerUseOfProperty"],
                 "approxLocation":          rec["approxLocation"],
+                "isCentroid":              rec.get("isCentroid", rec["approxLocation"]),
                 "sellerLastName":   rec["sellerLastName"],
                 "sellerFirstName":  rec["sellerFirstName"],
                 "sellerEntityName": rec["sellerEntityName"],
@@ -1080,19 +1084,25 @@ def data_approx_all():
         lon = entry.get("lon")
         if lat is None or lon is None:
             continue  # skip null-coord entries (couldn't be geocoded)
+        # Use propLocCty (city field) for popup header — more accurate than
+        # trustedTown which comes from schoolCode and can be miscoded.
+        city        = entry.get("city") or entry.get("trustedTown") or ""
+        county_name = entry.get("trustedCountyName") or ""
+
         results.append({
             "id":      int(oid),
             "address": entry.get("address", ""),
-            "city":    entry.get("city", ""),
+            "city":    city,
             "lat":     lat,
             "lon":     lon,
             "approxLocation": True,
+            "isCentroid":     False,  # these are geocoded, not town centroid fallbacks
             # Minimal fields — popup will fetch full details on click via /ptt172
             "price":   None,
             "date":    None,
             "trustedCountyCode": entry.get("trustedCountyCode"),
-            "trustedCountyName": entry.get("trustedCountyName"),
-            "trustedTown":       entry.get("trustedTown"),
+            "trustedCountyName": county_name,
+            "trustedTown":       city,  # use propLocCty for display
             "span":    None,
             "schoolCode": None,
             "correctedCounty": False,
@@ -1838,6 +1848,7 @@ def history():
                 "buildingConstruction1Desc": rec["buildingConstruction1Desc"],
                 "interestUndivPercentDesc":  rec["interestUndivPercentDesc"],
                 "approxLocation":  rec["approxLocation"],
+                "isCentroid":      rec.get("isCentroid", rec["approxLocation"]),
             })
 
     return jsonify({"data": results})

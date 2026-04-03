@@ -2065,9 +2065,14 @@ function buildSaleRow(s, dimmed){
 function buildPopupHTML(p, sales, historySales){
   // Header (outside scroll area so it's always visible)
   let header = '';
-  if(p.trustedTown)
-    header += `<i>${p.trustedTown}, ${p.trustedCountyName || ''}</i><br>`;
-  if(sales.some(s => s.approxLocation))
+  // Header town: use city (propLocCty) for geocoded approx records,
+  // trustedTown for centroid fallbacks and normal records.
+  const headerTown = p.trustedTown || p.city || '';
+  if(headerTown)
+    header += `<i>${headerTown}, ${p.trustedCountyName || ''}</i><br>`;
+  // Only show centroid warning when coordinates are literally the town center.
+  // Geocoded records (SPAN/Nominatim) are approxLocation=true but isCentroid=false.
+  if(sales.some(s => s.isCentroid))
     header += `<span style="font-size:10px;color:#e65c00;">&#9888; Approximate location (town center) &mdash; source coordinates were invalid.</span><br>`;
 
   // Google Maps / Street View button — uses the property coordinates
