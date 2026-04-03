@@ -1104,18 +1104,21 @@ def data_approx_all():
         lon = entry.get("lon")
 
         if lat is not None and lon is not None:
-            # Successfully geocoded — already plotted as black dot by /data endpoint
-            # via resolve_coordinates Tier 0. Skip to avoid duplicate dots.
-            continue
-
-        # Null-coord record — couldn't be geocoded by SPAN or Nominatim.
-        # Fall back to town centroid so it shows as an orange circle.
-        trusted_town = entry.get("trustedTown") or entry.get("city") or ""
-        centroid = TOWN_CENTROIDS.get(trusted_town.strip().upper())
-        if not centroid:
-            continue  # no centroid available — skip
-        lat = centroid["lat"]
-        lon = centroid["lon"]
+            # Successfully geocoded via SPAN/Nominatim.
+            # Serve these here so records with null/bad ArcGIS geometry still appear.
+            # If /data also returns the record, both land at identical coords and
+            # merge into one popup via markerRefs grouping.
+            is_centroid_flag = False
+        else:
+            # Null-coord record — couldn't be geocoded.
+            # Fall back to town centroid so it shows as an orange circle.
+            trusted_town = entry.get("trustedTown") or entry.get("city") or ""
+            centroid = TOWN_CENTROIDS.get(trusted_town.strip().upper())
+            if not centroid:
+                continue  # no centroid available — skip
+            lat = centroid["lat"]
+            lon = centroid["lon"]
+            is_centroid_flag = True
         # Use propLocCty (city field) for popup header — more accurate than
         # trustedTown which comes from schoolCode and can be miscoded.
         raw_city = (entry.get("city") or entry.get("trustedTown") or "").strip()
@@ -1135,7 +1138,7 @@ def data_approx_all():
             "lat":     lat,
             "lon":     lon,
             "approxLocation": True,
-            "isCentroid":     True,   # town centroid fallback — couldn't geocode
+            "isCentroid":     is_centroid_flag,
             # Minimal fields — popup will fetch full details on click via /ptt172
             "price":   None,
             "date":    None,
