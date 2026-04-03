@@ -570,11 +570,31 @@ def feature_to_record(f, filters):
         except Exception:
             pass
 
+    # If this record is in GEOCODED_APPROX, use the cached town/county for display.
+    # The ArcGIS schoolCode can be miscoded (e.g. Barnet property with schoolCode
+    # pointing to Fair Haven), so the geocoded cache's propLocCty-derived values
+    # are more accurate for the popup header.
+    oid_str       = str(attr.get("OBJECTID") or "")
+    geo_entry     = GEOCODED_APPROX.get(oid_str)
+    if geo_entry and geo_entry.get("lat") and geo_entry.get("lon"):
+        geo_city       = geo_entry.get("city") or loc_info["trustedTown"]
+        geo_city_title = (geo_city or "").strip().title()
+        geo_county     = TOWN_TO_COUNTY.get(geo_city_title)
+        geo_county_code= str(geo_county).zfill(2) if geo_county else loc_info["trustedCountyCode"]
+        geo_county_name= COUNTY_CODE_TO_NAME.get(geo_county_code) or loc_info["trustedCountyName"]
+        display_town   = geo_city_title
+        display_county_code = geo_county_code
+        display_county_name = geo_county_name
+    else:
+        display_town        = loc_info["trustedTown"]
+        display_county_code = loc_info["trustedCountyCode"]
+        display_county_name = loc_info["trustedCountyName"]
+
     record = {
         # Location (trusted)
-        "trustedTown":        loc_info["trustedTown"],
-        "trustedCountyCode":  loc_info["trustedCountyCode"],
-        "trustedCountyName":  loc_info["trustedCountyName"],
+        "trustedTown":        display_town,
+        "trustedCountyCode":  display_county_code,
+        "trustedCountyName":  display_county_name,
         "correctedCounty":    loc_info["correctedCounty"],
 
         # Map display
