@@ -1873,9 +1873,10 @@ function renderApproxData(records){
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
 
-    // Try to merge centroid records into existing black dots at same address
-    if(p.isCentroid === true && p.address && p.trustedTown){
-      const addrKey = (normalizeAddr(p.address) + '|' + p.trustedTown.trim().toUpperCase());
+    // Try to merge centroid records into existing black dots at same address.
+    // Use county in the key (not town) to handle cases where propLocCty is wrong.
+    if(p.isCentroid === true && p.address){
+      const addrKey = (normalizeAddr(p.address) + '|' + (p.trustedCountyCode || ''));
       const existing = addressDotLookup[addrKey];
       if(existing){
         // Add this sale to the existing black dot's sales list and update popup
@@ -2039,8 +2040,8 @@ function renderData(records){
 
     // Populate address lookup so approx records can merge into this dot
     sales.forEach(s => {
-      if(!s.approxLocation && s.address && s.trustedTown){
-        const addrKey = (normalizeAddr(s.address) + '|' + s.trustedTown.trim().toUpperCase());
+      if(!s.approxLocation && s.address){
+        const addrKey = (normalizeAddr(s.address) + '|' + (s.trustedCountyCode || ''));
         if(!addressDotLookup[addrKey]){
           addressDotLookup[addrKey] = { marker, sales, lat: p.lat, lon: p.lon };
         }
