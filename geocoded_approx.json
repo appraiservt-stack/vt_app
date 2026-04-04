@@ -2474,17 +2474,6 @@
     "method": null,
     "geocoded_at": "2026-04-03"
   },
-  "160622": {
-    "lat": null,
-    "lon": null,
-    "address": "UNIT 2406 ORANGE LAKE 485 HOTEL RO",
-    "city": "Brownsville",
-    "trustedTown": "West Windsor",
-    "trustedCountyCode": "14",
-    "trustedCountyName": "Windsor",
-    "method": null,
-    "geocoded_at": "2026-04-03"
-  },
   "160639": {
     "lat": null,
     "lon": null,
@@ -3065,17 +3054,6 @@
     "trustedTown": "Cambridge",
     "trustedCountyCode": "08",
     "trustedCountyName": "Lamoille",
-    "method": null,
-    "geocoded_at": "2026-04-03"
-  },
-  "163144": {
-    "lat": null,
-    "lon": null,
-    "address": "PARCEL 2, LAND ONLY 1154 MURPHY HIL",
-    "city": "North Bennington",
-    "trustedTown": "North Bennington",
-    "trustedCountyCode": "02",
-    "trustedCountyName": "Bennington",
     "method": null,
     "geocoded_at": "2026-04-03"
   },
@@ -5686,17 +5664,6 @@
     "trustedCountyCode": "08",
     "trustedCountyName": "Lamoille",
     "method": null,
-    "geocoded_at": "2026-04-03"
-  },
-  "173443": {
-    "lat": 43.7616448,
-    "lon": -73.2650532,
-    "address": "10 NORTH SHORE DR",
-    "city": "Bellows Falls",
-    "trustedTown": "Rockingham",
-    "trustedCountyCode": "13",
-    "trustedCountyName": "Windham",
-    "method": "nominatim",
     "geocoded_at": "2026-04-03"
   },
   "173535": {
@@ -9150,17 +9117,6 @@
     "trustedTown": "Cambridge",
     "trustedCountyCode": "08",
     "trustedCountyName": "Lamoille",
-    "method": null,
-    "geocoded_at": "2026-04-03"
-  },
-  "187479": {
-    "lat": null,
-    "lon": null,
-    "address": "HILL ST BEANS HOMES STORAGE",
-    "city": "Lyndonville",
-    "trustedTown": "Northfield",
-    "trustedCountyCode": "12",
-    "trustedCountyName": "Washington",
     "method": null,
     "geocoded_at": "2026-04-03"
   },
@@ -33617,17 +33573,6 @@
     "method": null,
     "geocoded_at": "2026-04-04"
   },
-  "315908": {
-    "lat": 43.4504014,
-    "lon": -72.7064589,
-    "address": "12 NORTH SHORE DRIVE",
-    "city": "Bellows Falls",
-    "trustedTown": "Rockingham",
-    "trustedCountyCode": "13",
-    "trustedCountyName": "Windham",
-    "method": "nominatim",
-    "geocoded_at": "2026-04-04"
-  },
   "315912": {
     "lat": null,
     "lon": null,
@@ -46402,5 +46347,65 @@
     "method": "manual_nominatim",
     "geocoded_at": "2026-04-05",
     "note": "Same parcel as OBJECTID 163338. Geocoded as 2232 VT Route 14 North, Randolph."
+  },
+  "160622": {
+    "lat": null,
+    "lon": null,
+    "address": "UNIT 2406 ORANGE LAKE 485 HOTEL RO",
+    "city": "Brownsville",
+    "span": "73823500000",
+    "trustedTown": "West Windsor",
+    "trustedCountyCode": "14",
+    "trustedCountyName": "Windsor",
+    "method": null,
+    "geocoded_at": "2026-04-04"
+  },
+  "163144": {
+    "lat": null,
+    "lon": null,
+    "address": "PARCEL 2, LAND ONLY 1154 MURPHY HIL",
+    "city": "North Bennington",
+    "span": "05113863889",
+    "trustedTown": "North Bennington",
+    "trustedCountyCode": "02",
+    "trustedCountyName": "Bennington",
+    "method": null,
+    "geocoded_at": "2026-04-04"
+  },
+  "173443": {
+    "lat": 43.182649,
+    "lon": -72.4552479,
+    "address": "10 NORTH SHORE DR",
+    "city": "Bellows Falls",
+    "span": "52816612173",
+    "trustedTown": "Rockingham",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
+    "method": "nominatim",
+    "geocoded_at": "2026-04-04"
+  },
+  "187479": {
+    "lat": null,
+    "lon": null,
+    "address": "HILL ST BEANS HOMES STORAGE",
+    "city": "Lyndonville",
+    "span": "44113911228",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
+    "method": null,
+    "geocoded_at": "2026-04-04"
+  },
+  "315908": {
+    "lat": null,
+    "lon": null,
+    "address": "12 NORTH SHORE DRIVE",
+    "city": "Bellows Falls",
+    "span": "52816612258",
+    "trustedTown": "Rockingham",
+    "trustedCountyCode": "13",
+    "trustedCountyName": "Windham",
+    "method": null,
+    "geocoded_at": "2026-04-04"
   }
 }
