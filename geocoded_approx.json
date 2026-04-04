@@ -3157,15 +3157,17 @@
     "geocoded_at": "2026-04-03"
   },
   "163338": {
-    "lat": 44.0221913,
-    "lon": -72.5709691,
+    "lat": 43.971879,
+    "lon": -72.553534,
     "address": "2232 VERMONT ROUTE 14",
     "city": "Randolph",
+    "span": "50715914288",
     "trustedTown": "Randolph",
     "trustedCountyCode": "09",
     "trustedCountyName": "Orange",
-    "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "method": "manual_interpolated",
+    "geocoded_at": "2026-04-05",
+    "note": "Filer omitted \"North\". Placed at interpolated position on VT Route 14 North in Randolph."
   },
   "163359": {
     "lat": null,
@@ -46387,5 +46389,18 @@
     "trustedCountyName": null,
     "method": "nominatim",
     "geocoded_at": "2026-04-04"
+  },
+  "282392": {
+    "lat": 43.971879,
+    "lon": -72.553534,
+    "address": "2232 VERMONT ROUTE 14N",
+    "city": "Randolph",
+    "span": "50715914288",
+    "trustedTown": "Randolph",
+    "trustedCountyCode": "09",
+    "trustedCountyName": "Orange",
+    "method": "manual_interpolated",
+    "geocoded_at": "2026-04-05",
+    "note": "Same parcel as OBJECTID 163338 (duplicate sale). Placed at interpolated position on VT Route 14 North in Randolph."
   }
 }
