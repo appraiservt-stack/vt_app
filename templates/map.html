@@ -1875,11 +1875,14 @@ function loadData(){
 let approxCache      = null;   // null = not yet loaded
 let approxCacheReady = false;
 
+let approxCacheIds = new Set(); // fast O(1) lookup: is this id in approxCache?
+
 function initApproxCache(){
   fetch('/data/approx/all')
   .then(r => r.json())
   .then(data => {
     approxCache      = data.data || [];
+    approxCacheIds   = new Set(approxCache.map(p => p.id));
     approxCacheReady = true;
     // Pre-populate addressDotLookup from geocoded cache records (isCentroid=false)
     // so centroid records can merge into them even when not in current viewport.
@@ -2123,7 +2126,8 @@ function renderData(records){
     // don’t get cleared/redrawn on every pan/zoom.
     if(p.approxLocation) return;
     // Skip records already in approx cache — cache serves them with correct coords.
-    if(approxCacheReady && approxCache && approxCache.some(a => a.id === p.id)) return;
+    // approxCacheIds is a Set for O(1) lookup instead of O(n) .some() scan.
+    if(approxCacheReady && approxCacheIds.has(p.id)) return;
 
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
