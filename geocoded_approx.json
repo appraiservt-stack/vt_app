@@ -43450,25 +43450,25 @@
     "geocoded_at": "2026-04-04"
   },
   "213103": {
-    "lat": null,
-    "lon": null,
+    "lat": 44.13364210000003,
+    "lon": -72.66174629999995,
     "address": "76 VERMONT ROUTE 12A, UNIT #6",
     "city": "Northfield",
     "trustedTown": "Northfield",
     "trustedCountyCode": "12",
     "trustedCountyName": "Washington",
-    "method": null,
+    "method": "manual_sibling",
     "geocoded_at": "2026-04-04"
   },
   "260586": {
-    "lat": null,
-    "lon": null,
+    "lat": 44.13364210000003,
+    "lon": -72.66174629999995,
     "address": "76 VERMONT ROUTE 12A, UNIT #4",
     "city": "Northfield",
     "trustedTown": "Northfield",
     "trustedCountyCode": "12",
     "trustedCountyName": "Washington",
-    "method": null,
+    "method": "manual_sibling",
     "geocoded_at": "2026-04-04"
   }
 }
