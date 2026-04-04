@@ -1031,7 +1031,7 @@ function onParcelClick(e){
   })
   .catch(err => console.warn('Parcel click query error:', err));
 }
-map.on('click', onParcelClick);
+map.on('contextmenu', onParcelClick);  // right-click to show Grand List popup
 
 // loadParcels defined above in VT PARCELS section
 
