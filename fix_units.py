@@ -39,32 +39,35 @@ data['260586'] = {
 #   507-159-14126 → 2248 VT Route 14 North: 43.971761, -72.553894
 # 2232 is 82.6% of the way from 2156 to 2248.
 
+# Nominatim returns exact house-number interpolated coords for this address:
+# '2232, Vermont Route 14 North, North Randolph, Randolph, Orange County, Vermont'
+# lat=43.9710045, lon=-72.5539551  (on the road, not parcel centroid)
 data['163338'] = {
-    'lat': 43.971879,
-    'lon': -72.553534,
+    'lat': 43.9710045,
+    'lon': -72.5539551,
     'address': '2232 VERMONT ROUTE 14',
     'city': 'Randolph',
     'span': '50715914288',
     'trustedTown': 'Randolph',
     'trustedCountyCode': '09',
     'trustedCountyName': 'Orange',
-    'method': 'manual_interpolated',
+    'method': 'manual_nominatim',
     'geocoded_at': '2026-04-05',
-    'note': 'Filer omitted "North". Placed at interpolated position on VT Route 14 North in Randolph.',
+    'note': 'Filer omitted "North". Geocoded as 2232 VT Route 14 North, Randolph.',
 }
 
 data['282392'] = {
-    'lat': 43.971879,
-    'lon': -72.553534,
+    'lat': 43.9710045,
+    'lon': -72.5539551,
     'address': '2232 VERMONT ROUTE 14N',
     'city': 'Randolph',
     'span': '50715914288',
     'trustedTown': 'Randolph',
     'trustedCountyCode': '09',
     'trustedCountyName': 'Orange',
-    'method': 'manual_interpolated',
+    'method': 'manual_nominatim',
     'geocoded_at': '2026-04-05',
-    'note': 'Same parcel as OBJECTID 163338 (duplicate sale). Placed at interpolated position on VT Route 14 North in Randolph.',
+    'note': 'Same parcel as OBJECTID 163338. Geocoded as 2232 VT Route 14 North, Randolph.',
 }
 
 with open(OUTPUT, 'w') as f:
