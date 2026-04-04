@@ -239,6 +239,72 @@ def arcgis_sibling_lookup(address, school_code, county_bounds):
 
 # ── Method 3: Nominatim geocoding ─────────────────────────────────────────────
 
+# Village names that filers write as propLocCty but are not official town names.
+# Maps village/hamlet name -> parent town name (uppercase, matching town_centroids keys).
+VILLAGE_TO_TOWN = {
+    'BELLOWS FALLS':         'ROCKINGHAM',
+    'MORRISVILLE':           'MORRISTOWN',
+    'LYNDONVILLE':           'LYNDON',
+    'ISLAND POND':           'BRIGHTON',
+    'PROCTORSVILLE':         'CAVENDISH',
+    'PERKINSVILLE':          'WEATHERSFIELD',
+    'NORTH SPRINGFIELD':     'SPRINGFIELD',
+    'NORTH MONTPELIER':      'CALAIS',
+    'EAST MONTPELIER VILLAGE': 'EAST MONTPELIER',
+    'WEST BURKE':            'BURKE',
+    'EAST BURKE':            'BURKE',
+    'BARTON VILLAGE':        'BARTON',
+    'ORLEANS VILLAGE':       'BARTON',
+    'WEST PAWLET':           'PAWLET',
+    'NORTH BENNINGTON':      'BENNINGTON',
+    'READSBORO':             'READSBORO',
+    'JACKSONVILLE':          'WHITINGHAM',
+    'NORTH TROY':            'TROY',
+    'EAST HARDWICK':         'HARDWICK',
+    'GREENSBORO BEND':       'GREENSBORO',
+    'CRAFTSBURY COMMON':     'CRAFTSBURY',
+    'EAST CRAFTSBURY':       'CRAFTSBURY',
+    'NORTH HYDE PARK':       'HYDE PARK',
+    'JEFFERSONVILLE':        'CAMBRIDGE',
+    'SMUGGLERS NOTCH':       'CAMBRIDGE',
+    'WATERBURY CENTER':      'WATERBURY',
+    'STOWE HOLLOW':          'STOWE',
+    'MOSCOW':                'STOWE',
+    'NORTH POMFRET':         'POMFRET',
+    'SOUTH POMFRET':         'POMFRET',
+    'TAFTSVILLE':            'WOODSTOCK',
+    'QUECHEE':               'HARTFORD',
+    'WILDER':                'HARTFORD',
+    'WHITE RIVER JUNCTION':  'HARTFORD',
+    'WEST LEBANON':          'HARTFORD',
+    'ASCUTNEY':              'WEATHERSFIELD',
+    'BROWNSVILLE':           'WEST WINDSOR',
+    'NORTH HARTLAND':        'HARTLAND',
+    'NORTH THETFORD':        'THETFORD',
+    'POST MILLS':            'THETFORD',
+    'EAST THETFORD':         'THETFORD',
+    'FAIRLEE VILLAGE':       'FAIRLEE',
+    'WELLS RIVER':           'NEWBURY',
+    'GROTON':                'GROTON',
+    'MARSHFIELD VILLAGE':    'MARSHFIELD',
+}
+
+
+def resolve_geocode_town(geocode_town, town_centroids):
+    """Resolve a propLocCty value (possibly a village name) to a town name
+    that exists in town_centroids. Returns the resolved town name or the
+    original if no mapping found."""
+    key = (geocode_town or '').strip().upper()
+    # Direct match
+    if key in town_centroids:
+        return geocode_town
+    # Village -> town mapping
+    mapped = VILLAGE_TO_TOWN.get(key)
+    if mapped and mapped in town_centroids:
+        return mapped.title()
+    return geocode_town
+
+
 def nominatim_geocode(address, geocode_town, town_centroids):
     """
     Geocode address via Nominatim constrained to geocode_town's bbox.
@@ -248,7 +314,9 @@ def nominatim_geocode(address, geocode_town, town_centroids):
     if not has_street_number(address):
         return None, None, None
 
-    centroid = town_centroids.get((geocode_town or "").upper())
+    # Resolve village names to parent town before centroid lookup
+    resolved_town = resolve_geocode_town(geocode_town, town_centroids)
+    centroid = town_centroids.get((resolved_town or "").upper())
     if centroid:
         clat, clon = centroid["lat"], centroid["lon"]
         bbox = (

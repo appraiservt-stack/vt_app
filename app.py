@@ -71,6 +71,51 @@ COUNTY_CODE_TO_NAME = VT_CODES["counties"]
 TOWN_TO_COUNTY      = VT_CODES["town_to_county"]
 SCHOOL_TO_TOWN      = {int(k): v for k, v in VT_CODES["school_to_town"].items()}
 
+# Village/hamlet names filers write as propLocCty that are not official town names.
+# Used to resolve centroid lookups and county derivation when propLocCty is a village.
+VILLAGE_TO_TOWN = {
+    'BELLOWS FALLS':         'Rockingham',
+    'MORRISVILLE':           'Morristown',
+    'LYNDONVILLE':           'Lyndon',
+    'ISLAND POND':           'Brighton',
+    'PROCTORSVILLE':         'Cavendish',
+    'PERKINSVILLE':          'Weathersfield',
+    'NORTH SPRINGFIELD':     'Springfield',
+    'NORTH MONTPELIER':      'Calais',
+    'EAST MONTPELIER VILLAGE': 'East Montpelier',
+    'WEST BURKE':            'Burke',
+    'EAST BURKE':            'Burke',
+    'BARTON VILLAGE':        'Barton',
+    'ORLEANS VILLAGE':       'Barton',
+    'WEST PAWLET':           'Pawlet',
+    'NORTH BENNINGTON':      'Bennington',
+    'JACKSONVILLE':          'Whitingham',
+    'NORTH TROY':            'Troy',
+    'EAST HARDWICK':         'Hardwick',
+    'GREENSBORO BEND':       'Greensboro',
+    'CRAFTSBURY COMMON':     'Craftsbury',
+    'EAST CRAFTSBURY':       'Craftsbury',
+    'NORTH HYDE PARK':       'Hyde Park',
+    'JEFFERSONVILLE':        'Cambridge',
+    'WATERBURY CENTER':      'Waterbury',
+    'STOWE HOLLOW':          'Stowe',
+    'MOSCOW':                'Stowe',
+    'NORTH POMFRET':         'Pomfret',
+    'SOUTH POMFRET':         'Pomfret',
+    'TAFTSVILLE':            'Woodstock',
+    'QUECHEE':               'Hartford',
+    'WILDER':                'Hartford',
+    'WHITE RIVER JUNCTION':  'Hartford',
+    'ASCUTNEY':              'Weathersfield',
+    'BROWNSVILLE':           'West Windsor',
+    'NORTH HARTLAND':        'Hartland',
+    'NORTH THETFORD':        'Thetford',
+    'POST MILLS':            'Thetford',
+    'EAST THETFORD':         'Thetford',
+    'WELLS RIVER':           'Newbury',
+    'MARSHFIELD VILLAGE':    'Marshfield',
+}
+
 # Grand List Category lookup: numeric code → description text
 GL_CATEGORY_LOOKUP   = VT_CODES.get("grand_list_categories", {})
 # Building type lookup: numeric code → description text
@@ -244,13 +289,35 @@ def derive_trusted_location(attr):
     if trusted_town:
         trusted_county = TOWN_TO_COUNTY.get(trusted_town)
 
-    # Fallback 1: propLocCty town name lookup
+    # Sanity check: if schoolCode resolves to a county but the actual geocoded
+    # coordinates land outside that county bbox, the schoolCode is miscoded.
+    # In that case, override with propLocCty-derived county if available.
+    if trusted_county is not None and prop_city:
+        lat_val = attr.get("Latitude") or attr.get("lat")
+        lon_val = attr.get("Longitude") or attr.get("lon")
+        try:
+            lat_f = float(lat_val) if lat_val is not None else None
+            lon_f = float(lon_val) if lon_val is not None else None
+        except (TypeError, ValueError):
+            lat_f = lon_f = None
+        if lat_f is not None and not coords_in_county(lat_f, lon_f, trusted_county):
+            # Coords are outside the schoolCode-derived county — try propLocCty
+            pc_key = prop_city.strip().upper()
+            pc_resolved = VILLAGE_TO_TOWN.get(pc_key, prop_city.strip().title())
+            pc_county = TOWN_TO_COUNTY.get(pc_resolved) or TOWN_TO_COUNTY.get(prop_city.strip().title())
+            if pc_county and coords_in_county(lat_f, lon_f, pc_county):
+                trusted_county = pc_county
+                trusted_town   = pc_resolved
+
+    # Fallback 1: propLocCty town name lookup (with village -> town resolution)
     if trusted_county is None:
         prop_city = (prop_city or '').strip().title()
         if prop_city:
-            trusted_county = TOWN_TO_COUNTY.get(prop_city)
+            # Try direct town name first, then village->town mapping
+            resolved = VILLAGE_TO_TOWN.get(prop_city.upper(), prop_city)
+            trusted_county = TOWN_TO_COUNTY.get(resolved) or TOWN_TO_COUNTY.get(prop_city)
             if trusted_county:
-                trusted_town = trusted_town or prop_city
+                trusted_town = trusted_town or resolved
 
     # Fallback 2: self-reported countyCode (unreliable but better than nothing)
     if trusted_county is None and raw_county is not None:
@@ -1168,9 +1235,10 @@ def data():
         if requested_counties:
             actual_county = rec.get("trustedCountyCode")
             if not actual_county:
-                # Try propLocCty as a fallback county source
-                prop_city = (rec.get("city") or "").strip().title()
-                fallback = TOWN_TO_COUNTY.get(prop_city)
+                # Try propLocCty as a fallback, with village->town resolution
+                prop_city = (rec.get("city") or "").strip()
+                resolved = VILLAGE_TO_TOWN.get(prop_city.upper(), prop_city.title())
+                fallback = TOWN_TO_COUNTY.get(resolved) or TOWN_TO_COUNTY.get(prop_city.title())
                 actual_county = str(fallback).zfill(2) if fallback else None
             if not actual_county:
                 continue  # Can't verify county — exclude from filtered results
@@ -1264,7 +1332,10 @@ def data_approx_all():
 
         # Derive county from propLocCty town name for accurate county display.
         city_upper   = city.strip().upper()
-        city_county  = TOWN_TO_COUNTY.get(city.strip().title()) or TOWN_TO_COUNTY.get(city_upper.title())
+        # Resolve village names (e.g. 'Bellows Falls') to parent town before county lookup
+        _city_key = city.strip().upper()
+        _resolved_city = VILLAGE_TO_TOWN.get(_city_key, city.strip().title())
+        city_county  = TOWN_TO_COUNTY.get(_resolved_city) or TOWN_TO_COUNTY.get(city.strip().title()) or TOWN_TO_COUNTY.get(city_upper.title())
         county_code2 = str(city_county).zfill(2) if city_county else entry.get("trustedCountyCode")
         county_name  = COUNTY_CODE_TO_NAME.get(county_code2) or entry.get("trustedCountyName") or ""
 
