@@ -679,10 +679,11 @@ def fetch_features(where, geometry_params=None, max_records=2000):
     return r.json().get("features", [])
 
 
-def fetch_all_features(where):
+def fetch_all_features(where, geometry_params=None):
     """
-    Page through ArcGIS results to get ALL matching records
-    (for statewide export, no viewport limit).
+    Page through ArcGIS results to get ALL matching records.
+    Optional geometry_params adds a bbox filter to constrain the result set
+    (e.g. for county-filtered map views). Without a bbox this fetches statewide.
     Uses resultOffset pagination.
     """
     all_features = []
@@ -698,6 +699,10 @@ def fetch_all_features(where):
             "resultRecordCount": page_size,
             "resultOffset":      offset,
         }
+        if geometry_params:
+            params.update(geometry_params)
+        else:
+            params["inSR"] = "4326"
         try:
             r = requests.get(ARCGIS_URL, params=params, timeout=25)
             data = r.json()
@@ -1210,7 +1215,9 @@ def data():
                 "inSR":         "4326",
                 "spatialRel":   "esriSpatialRelIntersects",
             }
-            features = fetch_features(where, bbox_geo, max_records=2000)
+            # Paginate with bbox — gets ALL county records without statewide fetch.
+            # Washington county = ~11k records, ~9s. Acceptable for a county view.
+            features = fetch_all_features(where, geometry_params=bbox_geo)
         else:
             # Unknown county code — fall back to statewide
             features = fetch_all_features(where)
