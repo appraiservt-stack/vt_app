@@ -1885,9 +1885,10 @@ function renderApproxData(records){
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
 
-    // Try to merge centroid records into existing black dots at same address.
+    // Try to merge ALL approx records into existing black dots at same address.
+    // Covers both centroid fallbacks and geocoded records that landed at same coords.
     // Use county in the key (not town) to handle cases where propLocCty is wrong.
-    if(p.isCentroid === true && p.address){
+    if(p.address){
       const addrKey = (normalizeAddr(p.address) + '|' + (p.trustedCountyCode || ''));
       const existing = addressDotLookup[addrKey];
       if(existing){
@@ -1899,9 +1900,16 @@ function renderApproxData(records){
       }
     }
 
-    const key = (p.lat != null && p.lon != null)
-      ? (Math.round(p.lat * 10000) / 10000) + "|" + (Math.round(p.lon * 10000) / 10000)
-      : (p.address || "") + "_" + (p.city || "");
+    // Group by coordinates OR by normalized address+county
+    // so approx records at same address cluster into one dot
+    let key;
+    if(p.lat != null && p.lon != null){
+      key = (Math.round(p.lat * 10000) / 10000) + "|" + (Math.round(p.lon * 10000) / 10000);
+    } else if(p.address){
+      key = 'addr|' + normalizeAddr(p.address) + '|' + (p.trustedCountyCode || '');
+    } else {
+      key = (p.address || '') + '_' + (p.city || '');
+    }
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(p);
   });
