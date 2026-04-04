@@ -268,19 +268,36 @@ def nominatim_geocode(address, geocode_town, town_centroids):
         f"{address}, Vermont",
     ]
 
-    # For addresses with a bare route number (e.g. "2232 VERMONT ROUTE 14"),
-    # also try North and South variants when the road splits at a junction.
-    # This catches cases where a filer omitted the directional suffix.
-    route_bare = re.search(
-        r'(.*\bROUTE\s+(\d+))\s*$',
+    # Route directional variants — handles three cases:
+    #   1. Bare:        "2232 VERMONT ROUTE 14"    → try North, South, N, S, etc.
+    #   2. Abbreviated: "2232 VERMONT ROUTE 14N"   → also try full spelling (14 North)
+    #   3. Spaced abbr: "2232 VERMONT ROUTE 14 N"  → same as #2
+    _DIR_EXPAND = {'N': 'North', 'S': 'South', 'E': 'East', 'W': 'West'}
+    _DIR_ABBREV = {'North': 'N', 'South': 'S', 'East': 'E', 'West': 'W'}
+
+    # Case 1: bare route number at end of address
+    route_bare = re.search(r'(.*\bROUTE\s+(\d+))\s*$', address.strip(), re.I)
+    if route_bare:
+        base = route_bare.group(1)
+        for full, abbr in [('North','N'),('South','S'),('East','E'),('West','W')]:
+            queries.append(f"{base} {full}, {city_str}, Vermont")
+            queries.append(f"{base} {full}, Vermont")
+            queries.append(f"{base}{abbr}, {city_str}, Vermont")   # e.g. ROUTE 14N
+            queries.append(f"{base} {abbr}, {city_str}, Vermont")  # e.g. ROUTE 14 N
+
+    # Case 2 & 3: address already ends in a directional abbreviation (14N / 14 N)
+    route_abbr = re.search(
+        r'(.*\bROUTE\s+(\d+))\s*([NSEW])\s*$',
         address.strip(),
         re.I
     )
-    if route_bare:
-        base_with_route = route_bare.group(1)
-        for direction in ('North', 'South', 'East', 'West'):
-            queries.append(f"{base_with_route} {direction}, {city_str}, Vermont")
-            queries.append(f"{base_with_route} {direction}, Vermont")
+    if route_abbr:
+        base    = route_abbr.group(1)               # e.g. "2232 VERMONT ROUTE 14"
+        abbr    = route_abbr.group(3).upper()        # e.g. "N"
+        full    = _DIR_EXPAND.get(abbr, abbr)        # e.g. "North"
+        # Add the fully-spelled version
+        queries.append(f"{base} {full}, {city_str}, Vermont")
+        queries.append(f"{base} {full}, Vermont")
 
     for q in queries:
         url = (
