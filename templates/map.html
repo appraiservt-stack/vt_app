@@ -1956,8 +1956,8 @@ function renderApproxData(records){
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
-      maxWidth:   280,
-      maxHeight:  420,
+      maxWidth:   300,
+      maxHeight:  520,
       autoPan:    false,
       keepInView: false
     });
@@ -2010,13 +2010,40 @@ function mergeApproxIntoBlackDots(){
     if(existing && existing.marker){
       // Remove orange circle from approxLayer
       if(ref && ref.marker) approxLayer.removeLayer(ref.marker);
-      // Add to black dot
+      // Add minimal record to black dot immediately
       existing.sales.push(p);
       markerRefs[p.id] = existing;
       existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
       mergeCount++;
+      // Enrich with full data from /data endpoint
+      enrichApproxSale(p, existing);
     }
   });
+}
+
+function enrichApproxSale(approxRecord, dotRef){
+  // Fetch full sale data for an approx record by OBJECTID
+  // and update the merged black dot popup with price/date/building info
+  fetch('/data/approx/enrich?id=' + approxRecord.id)
+  .then(r => r.json())
+  .then(data => {
+    if(!data.sale) return;
+    const full = data.sale;
+    // Update the approx record in place
+    approxRecord.price                  = full.price;
+    approxRecord.date                   = full.date;
+    approxRecord.buildingConstruction1Desc = full.buildingConstruction1Desc;
+    approxRecord.buildingConstruction2Desc = full.buildingConstruction2Desc;
+    approxRecord.buildingConstruction3Desc = full.buildingConstruction3Desc;
+    approxRecord.interestUndivPercentDesc  = full.interestUndivPercentDesc;
+    approxRecord.sellerLastName         = full.sellerLastName;
+    approxRecord.sellerFirstName        = full.sellerFirstName;
+    approxRecord.buyerLastName          = full.buyerLastName;
+    approxRecord.buyerFirstName         = full.buyerFirstName;
+    // Rebuild popup with enriched data
+    if(dotRef.marker) dotRef.marker.setPopupContent(buildPopupHTML(dotRef.sales[0], dotRef.sales, null));
+  })
+  .catch(() => {}); // silently ignore if enrichment fails
 }
 
 // ===================================================
@@ -2088,8 +2115,8 @@ function renderData(records){
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
-      maxWidth:   280,
-      maxHeight:  420,
+      maxWidth:   300,
+      maxHeight:  520,
       autoPan:    false,
       keepInView: false
     });

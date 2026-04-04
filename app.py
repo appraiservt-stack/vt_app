@@ -1227,6 +1227,53 @@ def data_approx_all():
     return jsonify({"data": results})
 
 
+@app.route("/data/approx/enrich")
+@login_required
+def data_approx_enrich():
+    """Fetch full sale data for a single approx record by OBJECTID.
+    Used to enrich merged approx records with price/date/building info.
+    """
+    obj_id = request.args.get("id", "")
+    if not obj_id:
+        return jsonify({"sale": None})
+    try:
+        obj_id_int = int(obj_id)
+    except (TypeError, ValueError):
+        return jsonify({"sale": None})
+
+    features = fetch_features(f"OBJECTID={obj_id_int}", max_records=1)
+    if not features:
+        return jsonify({"sale": None})
+
+    empty_filters = {
+        "counties": "", "towns": "", "date_from": "", "date_to": "",
+        "price_low": "", "price_high": "", "land_low": "", "land_high": "",
+        "building_types": "", "interest_types": "", "seller_use": "",
+        "buyer_use": "", "grand_list": "", "ptt_exemptions": "",
+        "seller_entity": "", "seller_last": "", "seller_first": "",
+        "buyer_entity": "", "buyer_last": "", "buyer_first": "",
+        "street": "", "span": "",
+        "enrolled_current_use": "", "dev_prev_conv": "",
+        "buyer_adjoining": "", "foreclosed": "",
+    }
+    rec = feature_to_record(features[0], empty_filters)
+    if not rec:
+        return jsonify({"sale": None})
+
+    return jsonify({"sale": {
+        "price":                     rec["ValuePaidOrTransferred"],
+        "date":                      rec["closingDate"],
+        "buildingConstruction1Desc": rec["buildingConstruction1Desc"],
+        "buildingConstruction2Desc": rec["buildingConstruction2Desc"],
+        "buildingConstruction3Desc": rec["buildingConstruction3Desc"],
+        "interestUndivPercentDesc":  rec["interestUndivPercentDesc"],
+        "sellerLastName":            rec["sellerLastName"],
+        "sellerFirstName":           rec["sellerFirstName"],
+        "buyerLastName":             rec["buyerLastName"],
+        "buyerFirstName":            rec["buyerFirstName"],
+    }})
+
+
 @app.route("/data/approx")
 @login_required
 def data_approx():
