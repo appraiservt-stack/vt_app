@@ -244,6 +244,15 @@ def derive_trusted_location(attr):
     if trusted_town:
         trusted_county = TOWN_TO_COUNTY.get(trusted_town)
 
+    # Fallback 1: propLocCty town name lookup
+    if trusted_county is None:
+        prop_city = (prop_city or '').strip().title()
+        if prop_city:
+            trusted_county = TOWN_TO_COUNTY.get(prop_city)
+            if trusted_county:
+                trusted_town = trusted_town or prop_city
+
+    # Fallback 2: self-reported countyCode (unreliable but better than nothing)
     if trusted_county is None and raw_county is not None:
         trusted_county = str(raw_county).zfill(2)
 
@@ -1083,11 +1092,22 @@ def data():
         rec = feature_to_record(f, filters)
         if rec is None:
             continue
-        # County cross-check: use trustedCountyCode from schoolCode lookup
+        # County cross-check: use trustedCountyCode from schoolCode lookup.
+        # If trustedCountyCode is null (junk schoolCode like 0 or 999),
+        # fall back to propLocCty town name lookup before deciding.
+        # If still null and a county filter is active, EXCLUDE the record —
+        # don't let unverifiable records leak through county filters.
         if requested_counties:
             actual_county = rec.get("trustedCountyCode")
-            if actual_county and str(actual_county).zfill(2) not in requested_counties:
-                continue   # Record belongs to a different county — drop
+            if not actual_county:
+                # Try propLocCty as a fallback county source
+                prop_city = (rec.get("city") or "").strip().title()
+                fallback = TOWN_TO_COUNTY.get(prop_city)
+                actual_county = str(fallback).zfill(2) if fallback else None
+            if not actual_county:
+                continue  # Can't verify county — exclude from filtered results
+            if str(actual_county).zfill(2) not in requested_counties:
+                continue  # Wrong county — drop
         results.append({
                 "id":               rec["id"],
                 "address":          rec["address"],

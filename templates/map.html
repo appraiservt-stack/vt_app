@@ -1912,10 +1912,14 @@ function loadApproxData(){
   const visible = approxCache.filter(p => {
     if(p.lat == null || p.lon == null) return false;
     if(!b.contains([p.lat, p.lon]))    return false;
-    if(counties.length && p.trustedCountyCode){
+    if(counties.length){
+      // If county filter is active, records with no county info are excluded.
+      // This prevents junk-schoolCode records (0, 999) from leaking through.
+      if(!p.trustedCountyCode) return false;
       if(!counties.includes(String(p.trustedCountyCode).padStart(2,'0'))) return false;
     }
-    if(towns.length && p.trustedTown){
+    if(towns.length){
+      if(!p.trustedTown) return false;
       if(!towns.includes(p.trustedTown.toUpperCase())) return false;
     }
     if(dateFrom || dateTo){
