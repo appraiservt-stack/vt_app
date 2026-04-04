@@ -174,7 +174,7 @@ def coords_in_county(lat, lon, county_code):
     return lat_min <= lat <= lat_max and lon_min <= lon <= lon_max
 
 
-def resolve_coordinates(raw_lat, raw_lon, trusted_town, object_id=None, match_method=None):
+def resolve_coordinates(raw_lat, raw_lon, trusted_town, object_id=None, match_method=None, prop_city_for_centroid=None):
     """Return (lat, lon, approx, is_centroid) for a record.
 
     Uses MatchMthod as the primary signal for coordinate quality:
@@ -208,11 +208,40 @@ def resolve_coordinates(raw_lat, raw_lon, trusted_town, object_id=None, match_me
             return raw_lat, raw_lon, True, False  # approx, not centroid
         # Coords out of VT — fall through to centroid
 
-    # Tier 3: unmatched or unknown method — town centroid fallback
-    town_key = (trusted_town or "").strip().upper()
-    centroid  = TOWN_CENTROIDS.get(town_key)
+    # Tier 3: unmatched or unknown method — town centroid fallback.
+    # Try in order:
+    #   a) trusted_town from schoolCode (most reliable when schoolCode is correct)
+    #   b) propLocCty direct match (filer-entered, sometimes a village name)
+    #   c) propLocCty via VILLAGE_TO_TOWN mapping (resolves village to parent town)
+    # This prevents miscoded schoolCodes (e.g. 246->Winooski for a Wilmington property)
+    # from placing the centroid in the wrong county.
+    def _try_centroid(town_name):
+        key = (town_name or '').strip().upper()
+        if not key:
+            return None
+        c = TOWN_CENTROIDS.get(key)
+        if c:
+            return c
+        # Try village->town mapping
+        mapped = VILLAGE_TO_TOWN.get(key)
+        if mapped:
+            return TOWN_CENTROIDS.get(mapped.upper())
+        return None
+
+    # Try schoolCode-derived town first, but validate it's in the right county
+    centroid = _try_centroid(trusted_town)
+    prop_city_val = (prop_city_for_centroid or '').strip()
+    if centroid and prop_city_val:
+        # If we also have a propLocCty centroid and it's in a different county,
+        # prefer propLocCty — schoolCode is more likely to be miscoded than address
+        prop_centroid = _try_centroid(prop_city_val)
+        if prop_centroid and prop_centroid.get('county') != centroid.get('county'):
+            centroid = prop_centroid  # propLocCty wins on county mismatch
+    elif not centroid:
+        centroid = _try_centroid(prop_city_val)
+
     if centroid:
-        return centroid["lat"], centroid["lon"], True, True
+        return centroid['lat'], centroid['lon'], True, True
 
     return None, None, False, False
 
@@ -753,7 +782,8 @@ def feature_to_record(f, filters):
                 attr.get("Latitude"), attr.get("Longitude"),
                 loc_info["trustedTown"],
                 object_id=attr.get("OBJECTID"),
-                match_method=attr.get("MatchMthod")
+                match_method=attr.get("MatchMthod"),
+                prop_city_for_centroid=attr.get("propLocCty")
             )
         )),
 
@@ -843,12 +873,16 @@ def feature_to_record(f, filters):
         # Export lat/lon: use resolved coords (centroid fallback if source coords are bad)
         "Latitude":                    resolve_coordinates(
                                            attr.get("Latitude"), attr.get("Longitude"),
-                                           loc_info["rawCountyCode"],
-                                           loc_info["trustedTown"])[0],
+                                           loc_info["trustedTown"],
+                                           object_id=attr.get("OBJECTID"),
+                                           match_method=attr.get("MatchMthod"),
+                                           prop_city_for_centroid=attr.get("propLocCty"))[0],
         "Longitude":                   resolve_coordinates(
                                            attr.get("Latitude"), attr.get("Longitude"),
-                                           loc_info["rawCountyCode"],
-                                           loc_info["trustedTown"])[1],
+                                           loc_info["trustedTown"],
+                                           object_id=attr.get("OBJECTID"),
+                                           match_method=attr.get("MatchMthod"),
+                                           prop_city_for_centroid=attr.get("propLocCty"))[1],
         "additionalSellerNames":       attr.get("addSellNam"),
         "additionalBuyerNames":        attr.get("addBuyrNam"),
     }

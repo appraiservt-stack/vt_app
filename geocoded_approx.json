@@ -22144,17 +22144,6 @@
     "method": null,
     "geocoded_at": "2026-04-03"
   },
-  "244617": {
-    "lat": null,
-    "lon": null,
-    "address": "112 BEAVER HOLLOW RD",
-    "city": "Londonderry",
-    "trustedTown": "Isle La Motte",
-    "trustedCountyCode": "07",
-    "trustedCountyName": "Grand Isle",
-    "method": null,
-    "geocoded_at": "2026-04-03"
-  },
   "244625": {
     "lat": null,
     "lon": null,
@@ -33812,17 +33801,6 @@
     "trustedTown": "Orwell",
     "trustedCountyCode": "01",
     "trustedCountyName": "Addison",
-    "method": null,
-    "geocoded_at": "2026-04-04"
-  },
-  "322859": {
-    "lat": null,
-    "lon": null,
-    "address": "ROUTE 9",
-    "city": "Wilmington",
-    "trustedTown": "Winooski",
-    "trustedCountyCode": "04",
-    "trustedCountyName": "Chittenden",
     "method": null,
     "geocoded_at": "2026-04-04"
   },
@@ -46405,6 +46383,18 @@
     "trustedTown": "Rockingham",
     "trustedCountyCode": "13",
     "trustedCountyName": "Windham",
+    "method": null,
+    "geocoded_at": "2026-04-04"
+  },
+  "322859": {
+    "lat": null,
+    "lon": null,
+    "address": "ROUTE 9",
+    "city": "Wilmington",
+    "span": "76224613763",
+    "trustedTown": "Winooski",
+    "trustedCountyCode": "04",
+    "trustedCountyName": "Chittenden",
     "method": null,
     "geocoded_at": "2026-04-04"
   }
