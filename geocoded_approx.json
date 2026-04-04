@@ -14717,17 +14717,6 @@
     "method": null,
     "geocoded_at": "2026-04-03"
   },
-  "213103": {
-    "lat": null,
-    "lon": null,
-    "address": "76 VERMONT ROUTE 12A, UNIT #6",
-    "city": "Northfield",
-    "trustedTown": "Northfield",
-    "trustedCountyCode": "12",
-    "trustedCountyName": "Washington",
-    "method": null,
-    "geocoded_at": "2026-04-03"
-  },
   "213111": {
     "lat": null,
     "lon": null,
@@ -25868,17 +25857,6 @@
     "trustedTown": "Chelsea",
     "trustedCountyCode": "09",
     "trustedCountyName": "Orange",
-    "method": null,
-    "geocoded_at": "2026-04-03"
-  },
-  "260586": {
-    "lat": null,
-    "lon": null,
-    "address": "76 VERMONT ROUTE 12A, UNIT #4",
-    "city": "Northfield",
-    "trustedTown": "Northfield",
-    "trustedCountyCode": "12",
-    "trustedCountyName": "Washington",
     "method": null,
     "geocoded_at": "2026-04-03"
   },
@@ -43468,6 +43446,28 @@
     "trustedTown": "Wheelock",
     "trustedCountyCode": "03",
     "trustedCountyName": "Caledonia",
+    "method": null,
+    "geocoded_at": "2026-04-04"
+  },
+  "213103": {
+    "lat": null,
+    "lon": null,
+    "address": "76 VERMONT ROUTE 12A, UNIT #6",
+    "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
+    "method": null,
+    "geocoded_at": "2026-04-04"
+  },
+  "260586": {
+    "lat": null,
+    "lon": null,
+    "address": "76 VERMONT ROUTE 12A, UNIT #4",
+    "city": "Northfield",
+    "trustedTown": "Northfield",
+    "trustedCountyCode": "12",
+    "trustedCountyName": "Washington",
     "method": null,
     "geocoded_at": "2026-04-04"
   }
