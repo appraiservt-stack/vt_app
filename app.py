@@ -2115,9 +2115,12 @@ def ptt172_preview():
 
 
 @app.route("/ptt172")
-def ptt172():  # noqa: C901
+@app.route("/ptt172/<filename>")
+def ptt172(filename=None):  # noqa: C901
     """Pre-filled PTT-172 PDF. Opens inline in browser by default.
     ?id=OBJECTID  &download=1 to force file download.
+    The optional <filename> path segment (e.g. PTT-172_xxx.pdf) makes
+    browsers use the correct .pdf extension when saving.
     """
     import io as _io
     from datetime import datetime as _dt, timezone as _tz
@@ -2615,9 +2618,16 @@ def ptt172():  # noqa: C901
     fname = f"PTT-172_{addr}_{close}.pdf"
 
     # Default: open inline in browser. If ?download=1 force download.
-    disposition = f"attachment; filename={fname}" if download else f"inline; filename={fname}"
+    # Use filename* (RFC 5987) and plain filename for maximum browser compatibility.
+    if download:
+        disposition = f"attachment; filename={fname}; filename*=UTF-8''{fname}"
+    else:
+        disposition = f"inline; filename={fname}"
     return Response(pdf_bytes, mimetype="application/pdf",
-                    headers={"Content-Disposition": disposition})
+                    headers={
+                        "Content-Disposition": disposition,
+                        "Content-Type": "application/pdf",
+                    })
 
 
 @app.route("/contact", methods=["POST"])
