@@ -1276,8 +1276,9 @@ function normalizeAddr(addr){
   // Strip VT/VERMONT prefix from road names
   s = s.replace(/\bVERMONT\s+/g, '');
   s = s.replace(/\bVT\s+/g, '');
-  // Normalize ROUTE -> RT
+  // Normalize ROUTE/RTE -> RT
   s = s.replace(/\bROUTE\b/g, 'RT');
+  s = s.replace(/\bRTE\b/g, 'RT');
   // Remove punctuation and extra spaces
   s = s.replace(/[,#]/g, '').replace(/\s+/g, ' ').trim();
   return s;
@@ -1821,6 +1822,17 @@ function initApproxCache(){
   .then(data => {
     approxCache      = data.data || [];
     approxCacheReady = true;
+    // Pre-populate addressDotLookup from geocoded cache records (isCentroid=false)
+    // so centroid records can merge into them even when not in current viewport.
+    approxCache.forEach(p => {
+      if(p.isCentroid === false && p.address && p.lat != null){
+        const addrKey = normalizeAddr(p.address) + '|' + (p.trustedCountyCode || '');
+        if(!addressDotLookup[addrKey]){
+          // Create a virtual marker ref for merging
+          addressDotLookup[addrKey] = { marker: null, sales: [p], lat: p.lat, lon: p.lon, fromCache: true };
+        }
+      }
+    });
     loadApproxData();
   })
   .catch(e => console.warn('Approx cache load error:', e));
