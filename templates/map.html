@@ -2070,9 +2070,9 @@ function renderData(records){
   // Re-apply any persistent drawn shapes so filter changes update selection
   reapplyDrawnShapes();
 
-  // Re-render approx layer now that addressDotLookup is populated
-  // so centroid records can merge into the correct black dots
-  if(approxCacheReady) loadApproxData();
+  // Note: do NOT call loadApproxData() here — it causes flickering because
+  // moveend fires loadData() -> renderData() -> loadApproxData() repeatedly.
+  // The approxLayer is managed independently via pan/zoom events.
 }
 
 // ===================================================
