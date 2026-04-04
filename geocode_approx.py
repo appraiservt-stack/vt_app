@@ -268,6 +268,20 @@ def nominatim_geocode(address, geocode_town, town_centroids):
         f"{address}, Vermont",
     ]
 
+    # For addresses with a bare route number (e.g. "2232 VERMONT ROUTE 14"),
+    # also try North and South variants when the road splits at a junction.
+    # This catches cases where a filer omitted the directional suffix.
+    route_bare = re.search(
+        r'(.*\bROUTE\s+(\d+))\s*$',
+        address.strip(),
+        re.I
+    )
+    if route_bare:
+        base_with_route = route_bare.group(1)
+        for direction in ('North', 'South', 'East', 'West'):
+            queries.append(f"{base_with_route} {direction}, {city_str}, Vermont")
+            queries.append(f"{base_with_route} {direction}, Vermont")
+
     for q in queries:
         url = (
             "https://nominatim.openstreetmap.org/search"

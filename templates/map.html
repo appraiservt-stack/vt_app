@@ -880,13 +880,12 @@ map.on("baselayerchange", function(e){
 });
 
 // ============================================================
-// VT PARCELS — WMS tile overlay + click-to-query popup
+// VT PARCELS — dynamic image overlay via ANR MapServer export (same approach as FEMA)
 // ============================================================
-const PARCEL_WMS_URL  = 'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/WMSServer';
 const PARCEL_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
 const PARCEL_MIN_ZOOM = 14;
 
-// Create pane so WMS tiles sit below markers
+// Create pane so parcel outlines sit below markers but above basemap
 if(!map.getPane('parcelPane')){
   const pp = map.createPane('parcelPane');
   pp.style.zIndex = 360;
@@ -896,60 +895,9 @@ if(!map.getPane('parcelPane')){
 const CF_WORKER = 'https://vt-map-proxy.quiet-scene-a739.workers.dev/';
 const PROXY = (url) => CF_WORKER + '?url=' + encodeURIComponent(url);
 
-// Parcel outlines via ArcGIS MapServer dynamic image overlay.
-// Direct requests allowed from vtpropertysales.com — no proxy needed.
-// Uses same viewport-image approach as FEMA layer for best performance.
-const PARCEL_EXPORT_URL = 'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer/export';
-
-const parcelWmsLayer = L.layerGroup(); // container for dynamic image overlay
-let   parcelImageOverlay = null;       // current image overlay
-
-let parcelsOn = false;
-let parcelXhr = null;
-let parcelLayer = parcelWmsLayer; // alias so existing refs don't break
-
-function loadParcelImage(){
-  if(!parcelsOn) return;
-  if(map.getZoom() < PARCEL_MIN_ZOOM) return;
-
-  const bounds = map.getBounds();
-  const sw = bounds.getSouthWest();
-  const ne = bounds.getNorthEast();
-
-  // Convert to Web Mercator (EPSG:102100)
-  const toMerc = (lng, lat) => [
-    lng * 20037508.34 / 180,
-    Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180
-  ];
-  const swM = toMerc(sw.lng, sw.lat);
-  const neM = toMerc(ne.lng, ne.lat);
-  const bbox = `${swM[0]},${swM[1]},${neM[0]},${neM[1]}`;
-
-  const size = map.getSize();
-  const params = new URLSearchParams({
-    bbox,
-    bboxSR:      '102100',
-    layers:      'show:0',
-    size:        `${size.x},${size.y}`,
-    imageSR:     '102100',
-    format:      'png32',
-    transparent: 'true',
-    f:           'image',
-    dpi:         '96'
-  });
-
-  const imgUrl = PARCEL_EXPORT_URL + '?' + params.toString();
-
-  // Remove old overlay
-  if(parcelImageOverlay) parcelWmsLayer.removeLayer(parcelImageOverlay);
-
-  parcelImageOverlay = L.imageOverlay(imgUrl, bounds, {
-    opacity:     0.7,
-    pane:        'parcelPane',
-    interactive: false
-  });
-  parcelWmsLayer.addLayer(parcelImageOverlay);
-}
+// parcelOverlay, parcelWmsLayer, parcelsOn are initialized after
+// makeDynamicOverlay is defined (see below in the FEMA section).
+let parcelWmsLayer, parcelOverlay, parcelsOn = false, parcelLayer;
 
 // Click handler — query parcel data at click location
 function onParcelClick(e){
@@ -1026,8 +974,8 @@ function onParcelClick(e){
 }
 map.on('click', onParcelClick);
 
-// loadParcels — refresh parcel image for current viewport
-function loadParcels(){ loadParcelImage(); }
+// loadParcels — no-op: makeDynamicOverlay handles move/zoom events internally
+function loadParcels(){}
 
 // ============================================================
 // FEMA FLOOD ZONES — via Flask proxy + Esri MapServer export
@@ -1094,6 +1042,16 @@ const femaOverlay = makeDynamicOverlay(
 const femaFloodLayer = femaOverlay.layer;
 let femaOn = false;
 function loadFema(){}
+
+// Initialize parcel overlay here — after makeDynamicOverlay is defined.
+// Routes through Cloudflare Worker proxy (ANR server requires it).
+// Loads image only on img.onload — prevents blank/stretched overlays.
+parcelOverlay  = makeDynamicOverlay(
+  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_CADASTRAL_SP_NOCACHE_v2/MapServer',
+  '0', 'parcelPane', 0.7, PARCEL_MIN_ZOOM
+);
+parcelWmsLayer = parcelOverlay.layer;
+parcelLayer    = parcelWmsLayer; // alias for any legacy refs
 
 // ============================================================
 // TOWN & COUNTY BOUNDARY LAYERS
@@ -1294,13 +1252,13 @@ L.control.layers(
 
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true; loadParcelImage(); }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true; parcelOverlay.enable(); }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
 });
 map.on('overlayremove', function(e){
-  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = false; if(parcelImageOverlay){ parcelWmsLayer.removeLayer(parcelImageOverlay); parcelImageOverlay=null; } }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = false; parcelOverlay.disable(); }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
