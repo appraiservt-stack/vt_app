@@ -1952,7 +1952,7 @@ function renderApproxData(records){
     });
 
     sales.forEach(s => {
-      markerRefs[s.id] = { marker, sales, prop: p };
+      markerRefs[s.id] = { marker, sales, prop: p, fromApproxLayer: true };
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
@@ -1975,6 +1975,47 @@ function renderApproxData(records){
     });
 
     approxLayer.addLayer(marker);
+  });
+}
+
+// ===================================================
+// MERGE APPROX INTO BLACK DOTS
+// Called after renderData() populates spanDotLookup and addressDotLookup.
+// Iterates approxLayer markers and merges any that now have a matching
+// black dot — removes the orange circle and adds sale to black dot popup.
+// ===================================================
+function mergeApproxIntoBlackDots(){
+  if(!approxCacheReady || !approxCache) return;
+  const b = map.getBounds();
+  let mergeCount = 0;
+
+  approxCache.forEach(p => {
+    // Only process records currently in viewport
+    if(p.lat == null || p.lon == null || !b.contains([p.lat, p.lon])) return;
+    // Skip if already merged (markerRef points to a markersLayer marker)
+    const ref = markerRefs[p.id];
+    if(ref && !ref.fromApproxLayer) return;
+
+    let existing = null;
+
+    // Try SPAN first
+    if(p.span && String(p.span) !== '0'){
+      existing = spanDotLookup[String(p.span).trim()];
+    }
+    // Try address fallback
+    if(!existing && p.address){
+      existing = addressDotLookup[normalizeAddr(p.address) + '|' + (p.trustedCountyCode || '')];
+    }
+
+    if(existing && existing.marker){
+      // Remove orange circle from approxLayer
+      if(ref && ref.marker) approxLayer.removeLayer(ref.marker);
+      // Add to black dot
+      existing.sales.push(p);
+      markerRefs[p.id] = existing;
+      existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
+      mergeCount++;
+    }
   });
 }
 
@@ -2100,6 +2141,11 @@ function renderData(records){
 
   // Re-apply any persistent drawn shapes so filter changes update selection
   reapplyDrawnShapes();
+
+  // After renderData populates spanDotLookup and addressDotLookup,
+  // run a merge pass on already-rendered approx records.
+  // This handles the case where approx cache loaded before black dots.
+  if(approxCacheReady) mergeApproxIntoBlackDots();
 
   // Note: do NOT call loadApproxData() here — it causes flickering because
   // moveend fires loadData() -> renderData() -> loadApproxData() repeatedly.
