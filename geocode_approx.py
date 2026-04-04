@@ -90,14 +90,35 @@ def coords_in_county(lat, lon, county_code):
     return b[0] <= lat <= b[1] and b[2] <= lon <= b[3]
 
 
-def is_approx(lat, lon, trusted_county):
-    if lat is None or lon is None or (lat == 0 and lon == 0):
-        return True
-    if not (VT_LAT_MIN <= lat <= VT_LAT_MAX and VT_LON_MIN <= lon <= VT_LON_MAX):
-        return True
-    if trusted_county and not coords_in_county(lat, lon, trusted_county):
-        return True
-    return False
+# MatchMthod values (mirrors app.py)
+_GOOD_MATCH_METHODS = {
+    'property address (esite)',
+    'property address (composite)',
+    'span (esite)',
+}
+_APPROX_MATCH_METHODS = {
+    'span (parcel centroid)',
+}
+
+
+def is_approx(lat, lon, match_method=None, trusted_county=None):
+    """Return True if this record needs geocoding."""
+    mm = (match_method or '').strip().lower()
+
+    if mm in _GOOD_MATCH_METHODS:
+        if (lat is not None and lon is not None and
+                lat != 0 and lon != 0 and
+                VT_LAT_MIN <= lat <= VT_LAT_MAX and
+                VT_LON_MIN <= lon <= VT_LON_MAX):
+            return False
+
+    if mm in _APPROX_MATCH_METHODS:
+        if (lat is not None and lon is not None and
+                VT_LAT_MIN <= lat <= VT_LAT_MAX and
+                VT_LON_MIN <= lon <= VT_LON_MAX):
+            return False
+
+    return True
 
 
 def format_span(span_raw):
@@ -161,15 +182,30 @@ def arcgis_sibling_lookup(address, school_code, county_bounds):
     Strips unit numbers and searches for any record with valid coords.
     Returns (lat, lon, method) or (None, None, None).
     """
-    import re
     # Strip unit suffix to get base address
     base = re.sub(r',?\s*(UNIT|APT|SUITE|STE|LOT|#)\s*.*$', '', address, flags=re.I).strip()
     if not base or not re.match(r'^\d+', base):
         return None, None, None
 
+    # Normalize the base address for matching:
+    # Remove VERMONT/VT prefix from road name so '76 VERMONT ROUTE 12A'
+    # matches siblings stored as '76 VT ROUTE 12A' or '76 ROUTE 12A'
+    base_norm = re.sub(r'\bVERMONT\s+', '', base, flags=re.I)
+    base_norm = re.sub(r'\bVT\s+', '', base_norm, flags=re.I).strip()
+    # Extract just the street number for a broad LIKE match
+    street_num = base_norm.split()[0] if base_norm else ''
+    # Use street number + partial street name for the LIKE clause
+    words = base_norm.split()
+    partial = ' '.join(words[:2]) if len(words) >= 2 else base_norm
+
     try:
+        # schoolCode may be string or int - use numeric comparison
+        try:
+            sc_num = int(float(str(school_code)))
+        except (TypeError, ValueError):
+            return None, None, None
         params = {
-            'where':    f"propLocStr LIKE '{base}%' AND schoolCode={school_code}",
+            'where':    f"propLocStr LIKE '{street_num} %' AND schoolCode={sc_num}",
             'outFields': 'OBJECTID,propLocStr,Latitude,Longitude',
             'f':        'json',
             'outSR':    '4326',
@@ -180,6 +216,14 @@ def arcgis_sibling_lookup(address, school_code, county_bounds):
         for feat in feats:
             a = feat['attributes']
             g = feat.get('geometry', {})
+            sibling_addr = (a.get('propLocStr') or '').upper()
+            # Verify sibling shares the same road name (not just same street number)
+            # Normalize sibling address the same way and check prefix matches
+            sibling_norm = re.sub(r'\bVERMONT\s+', '', sibling_addr, flags=re.I)
+            sibling_norm = re.sub(r'\bVT\s+', '', sibling_norm, flags=re.I)
+            sibling_norm = re.sub(r',?\s*(UNIT|APT|SUITE|STE|LOT|#)\s*.*$', '', sibling_norm, flags=re.I).strip()
+            if sibling_norm.upper() != base_norm.upper():
+                continue  # different road, skip
             lat = g.get('y') or a.get('Latitude')
             lon = g.get('x') or a.get('Longitude')
             try:
@@ -188,7 +232,6 @@ def arcgis_sibling_lookup(address, school_code, county_bounds):
             except (TypeError, ValueError):
                 continue
             if lat and lon and VT_LAT_MIN <= lat <= VT_LAT_MAX and VT_LON_MIN <= lon <= VT_LON_MAX:
-                # Check county bounds if available
                 return lat, lon, 'arcgis_sibling'
     except Exception:
         pass
@@ -264,7 +307,7 @@ def fetch_all_approx(school_to_town, town_to_county):
     while True:
         params = {
             "where":             "ValPdOrTrn > 0",
-            "outFields":         "OBJECTID,span,propLocStr,propLocCty,schoolCode,Latitude,Longitude",
+            "outFields":         "OBJECTID,span,propLocStr,propLocCty,schoolCode,Latitude,Longitude,MatchMthod",
             "f":                 "json",
             "outSR":             "4326",
             "resultRecordCount": page_size,
@@ -306,8 +349,9 @@ def fetch_all_approx(school_to_town, town_to_county):
             trusted_county = town_to_county.get(school_town) if school_town else None
             prop_loc_city  = (a.get("propLocCty") or "").strip().title()
             geocode_town   = prop_loc_city if prop_loc_city else (school_town or "")
+            match_method   = a.get("MatchMthod") or ""
 
-            if is_approx(lat, lon, trusted_county):
+            if is_approx(lat, lon, match_method=match_method, trusted_county=trusted_county):
                 all_approx.append({
                     "objectid":       a.get("OBJECTID"),
                     "span":           a.get("span"),
@@ -396,11 +440,22 @@ def main():
                 span_fail += 1
 
         # Method 2b: ArcGIS sibling lookup (condo/unit with no parcel record)
-        if lat is None and rec.get('school_code_raw'):
-            lat, lon, method = arcgis_sibling_lookup(address, rec['school_code_raw'], COUNTY_BOUNDS)
-            if lat:
-                span_success += 1
-                print(f"ArcGIS sibling ({lat:.5f}, {lon:.5f})")
+        # Try whenever SPAN fails and there's a street number in the address
+        if lat is None and has_street_number(address):
+            # Get schoolCode - may be stored as string or int
+            sc_raw = rec.get('school_code_raw')
+            try:
+                sc_for_lookup = int(float(str(sc_raw))) if sc_raw is not None else 0
+            except (TypeError, ValueError):
+                sc_for_lookup = 0
+            # Debug: show what we have
+            if sc_for_lookup == 0:
+                print(f" [sibling skip: school_code_raw={sc_raw!r}] ", end="")
+            else:
+                lat, lon, method = arcgis_sibling_lookup(address, sc_for_lookup, COUNTY_BOUNDS)
+                if lat:
+                    span_success += 1
+                    print(f"ArcGIS sibling ({lat:.5f}, {lon:.5f})")
 
         # Method 3: Nominatim fallback
         if lat is None:

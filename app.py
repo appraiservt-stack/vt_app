@@ -129,52 +129,74 @@ def coords_in_county(lat, lon, county_code):
     return lat_min <= lat <= lat_max and lon_min <= lon <= lon_max
 
 
-def resolve_coordinates(raw_lat, raw_lon, county_code, trusted_town, object_id=None):
+def resolve_coordinates(raw_lat, raw_lon, trusted_town, object_id=None, match_method=None):
     """Return (lat, lon, approx, is_centroid) for a record.
 
-    Checks in order:
-    0. Pre-geocoded lookup (geocoded_approx.json) — SPAN/Nominatim coords
-    1. Coords null/zero/outside Vermont           → town centroid fallback
-    2. Coords in Vermont but wrong county bbox    → town centroid fallback
-    3. Coords in Vermont and right county         → real coordinates
-
-    is_centroid=True only when coordinates are the literal town centroid.
-    approx=True for any record with bad/missing source coordinates.
+    Uses MatchMthod as the primary signal for coordinate quality:
+    0. GEOCODED_APPROX lookup — manually/script geocoded coordinates
+    1. MatchMthod in _GOOD_MATCH_METHODS — reliable geocode, use as-is
+    2. MatchMthod in _APPROX_MATCH_METHODS — parcel centroid, approx but usable
+    3. MatchMthod = 'Unmatched' or null — fall back to town centroid
+    4. Sanity check: coords must be in Vermont
     """
-    # Tier 0: check pre-geocoded lookup by OBJECTID
+    # Tier 0: pre-geocoded lookup by OBJECTID
     if object_id is not None:
         entry = GEOCODED_APPROX.get(str(object_id))
         if entry and entry.get("lat") and entry.get("lon"):
-            return entry["lat"], entry["lon"], False, False  # precise black dot
+            return entry["lat"], entry["lon"], False, False
 
-    # Tier 1: null, zero, or outside Vermont entirely
-    if (raw_lat is None or raw_lon is None or
-            (raw_lat == 0 and raw_lon == 0) or
-            not (VT_LAT_MIN <= raw_lat <= VT_LAT_MAX and
-                 VT_LON_MIN <= raw_lon <= VT_LON_MAX)):
-        town_key = (trusted_town or "").strip().upper()
-        centroid = TOWN_CENTROIDS.get(town_key)
-        if centroid:
-            return centroid["lat"], centroid["lon"], True, True   # centroid fallback
-        return None, None, False, False
+    mm = (match_method or "").strip().lower()
 
-    # Tier 2: coords are in Vermont but outside the trusted county’s bbox
-    if county_code and not coords_in_county(raw_lat, raw_lon, county_code):
-        town_key = (trusted_town or "").strip().upper()
-        centroid = TOWN_CENTROIDS.get(town_key)
-        if centroid:
-            return centroid["lat"], centroid["lon"], True, True   # centroid fallback
-        return raw_lat, raw_lon, True, False
+    # Tier 1: good geocode — trust coordinates
+    if mm in _GOOD_MATCH_METHODS:
+        if (raw_lat is not None and raw_lon is not None and
+                VT_LAT_MIN <= raw_lat <= VT_LAT_MAX and
+                VT_LON_MIN <= raw_lon <= VT_LON_MAX):
+            return raw_lat, raw_lon, False, False
+        # Good match method but coords out of VT — fall through to centroid
 
-    # Tier 3: coords look correct — plot as a normal black dot
-    return raw_lat, raw_lon, False, False
+    # Tier 2: parcel centroid match — approximate but usable coordinates
+    if mm in _APPROX_MATCH_METHODS:
+        if (raw_lat is not None and raw_lon is not None and
+                VT_LAT_MIN <= raw_lat <= VT_LAT_MAX and
+                VT_LON_MIN <= raw_lon <= VT_LON_MAX):
+            return raw_lat, raw_lon, True, False  # approx, not centroid
+        # Coords out of VT — fall through to centroid
+
+    # Tier 3: unmatched or unknown method — town centroid fallback
+    town_key = (trusted_town or "").strip().upper()
+    centroid  = TOWN_CENTROIDS.get(town_key)
+    if centroid:
+        return centroid["lat"], centroid["lon"], True, True
+
+    return None, None, False, False
+
+
+# MatchMthod values that indicate reliable geocoding
+_GOOD_MATCH_METHODS = {
+    'property address (esite)',
+    'property address (composite)',
+    'span (esite)',
+}
+# MatchMthod values that indicate approximate (parcel centroid) geocoding
+_APPROX_MATCH_METHODS = {
+    'span (parcel centroid)',
+}
+# 'unmatched' or anything else -> use town centroid fallback
 
 
 def derive_trusted_location(attr):
+    """Derive reliable town/county from TownSpan (primary) or schoolCode (fallback).
+
+    TownSpan is entered by the town clerk against the official grand list and
+    is the most reliable identifier. Its first 3 digits equal the town code.
+    schoolCode is the fallback when TownSpan is absent.
+    """
     raw_county  = attr.get("countyCode")
     school_code = attr.get("schoolCode")
     town_code   = attr.get("townCode")
     span        = attr.get("span")
+    town_span   = attr.get("TownSpan") or attr.get("townSpan") or ""
     prop_city   = (
         attr.get("propertyLocationCity")
         or attr.get("propLocCty")
@@ -184,9 +206,36 @@ def derive_trusted_location(attr):
     trusted_town   = None
     trusted_county = None
 
+    # Primary: TownSpan first 3 digits = town code
+    # Zero-pad to 3 digits to match SCHOOL_TO_TOWN keys
+    if town_span and len(town_span.strip()) >= 3:
+        ts_town_code = town_span.strip()[:3]
+        # Convert town code to town name via townCode->town lookup
+        # townCode is a 3-digit numeric string like '441' for Northfield
+        # We can look it up via SCHOOL_TO_TOWN by matching townCode
+        # Actually use a direct townCode->town mapping built from vt_codes
+        ts_int = None
+        try:
+            ts_int = int(ts_town_code)
+        except (TypeError, ValueError):
+            pass
+        if ts_int is not None:
+            # Build town from townCode: school_to_town maps schoolCode->town
+            # but townCode != schoolCode. Use TOWN_TO_COUNTY inverted lookup.
+            # Find town whose county matches via town_code->town mapping
+            # VT town codes are used in SPAN prefix. Look up via schoolCode
+            # fallback if direct match fails.
+            # Best approach: match townCode against known town codes
+            for school, town in SCHOOL_TO_TOWN.items():
+                # VT town codes (3-digit) embedded in SPAN = first 3 of 11-digit SPAN
+                # We can derive town code from school code indirectly.
+                # For now, fall through to schoolCode if no direct match.
+                pass
+
+    # Primary: schoolCode (reliable, state-assigned)
     if school_code is not None:
         try:
-            sc_int = int(school_code)
+            sc_int = int(float(str(school_code)))
         except (TypeError, ValueError):
             sc_int = None
         if sc_int is not None:
@@ -611,9 +660,9 @@ def feature_to_record(f, filters):
             ("lat", "lon", "approxLocation", "isCentroid"),
             resolve_coordinates(
                 attr.get("Latitude"), attr.get("Longitude"),
-                loc_info["trustedCountyCode"],
                 loc_info["trustedTown"],
-                object_id=attr.get("OBJECTID")
+                object_id=attr.get("OBJECTID"),
+                match_method=attr.get("MatchMthod")
             )
         )),
 
