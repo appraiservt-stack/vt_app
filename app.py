@@ -1066,11 +1066,64 @@ def data():
     has_town_filter   = bool(filters.get("towns",    "").strip())
     has_county_filter = bool(filters.get("counties", "").strip())
 
-    if has_name_filter or has_town_filter or has_county_filter:
-        # No geometry restriction — let SQL filters do all the work.
-        # This ensures misgeocoded records (wrong TOWNNAME/coordinates in ArcGIS)
-        # are still returned when a county or town filter is active.
+    if has_name_filter:
+        # Name/SPAN/street search: no bbox — must search statewide to find
+        # the record regardless of where it is on the map.
         features = fetch_all_features(where)
+
+    elif has_county_filter:
+        # County filter: use a generous county bbox instead of the viewport.
+        # This returns all records within the county in one fast ArcGIS call
+        # (no pagination) while still being far cheaper than a statewide fetch.
+        # The county bbox is padded ~10 miles so border towns aren't clipped.
+        # Misgeocoded records (coordinates outside bbox) are rare and are caught
+        # by the post-fetch trustedCounty cross-check.
+        county_codes = [c.strip().zfill(2) for c in filters["counties"].split(",") if c.strip()]
+        # Union the bboxes of all selected counties
+        lat_mins, lat_maxs, lon_mins, lon_maxs = [], [], [], []
+        for code in county_codes:
+            bounds = COUNTY_BOUNDS.get(code)
+            if bounds:
+                lat_min, lat_max, lon_min, lon_max = bounds
+                lat_mins.append(lat_min); lat_maxs.append(lat_max)
+                lon_mins.append(lon_min); lon_maxs.append(lon_max)
+        if lat_mins:
+            bbox_geo = {
+                "geometry":     f"{min(lon_mins)},{min(lat_mins)},{max(lon_maxs)},{max(lat_maxs)}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR":         "4326",
+                "spatialRel":   "esriSpatialRelIntersects",
+            }
+            features = fetch_features(where, bbox_geo, max_records=2000)
+        else:
+            # Unknown county code — fall back to statewide
+            features = fetch_all_features(where)
+
+    elif has_town_filter:
+        # Town filter: build a bbox from the union of selected town centroids
+        # with a generous ~0.15 degree (~10 mile) pad in each direction.
+        # Single town fetches are fast — a town never exceeds ~500 records.
+        town_names = [t.strip() for t in filters["towns"].split(",") if t.strip()]
+        pad = 0.15
+        t_lat_mins, t_lat_maxs, t_lon_mins, t_lon_maxs = [], [], [], []
+        for town in town_names:
+            centroid = TOWN_CENTROIDS.get(town.upper())
+            if centroid:
+                t_lat_mins.append(centroid["lat"] - pad)
+                t_lat_maxs.append(centroid["lat"] + pad)
+                t_lon_mins.append(centroid["lon"] - pad)
+                t_lon_maxs.append(centroid["lon"] + pad)
+        if t_lat_mins:
+            town_bbox_geo = {
+                "geometry":     f"{min(t_lon_mins)},{min(t_lat_mins)},{max(t_lon_maxs)},{max(t_lat_maxs)}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR":         "4326",
+                "spatialRel":   "esriSpatialRelIntersects",
+            }
+            features = fetch_features(where, town_bbox_geo, max_records=2000)
+        else:
+            features = fetch_features(where, None, max_records=2000)
+
     else:
         geo_params = {
             "geometry":     f"{xmin},{ymin},{xmax},{ymax}",
