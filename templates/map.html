@@ -2560,6 +2560,23 @@ function onZoomEnd(){ loadApproxData(); loadParcels(); loadFema(); loadTownBound
 
 function initMapEvents(){
   restoreBdySettings();
+
+  // Default date range: last 12 months.
+  // Pre-populates the Closing Date From field so the initial load is fast.
+  // Users can clear or change this at any time.
+  (function setDefaultDateRange(){
+    const df = document.getElementById('dateFrom');
+    const dt = document.getElementById('dateTo');
+    // Only set if both fields are currently empty (don't override a saved state)
+    if(!df.value && !dt.value){
+      const today = new Date();
+      const oneYearAgo = new Date(today);
+      oneYearAgo.setFullYear(today.getFullYear() - 1);
+      df.value = oneYearAgo.toISOString().split('T')[0];
+      // Leave dateTo blank so it defaults to "now" with no upper bound
+    }
+  })();
+
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
   // Fire initial load immediately (no debounce)
