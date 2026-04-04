@@ -475,6 +475,7 @@ def main():
             "lon":               lon,
             "address":           address,
             "city":              city_display,
+            "span":              str(rec.get('span') or '').strip() or None,
             "trustedTown":       trusted_town.title() if trusted_town else None,
             "trustedCountyCode": county_code,
             "trustedCountyName": county_name,

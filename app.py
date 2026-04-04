@@ -1194,7 +1194,7 @@ def data_approx_all():
             "trustedCountyCode": county_code2 or entry.get("trustedCountyCode"),
             "trustedCountyName": county_name,
             "trustedTown":       city,  # use propLocCty for display
-            "span":    None,
+            "span":    entry.get("span"),
             "schoolCode": None,
             "correctedCounty": False,
             "interestUndivPercentDesc": None,

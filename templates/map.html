@@ -756,6 +756,7 @@ let townsByCounty         = {};
 let shouldFitBounds       = false;
 let selectedSales         = {};   // { id: fullRecordObj }
 let markerRefs            = {};   // { id: { marker, sales, prop } }
+let spanDotLookup         = {};   // { span: { marker, sales, prop } } for approx merging
 
 // Cache for name/SPAN/street searches — fetched statewide once, re-rendered on pan/zoom
 let nameSearchCache       = null;  // null when no cache; array of records when active
@@ -1885,20 +1886,34 @@ function renderApproxData(records){
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
 
-    // Try to merge ALL approx records into existing black dots at same address.
-    // Covers both centroid fallbacks and geocoded records that landed at same coords.
-    // Use county in the key (not town) to handle cases where propLocCty is wrong.
-    if(p.address){
-      const addrKey = (normalizeAddr(p.address) + '|' + (p.trustedCountyCode || ''));
-      const existing = addressDotLookup[addrKey];
-      if(existing){
-        // Add this sale to the existing black dot's sales list and update popup
+    // Try to merge into existing black dot via SPAN (most reliable) or address
+    let merged = false;
+
+    // 1. SPAN-based merge — most accurate, property-specific
+    if(p.span && String(p.span) !== '0'){
+      const spanKey = String(p.span).trim();
+      const existing = spanDotLookup[spanKey];
+      if(existing && existing.marker){
         existing.sales.push(p);
         markerRefs[p.id] = existing;
         existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
-        return; // don't create a separate green circle
+        merged = true;
       }
     }
+
+    // 2. Address-based merge fallback
+    if(!merged && p.address){
+      const addrKey = (normalizeAddr(p.address) + '|' + (p.trustedCountyCode || ''));
+      const existing = addressDotLookup[addrKey];
+      if(existing && existing.marker){
+        existing.sales.push(p);
+        markerRefs[p.id] = existing;
+        existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
+        merged = true;
+      }
+    }
+
+    if(merged) return;
 
     // Group by coordinates OR by normalized address+county
     // so approx records at same address cluster into one dot
@@ -1970,6 +1985,7 @@ function renderData(records){
   markersLayer.clearLayers();
   markerRefs = {};
   addressDotLookup = {};  // reset address->coords lookup on each render
+  spanDotLookup    = {};  // reset SPAN->marker lookup on each render
 
   let grouped = {};
   records.forEach(p => {
@@ -2058,12 +2074,19 @@ function renderData(records){
 
     markersLayer.addLayer(marker);
 
-    // Populate address lookup so approx records can merge into this dot
+    // Populate address and SPAN lookups so approx records can merge into this dot
     sales.forEach(s => {
       if(!s.approxLocation && s.address){
         const addrKey = (normalizeAddr(s.address) + '|' + (s.trustedCountyCode || ''));
         if(!addressDotLookup[addrKey]){
           addressDotLookup[addrKey] = { marker, sales, lat: p.lat, lon: p.lon };
+        }
+      }
+      // SPAN lookup — most reliable merge key since SPAN is property-specific
+      if(!s.approxLocation && s.span && String(s.span) !== '0'){
+        const spanKey = String(s.span).trim();
+        if(!spanDotLookup[spanKey]){
+          spanDotLookup[spanKey] = { marker, sales, lat: p.lat, lon: p.lon };
         }
       }
     });
