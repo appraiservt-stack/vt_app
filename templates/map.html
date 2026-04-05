@@ -2238,7 +2238,8 @@ function renderApproxData(records){
       if(existing && existing.marker){
         existing.sales.push(p);
         markerRefs[p.id] = existing;
-        existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
+        if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
+          existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
         merged = true;
       }
     }
@@ -2250,7 +2251,8 @@ function renderApproxData(records){
       if(existing && existing.marker){
         existing.sales.push(p);
         markerRefs[p.id] = existing;
-        existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
+        if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
+          existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
         merged = true;
       }
     }
@@ -2354,7 +2356,8 @@ function mergeApproxIntoBlackDots(){
       // Add minimal record to black dot immediately
       existing.sales.push(p);
       markerRefs[p.id] = existing;
-      existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
+      if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
+        existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
       mergeCount++;
       // Enrich with full data from /data endpoint
       enrichApproxSale(p, existing);
@@ -2381,8 +2384,9 @@ function enrichApproxSale(approxRecord, dotRef){
     approxRecord.sellerFirstName        = full.sellerFirstName;
     approxRecord.buyerLastName          = full.buyerLastName;
     approxRecord.buyerFirstName         = full.buyerFirstName;
-    // Rebuild popup with enriched data
-    if(dotRef.marker) dotRef.marker.setPopupContent(buildPopupHTML(dotRef.sales[0], dotRef.sales, null));
+    // Rebuild popup with enriched data — only if not currently open
+    if(dotRef.marker && (!_openPopupSpan || _openPopupSpan !== String(dotRef.sales[0].span)))
+      dotRef.marker.setPopupContent(buildPopupHTML(dotRef.sales[0], dotRef.sales, null));
   })
   .catch(() => {}); // silently ignore if enrichment fails
 }
