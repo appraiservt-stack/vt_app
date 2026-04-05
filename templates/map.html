@@ -1123,6 +1123,94 @@ map.on('contextmenu', onParcelClick);  // right-click to show Grand List popup
 // loadParcels defined above in VT PARCELS section
 
 // ============================================================
+// E911 ADDRESS NUMBERS — fetches VT statewide address points
+// Renders individual house numbers as labels at zoom 17+.
+// Works on top of any basemap including satellite.
+// Data: VCGI OPENDATA Emergency ESITE point service (~0.2s per viewport).
+// ============================================================
+const E911_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_OPENDATA_Emergency_ESITE_point_SP_v1/FeatureServer/0/query';
+const E911_MIN_ZOOM = 17;
+
+if(!map.getPane('e911Pane')){
+  const ep = map.createPane('e911Pane');
+  ep.style.zIndex = 450;  // above parcels, below markers
+  ep.style.pointerEvents = 'none';
+}
+
+const e911Layer    = L.layerGroup();
+let   e911GeoLayer = null;
+let   e911On       = false;
+let   e911FetchCtrl = null;
+
+function loadE911(){
+  if(!e911On) return;
+  if(map.getZoom() < E911_MIN_ZOOM){
+    if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; }
+    return;
+  }
+
+  if(e911FetchCtrl) e911FetchCtrl.abort();
+  e911FetchCtrl = new AbortController();
+  const signal = e911FetchCtrl.signal;
+
+  const b  = map.getBounds();
+  const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+  const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+  const env = `${sw.x},${sw.y},${ne.x},${ne.y}`;
+
+  const params = new URLSearchParams({
+    where:           '1=1',
+    geometry:        env,
+    geometryType:    'esriGeometryEnvelope',
+    inSR:            '102100',
+    spatialRel:      'esriSpatialRelIntersects',
+    outFields:       'HOUSE_NUMBER,HOUSE_NUMBERSUFFIX,PRIMARYNAME',
+    returnGeometry:  'true',
+    outSR:           '4326',
+    f:               'geojson',
+    resultRecordCount: '1000',
+  });
+
+  fetch(E911_URL + '?' + params.toString(), { signal })
+  .then(r => r.json())
+  .then(geojson => {
+    if(signal.aborted) return;
+    if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; }
+    if(!e911On) return;
+    e911GeoLayer = L.geoJSON(geojson, {
+      pane: 'e911Pane',
+      pointToLayer: function(feature, latlng){
+        const num = (feature.properties.HOUSE_NUMBER || '') +
+                    (feature.properties.HOUSE_NUMBERSUFFIX || '');
+        return L.marker(latlng, {
+          pane: 'e911Pane',
+          icon: L.divIcon({
+            className: '',
+            html: `<div style="
+              font-size:10px;
+              font-weight:bold;
+              color:#fff;
+              background:rgba(0,0,0,0.55);
+              border-radius:2px;
+              padding:0 2px;
+              white-space:nowrap;
+              pointer-events:none;
+              line-height:14px;
+            ">${num}</div>`,
+            iconAnchor: [0, 7],
+          })
+        });
+      },
+      interactive: false,
+    });
+    e911Layer.addLayer(e911GeoLayer);
+  })
+  .catch(err => { if(err.name !== 'AbortError') console.warn('E911 fetch error:', err); });
+}
+
+map.on('moveend zoomend', loadE911);
+
+// ============================================================
 // FEMA FLOOD ZONES — via Flask proxy + Esri MapServer export
 // Confirmed working: loads PNG tiles instantly, no CORS issues
 // Only shows AE, A, Floodway (excludes Zone X to avoid covering whole map)
@@ -1399,6 +1487,7 @@ map.on('overlayadd', function(e){
 });
 map.on('overlayremove', function(e){
   if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = false; if(parcelFetchCtrl) parcelFetchCtrl.abort(); if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; } }
+  if(e.name === 'House Numbers (zoom 17+)'){ e911On = false; if(e911FetchCtrl) e911FetchCtrl.abort(); if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; } }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
@@ -1776,10 +1865,7 @@ function hasNameFilter(){
 // APPLY FILTERS
 // ===================================================
 function applyFilters(){
-  filterApplied = true;
-  nameSearchCache = null;  // always invalidate cache on a fresh Apply
-
-  // Name/SPAN/street search: must fetch statewide since results could be
+  filte since results could be
   // anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
     const params = buildFilterParams();
@@ -4140,6 +4226,16 @@ function submitContactForm() {
     }
   })
   .catch(() => {
+    status.style.color = '#c0392b';
+    status.textContent = 'Network error. Please try again.';
+  });
+}
+</script>
+
+</body>
+</html>
+
+ => {
     status.style.color = '#c0392b';
     status.textContent = 'Network error. Please try again.';
   });
