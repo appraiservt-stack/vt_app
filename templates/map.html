@@ -864,20 +864,15 @@ let usgsTopo = L.tileLayer('https://basemap.nationalmap.gov/arcgis/rest/services
   maxZoom: 19,
   attribution: 'USGS National Map'
 });
-// Imagery with Labels = ESRI World Imagery + road/address label overlays stacked.
-// World_Transportation adds street names and numbers at high zoom.
-// World_Boundaries_and_Places adds place names, neighborhood labels.
+// Imagery with Labels = ESRI World Imagery + street name overlay.
+// World_Transportation removed — it showed large address range numbers that
+// conflicted with the E911 house number overlay.
+// World_Boundaries_and_Places provides street names without house numbers.
 let imageryLabels = L.layerGroup([
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxNativeZoom: 19,
     maxZoom: 20,
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, USGS, NOAA'
-  }),
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
-    maxNativeZoom: 19,
-    maxZoom: 20,
-    opacity: 1,
-    attribution: 'Tiles &copy; Esri'
   }),
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
     maxNativeZoom: 19,
@@ -2798,6 +2793,55 @@ const drawControl = new L.Control.Draw({
   edit: { featureGroup: drawLayer, edit: false, remove: false }
 });
 drawControl.addTo(map);
+
+// ============================================================
+// STREET VIEW PICKER CONTROL
+// A toggle button in the top-left controls. When active, the
+// next map click opens Google Maps at those coordinates in a
+// new tab, then the mode turns off automatically.
+// Does not interfere with right-click (parcel popup) or drawing.
+// ============================================================
+const StreetViewControl = L.Control.extend({
+  options: { position: 'topleft' },
+  onAdd: function(){
+    const btn = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+    btn.innerHTML = '<a href="#" title="Open location in Google Street View" ' +
+      'id="svBtn" style="font-size:16px;line-height:26px;display:block;width:26px;' +
+      'height:26px;text-align:center;text-decoration:none;color:#333;' +
+      'background:white;">&#x1F6B6;</a>';
+    L.DomEvent.on(btn, 'click', function(e){
+      L.DomEvent.stopPropagation(e);
+      L.DomEvent.preventDefault(e);
+      toggleStreetViewMode();
+    });
+    return btn;
+  }
+});
+new StreetViewControl().addTo(map);
+
+let _svModeOn = false;
+function toggleStreetViewMode(){
+  _svModeOn = !_svModeOn;
+  const btn = document.getElementById('svBtn');
+  if(_svModeOn){
+    btn.style.background = '#4285F4';
+    btn.style.color = '#fff';
+    map.getContainer().style.cursor = 'crosshair';
+  } else {
+    btn.style.background = 'white';
+    btn.style.color = '#333';
+    map.getContainer().style.cursor = '';
+  }
+}
+
+map.on('click', function(e){
+  if(!_svModeOn) return;
+  // Open Google Maps at clicked coordinates, zoom 18 street level
+  const url = 'https://www.google.com/maps/@' + e.latlng.lat + ',' + e.latlng.lng + ',18z';
+  window.open(url, '_blank', 'noopener');
+  // Turn off mode after one pick
+  toggleStreetViewMode();
+});
 
 let drawnShapes  = [];   // array of shape objects (see above)
 let shapeCounter = 0;    // ever-incrementing unique id
