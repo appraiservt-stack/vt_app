@@ -2836,10 +2836,13 @@ function toggleStreetViewMode(){
 
 map.on('click', function(e){
   if(!_svModeOn) return;
-  // Open Google Maps at clicked coordinates, zoom 18 street level
-  const url = 'https://www.google.com/maps/@' + e.latlng.lat + ',' + e.latlng.lng + ',18z';
+  const lat = e.latlng.lat;
+  const lng = e.latlng.lng;
+  // cbll = camera ball lat/lng, forces Street View to open directly
+  // 3a = Street View mode, 75y = field of view, 0h = heading, 90t = tilt
+  const url = 'https://www.google.com/maps/@' + lat + ',' + lng +
+              ',3a,75y,0h,90t/data=!3m1!1e3';
   window.open(url, '_blank', 'noopener');
-  // Turn off mode after one pick
   toggleStreetViewMode();
 });
 
