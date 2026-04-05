@@ -2188,8 +2188,9 @@ function loadApproxData(){
   const visible = approxCache.filter(p => {
     if(p.lat == null || p.lon == null) return false;
     if(!b.contains([p.lat, p.lon]))    return false;
-    // Exclude $0 transfers — same rule as server-side ArcGIS query
-    if((p.price || 0) <= 0) return false;
+    // Exclude $0 transfers from map display.
+    // Approx cache records have price=null (fetched on click) — don't exclude those.
+    if(p.price !== null && (p.price || 0) <= 0) return false;
     if(counties.length){
       // If county filter is active, records with no county info are excluded.
       // This prevents junk-schoolCode records (0, 999) from leaking through.
