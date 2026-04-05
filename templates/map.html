@@ -2484,17 +2484,14 @@ function buildPopupHTML(p, sales, historySales){
   else if(hasGeocoded)
     header += `<span style="font-size:10px;color:#e65c00;">&#9888; Approximate location &mdash; source coordinates were invalid, address geocoded.</span><br>`;
 
-  // Google Maps / Street View button — uses the property coordinates
+  // Google Maps / Street View button — always uses exact lat/lon coordinates.
+  // Opens Google Maps centered on the property at zoom 18 (street level).
+  // User can then click the yellow Street View pegman to see ground-level view.
   const lat = p.lat || (sales[0] && sales[0].lat);
   const lon = p.lon || (sales[0] && sales[0].lon);
   if(lat && lon){
-    // Open in Google Maps standard view (loads instantly, no black screen).
-    // User can click the yellow pegman in Google Maps to switch to Street View.
-    const addr0 = p.address || (sales[0] && sales[0].address) || '';
-    const town0 = p.city    || (sales[0] && sales[0].city)    || '';
-    const query = addr0 ? encodeURIComponent(addr0 + (town0 ? ', ' + town0 + ', VT' : ', VT'))
-                        : `${lat},${lon}`;
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    // @lat,lon,18z — drops directly to street-level zoom at exact coordinates
+    const mapsUrl = `https://www.google.com/maps/@${lat},${lon},18z`;
     header += `<a href="${mapsUrl}" target="_blank" rel="noopener"
       style="display:inline-block; margin-bottom:4px; padding:2px 8px;
              background:#4285F4; color:white; font-size:10px; font-weight:bold;
