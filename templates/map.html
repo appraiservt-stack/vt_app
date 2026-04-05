@@ -2642,15 +2642,18 @@ function buildPopupHTML(p, sales, historySales){
 // Open popup for a marker, fetching full history if date filter is active
 function openPopupWithHistory(marker, p, sales){
   const span = p.span || (sales[0] && sales[0].span);
-  if(hasDateFilter() && span){
-    // Show a quick placeholder first
+  if(span){
+    // Always fetch full history via /history — this returns ALL sales
+    // including $0 transfers (name changes, family transfers, refinances)
+    // which are excluded from the map display but should show in the popup.
+    // Show a quick placeholder first, then update when history arrives.
     marker.setPopupContent(buildPopupHTML(p, sales, null));
     marker.openPopup();
-    // Then fetch full history and update
     fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')))
     .then(r => r.json())
     .then(data => {
-      if(data.data && data.data.length > sales.length){
+      // Update popup if history returned any records
+      if(data.data && data.data.length > 0){
         marker.setPopupContent(buildPopupHTML(p, sales, data.data));
       }
     })
