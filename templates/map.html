@@ -1177,14 +1177,11 @@ function loadE911(){
       pointToLayer: function(feature, latlng){
         const num    = (feature.properties.HOUSE_NUMBER || '') +
                       (feature.properties.HOUSE_NUMBERSUFFIX || '');
-        const street = feature.properties.PRIMARYNAME || '';
-        // Show "483 Union St" style label — number bold, street name smaller
-        const label  = num + (street ? ' <span style="font-weight:normal;font-size:9px;">' + street + '</span>' : '');
         return L.marker(latlng, {
           pane: 'e911Pane',
           icon: L.divIcon({
             className: '',
-            html: '<div style="font-size:11px;font-weight:bold;color:#fff;background:none;white-space:nowrap;pointer-events:none;line-height:14px;text-shadow:1px 1px 2px #000,-1px -1px 2px #000,1px -1px 2px #000,-1px 1px 2px #000;">' + label + '</div>',
+            html: '<div style="font-size:11px;font-weight:bold;color:#fff;background:none;white-space:nowrap;pointer-events:none;line-height:14px;text-shadow:1px 1px 2px #000,-1px -1px 2px #000,1px -1px 2px #000,-1px 1px 2px #000;">' + num + '</div>',
             iconAnchor: [0, 7],
           })
         });
