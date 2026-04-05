@@ -975,7 +975,7 @@ function onParcelClick(e){
     geometryType: 'esriGeometryEnvelope',
     inSR: '102100',
     spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,GLYEAR,CAT,MUNGL1PCT',
+    outFields: 'SPAN,GLIST_SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,HSITEVAL,GLYEAR,YEAR,CAT,MUNGL1PCT,RESCODE,UVREDUC_HS,UVREDUC_NR,MAPID,PARCID,SOURCENAME,SOURCETYPE,EDITDATE,EDITOR,NRES_FLV,VETEXAMT,EXAMT_HS,EXAMT_NR',
     returnGeometry: 'false',
     outSR: '4326',
     f: 'json',
@@ -987,47 +987,123 @@ function onParcelClick(e){
     const feats = data.features || [];
     if(!feats.length) return;
     const p = feats[0].attributes;
-    const fmt$ = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
+    const fmt$ = v => (v != null && v !== '' && v !== 0) ? '$' + Number(v).toLocaleString() : '—';
+    const fmt$0 = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—'; // includes $0
     const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
+    const row  = (label, val, bold) => val && val !== '—'
+      ? `<tr><td style="color:#555;padding:1px 4px 1px 0;white-space:nowrap">${label}:</td><td${bold?' style="font-weight:bold"':''}>${val}</td></tr>`
+      : '';
+
     const addr   = p.E911ADDR  || '';
     const town   = p.TNAME     || '';
-    const span   = p.SPAN      || '';
+    const span   = p.SPAN      || p.GLIST_SPAN || '';
     const owner1 = p.OWNER1    || '';
     const owner2 = p.OWNER2    || '';
     const ptype  = p.PROPTYPE  || '';
     const cat    = p.CAT       || '';
     const glyear = p.GLYEAR    || '';
+    const gisyr  = p.YEAR      || '';
     const acres  = fmtA(p.ACRESGL);
-    const realFLV  = fmt$(p.REAL_FLV);
-    const landLV   = fmt$(p.LAND_LV);
-    const imprvLV  = fmt$(p.IMPRV_LV);
-    const hstedFLV = fmt$(p.HSTED_FLV);
-    const munGL    = fmt$(p.MUNGL1PCT);
-    const hsdecl   = (p.HSDECL === 'Y' || p.HSDECL === true) ? 'Yes' : (p.HSDECL ? p.HSDECL : '—');
+    const realFLV  = fmt$0(p.REAL_FLV);
+    const landLV   = fmt$0(p.LAND_LV);
+    const imprvLV  = fmt$0(p.IMPRV_LV);
+    const hstedFLV = fmt$0(p.HSTED_FLV);
+    const nresFLV  = fmt$(p.NRES_FLV);
+    const hsiteVal = fmt$(p.HSITEVAL);
+    const munGL    = fmt$0(p.MUNGL1PCT);
+    const vetEx    = fmt$(p.VETEXAMT);
+    const exHS     = fmt$(p.EXAMT_HS);
+    const exNR     = fmt$(p.EXAMT_NR);
+    const hsdecl   = (p.HSDECL === 'Y' || p.HSDECL === true) ? 'Yes' : 'No';
+    const mapid    = p.MAPID   || '';
+    const parcid   = p.PARCID  || '';
+
+    // Owner type
+    const RESCODE_MAP = {
+      'T': 'Town Resident','N': 'Non-Resident','C': 'Commercial/Industrial',
+      'X': 'Exempt','F': 'Farm','M': 'Mobile Home','O': 'Other'
+    };
+    const ownerType = RESCODE_MAP[p.RESCODE] || p.RESCODE || '';
+
+    // Current Use
+    const uvHS = Number(p.UVREDUC_HS) || 0;
+    const uvNR = Number(p.UVREDUC_NR) || 0;
+    const currentUse = (uvHS > 0 || uvNR > 0)
+      ? `Enrolled (reduction: ${fmt$0(uvHS + uvNR)})`
+      : 'Not Enrolled';
+
+    // GIS source
+    const src = [p.SOURCENAME, p.SOURCETYPE].filter(s => s && s !== 'UNKNOWN').join(' / ') || 'Unknown';
+    const editInfo = p.EDITDATE && p.EDITDATE !== 'UNKNOWN'
+      ? `${p.EDITOR || ''} ${p.EDITDATE || ''}`.trim()
+      : '';
+
     const html = `
-      <div style="font-size:12px; min-width:220px;">
-        <div style="background:#1a7a1a; color:white; font-weight:bold; padding:4px 8px;
-                    border-radius:3px 3px 0 0; margin-bottom:4px;">
+      <div style="font-size:12px; min-width:240px; max-width:300px;">
+        <div style="background:#1a7a1a;color:white;font-weight:bold;padding:4px 8px;
+                    border-radius:3px 3px 0 0;margin-bottom:6px;">
           &#x1F4CB; Grand List Data
         </div>
-        <b>${addr}</b>${addr && town ? ', ' : ''}${town}<br>
-        ${owner1 ? `<span style="font-size:11px;">${owner1}${owner2 ? '<br>' + owner2 : ''}</span><br>` : ''}
-        <table style="font-size:11px; border-collapse:collapse; width:100%; margin-top:4px;">
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">SPAN:</td><td style="font-weight:bold;">${span}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Type:</td><td>${ptype}${cat ? ' / ' + cat : ''}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">GL Year:</td><td>${glyear}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Acres (GL):</td><td>${acres}</td></tr>
-          <tr style="border-top:1px solid #eee;">
-              <td style="color:#555; padding:3px 4px 1px 0;">Listed Value:</td>
-              <td style="font-weight:bold;">${realFLV}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Land:</td><td>${landLV}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Improvements:</td><td>${imprvLV}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Val:</td><td>${hstedFLV}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Mun. 1% GL:</td><td>${munGL}</td></tr>
-          <tr><td style="color:#555; padding:1px 4px 1px 0;">Homestead Decl:</td><td>${hsdecl}</td></tr>
-        </table>
+
+        <!-- Address & Town -->
+        <div style="font-weight:bold;font-size:13px;margin-bottom:2px;">${addr}${addr&&town?', ':''}${town}</div>
+
+        <!-- Ownership -->
+        <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
+          <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Ownership</div>
+          <div style="font-weight:bold;">${owner1}${owner2?'<br>'+owner2:''}</div>
+          ${ownerType ? `<div style="font-size:10px;color:#666;margin-top:1px;">Type: ${ownerType}</div>` : ''}
+        </div>
+
+        <!-- Valuation -->
+        <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
+          <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Valuation (${glyear} Grand List)</div>
+          <table style="font-size:11px;border-collapse:collapse;width:100%;">
+            ${row('Full Value', realFLV, true)}
+            ${row('Land', landLV, false)}
+            ${row('Improvements', imprvLV, false)}
+            ${nresFLV !== '—' ? row('Non-Residential', nresFLV, false) : ''}
+            ${hsiteVal !== '—' ? row('Housesite Value', hsiteVal, false) : ''}
+            ${row('Mun. 1% GL', munGL, false)}
+          </table>
+        </div>
+
+        <!-- Homestead -->
+        <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
+          <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Homestead</div>
+          <table style="font-size:11px;border-collapse:collapse;width:100%;">
+            ${row('Declared', hsdecl, false)}
+            ${hstedFLV !== '—' ? row('Homestead Value', hstedFLV, false) : ''}
+            ${vetEx !== '—' ? row('Veterans Exemption', vetEx, false) : ''}
+            ${exHS !== '—' ? row('Exemption (HS)', exHS, false) : ''}
+            ${exNR !== '—' ? row('Exemption (NR)', exNR, false) : ''}
+          </table>
+        </div>
+
+        <!-- Description & Current Use -->
+        <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
+          <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Description</div>
+          <table style="font-size:11px;border-collapse:collapse;width:100%;">
+            ${row('Category', cat, false)}
+            ${row('Type', ptype, false)}
+            ${row('Acres (GL)', acres, false)}
+            ${row('Current Use', currentUse, false)}
+          </table>
+        </div>
+
+        <!-- IDs & GIS Info -->
+        <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;">
+          <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Parcel Info</div>
+          <table style="font-size:11px;border-collapse:collapse;width:100%;">
+            ${row('SPAN', span, true)}
+            ${mapid  ? row('Map ID',    mapid,  false) : ''}
+            ${parcid ? row('Parcel ID', parcid, false) : ''}
+            ${row('GIS Year', gisyr, false)}
+            ${src !== 'Unknown' ? row('GIS Source', src, false) : ''}
+          </table>
+        </div>
       </div>`;
-    L.popup({ maxWidth: 280 }).setLatLng(e.latlng).setContent(html).openOn(map);
+    L.popup({ maxWidth: 320, maxHeight: 520 }).setLatLng(e.latlng).setContent(html).openOn(map);
   })
   .catch(err => console.warn('Parcel click query error:', err));
 }
