@@ -2181,6 +2181,69 @@ def _export_grouped_inner():
         )
 
 
+@app.route("/search_address")
+def search_address():
+    """Search all sales at a given address + town, ignoring date filters.
+    Used by the condo address search widget in the popup.
+    Returns results sorted by date descending.
+    """
+    addr_input = request.args.get("address", "").strip().upper()
+    town_input  = request.args.get("town",    "").strip()
+    if not addr_input or not town_input:
+        return jsonify({"data": []})
+
+    # Escape single quotes
+    safe_addr = addr_input.replace("'", "''")
+    safe_town = town_input.replace("'", "''")
+
+    where = (
+        f"UPPER(propLocStr) LIKE '{safe_addr}%' "
+        f"AND propLocCty = '{safe_town}'"
+    )
+    features = fetch_all_features(where)
+
+    # Use empty filters so no date/price/type filtering is applied
+    empty_filters = {k: "" for k in [
+        "counties", "towns", "date_from", "date_to", "price_low", "price_high",
+        "land_size_min", "land_size_max", "building_types", "interest_types",
+        "seller_use", "buyer_use", "gl_categories", "ptt_exemptions",
+        "exclude_exempt", "family_only", "buyer_adj", "rented_before",
+        "rented_after", "dev_prev_conv", "ptt175", "name", "span_search",
+        "street_search",
+    ]}
+
+    results = []
+    for f in features:
+        rec = feature_to_record(f, empty_filters)
+        if rec is None:
+            continue
+        coords = resolve_coordinates(
+            f["attributes"].get("Latitude"),
+            f["attributes"].get("Longitude"),
+            rec.get("trustedTown"),
+            object_id=f["attributes"].get("OBJECTID"),
+            match_method=f["attributes"].get("MatchMthod"),
+            prop_city_for_centroid=f["attributes"].get("propLocCty")
+        )
+        results.append({
+            "id":          rec["id"],
+            "address":     rec["address"],
+            "city":        rec["city"],
+            "span":        rec["span"],
+            "date":        rec["date"],
+            "price":       rec["price"],
+            "buildingConstruction1": rec.get("buildingConstruction1"),
+            "buildingConstruction1Desc": rec.get("buildingConstruction1Desc"),
+            "interestType":rec.get("interestType"),
+            "interestDesc":rec.get("interestDesc"),
+            "pttUrl":      rec.get("pttUrl"),
+        })
+
+    # Sort by date descending
+    results.sort(key=lambda r: r["date"] or 0, reverse=True)
+    return jsonify({"data": results})
+
+
 @app.route("/history")
 def history():
     """Return ALL sales for a given SPAN (no date filter) so the popup can
