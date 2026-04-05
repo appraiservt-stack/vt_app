@@ -2295,8 +2295,12 @@ function renderApproxData(records){
       dashArray:   isCentroid ? null : '4 3',  // dashed for geocoded, solid for centroid
     });
 
+    const dotRef = { marker, sales, prop: p, fromApproxLayer: true };
     sales.forEach(s => {
-      markerRefs[s.id] = { marker, sales, prop: p, fromApproxLayer: true };
+      markerRefs[s.id] = dotRef;
+      // Enrich each approx sale with price/date/building data from the server.
+      // This runs for standalone orange/green dots that didn't merge into a black dot.
+      if(s.price == null) enrichApproxSale(s, dotRef);
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
@@ -2785,9 +2789,7 @@ function startProximityWatch(){
   const THRESHOLD = 120;
   const started = Date.now();
   _proximityTimer = setInterval(function(){
-    // Hard fallback after 12s
-    if(Date.now() - started > 12000){ stopProximityWatch(); map.closePopup(); return; }
-    // Grace period: don't close for first 600ms
+    // Grace period: don't close for first 600ms after opening
     if(Date.now() - started < 600) return;
     const popup = document.querySelector('.leaflet-popup');
     if(!popup){ stopProximityWatch(); return; }
