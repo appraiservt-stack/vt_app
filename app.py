@@ -443,7 +443,8 @@ def build_where_clause(filters):
     lifting across 218K+ records.  Python post-filtering is only used for
     the county-bounds coordinate validation (not a data filter).
     """
-    clauses = ["1=1"]
+    # Always exclude $0 transfers (refinances, name changes, family transfers, etc.)
+    clauses = ["ValPdOrTrn > 0"]
 
     # County filter
     # ArcGIS has inconsistent countyCode padding — some records use '9', others '09'.
