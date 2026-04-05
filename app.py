@@ -683,8 +683,18 @@ def fetch_features(where, geometry_params=None, max_records=2000):
     else:
         params["inSR"] = "4326"
 
-    r = requests.get(ARCGIS_URL, params=params)
-    return r.json().get("features", [])
+    try:
+        # Use POST to avoid URL length limits with large WHERE clauses
+        # (e.g. OBJECTID IN (...) with 100+ IDs can exceed GET URL limits)
+        r = requests.post(ARCGIS_URL, data=params, timeout=30)
+        data = r.json()
+        if data.get("error"):
+            app.logger.warning(f"ArcGIS error in fetch_features: {data['error']}")
+            return []
+        return data.get("features", [])
+    except Exception as e:
+        app.logger.error(f"fetch_features failed: {e}")
+        return []
 
 
 def fetch_all_features(where, geometry_params=None):
@@ -712,7 +722,7 @@ def fetch_all_features(where, geometry_params=None):
         else:
             params["inSR"] = "4326"
         try:
-            r = requests.get(ARCGIS_URL, params=params, timeout=25)
+            r = requests.post(ARCGIS_URL, data=params, timeout=25)
             data = r.json()
         except Exception as e:
             app.logger.error(f"fetch_all_features error at offset {offset}: {e}")
@@ -1564,6 +1574,15 @@ def export():
     Returns XLSX by default, CSV if ?format=csv.
     Accepts same filter params as /data plus optional ?ids= for selected-only export.
     """
+    try:
+        return _export_inner()
+    except Exception as e:
+        import traceback
+        app.logger.error(f"export error: {traceback.format_exc()}")
+        return jsonify({"error": f"Export failed: {str(e)}"}), 500
+
+
+def _export_inner():
     fmt     = request.args.get("format", "xlsx").lower()
     ids_raw = request.args.get("ids", "")
 
@@ -1912,6 +1931,15 @@ def export_grouped():
     Accepts POST with JSON body: {format, filters, groups}
     or GET with ?groups=JSON&format=...
     """
+    try:
+        return _export_grouped_inner()
+    except Exception as e:
+        import traceback
+        app.logger.error(f"export_grouped error: {traceback.format_exc()}")
+        return jsonify({"error": f"Export failed: {str(e)}"}), 500
+
+
+def _export_grouped_inner():
     import json as _json
 
     if request.method == "POST":
