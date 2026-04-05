@@ -2526,14 +2526,7 @@ function renderData(records){
 
 // Helper: is a date filter currently active?
 function hasDateFilter(){
-  // Only treat as an active date filter if the user explicitly set the dates.
-  // The 12-month default pre-populated on startup is marked with data-is-default
-  // and should NOT count as an active filter for popup history display.
-  const df = document.getElementById('dateFrom');
-  const dt = document.getElementById('dateTo');
-  const fromActive = df.value && !df.dataset.isDefault;
-  const toActive   = dt.value && !dt.dataset.isDefault;
-  return !!(fromActive || toActive);
+  return !!(document.getElementById('dateFrom').value || document.getElementById('dateTo').value);
 }
 
 // Build one sale row for the popup
@@ -2857,19 +2850,9 @@ function initMapEvents(){
       const oneYearAgo = new Date(today);
       oneYearAgo.setFullYear(today.getFullYear() - 1);
       df.value = oneYearAgo.toISOString().split('T')[0];
-      // Track the default so hasDateFilter() can tell user-set apart from default
-      df.dataset.isDefault = 'true';
       // Leave dateTo blank so it defaults to "now" with no upper bound
     }
   })();
-
-  // Clear the default flag when user manually changes the date
-  document.getElementById('dateFrom').addEventListener('change', function(){
-    delete this.dataset.isDefault;
-  });
-  document.getElementById('dateTo').addEventListener('change', function(){
-    delete this.dataset.isDefault;
-  });
 
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
