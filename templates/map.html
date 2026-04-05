@@ -1462,6 +1462,7 @@ L.control.layers(
   {
     // Overlays — toggle independently of the basemap
     "VT Parcels (zoom 14+)": parcelWmsLayer,
+    "House Numbers (zoom 17+)": e911Layer,
     "FEMA Flood Zones":      femaFloodLayer,
     "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
     "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
@@ -1471,6 +1472,7 @@ L.control.layers(
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
   if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true;  loadParcels(); }
+  if(e.name === 'House Numbers (zoom 17+)'){ e911On   = true;  loadE911(); }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
