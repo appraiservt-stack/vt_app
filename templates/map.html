@@ -1265,15 +1265,18 @@ function loadRoadLabels(){
       if(!pt) return;
       const latlng = [pt[1], pt[0]];
 
-      // Calculate rotation angle from segment direction
+      // Calculate rotation angle in SCREEN pixel space (not geographic coords).
+      // Converting to container pixels accounts for map projection and rotation.
       const p1 = coords[Math.max(0, mid - 1)];
       const p2 = coords[Math.min(coords.length - 1, mid + 1)];
       let angle = 0;
       if(p1 && p2){
-        const dx = p2[0] - p1[0];
-        const dy = p2[1] - p1[1];
+        const pt1 = map.latLngToContainerPoint([p1[1], p1[0]]);
+        const pt2 = map.latLngToContainerPoint([p2[1], p2[0]]);
+        const dx = pt2.x - pt1.x;
+        const dy = pt2.y - pt1.y;  // Y increases downward on screen
         angle = Math.atan2(dy, dx) * 180 / Math.PI;
-        // Keep text readable (flip if upside down)
+        // Keep text readable — flip if it would render upside down
         if(angle > 90)  angle -= 180;
         if(angle < -90) angle += 180;
       }
