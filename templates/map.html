@@ -1622,6 +1622,7 @@ function normalizeAddr(addr){
 let popupTimer      = null;
 let hoverTimer      = null;
 let hoverEnabled    = true;
+let _openPopupSpan  = null;  // SPAN of the currently open popup, if any
 
 // ===================================================
 // LOAD CODE TABLES FROM SERVER
@@ -2644,19 +2645,20 @@ function buildPopupHTML(p, sales, historySales){
 function openPopupWithHistory(marker, p, sales){
   const span = p.span || (sales[0] && sales[0].span);
 
-  // If popup is already open for this marker (e.g. from hover), don't collapse it.
-  // renderData re-calls this on pan/zoom - skip if popup is currently open.
-  if(marker.isPopupOpen()) return;
+  // If a popup is already open for this SPAN (e.g. renderData recreated the
+  // marker while the user was hovering), skip — don't collapse the open popup.
+  if(_openPopupSpan && _openPopupSpan === String(span)) return;
 
   if(span){
     // Always fetch full history via /history — returns ALL sales including $0
     marker.setPopupContent(buildPopupHTML(p, sales, null));
     marker.openPopup();
+    _openPopupSpan = String(span);
     fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')))
     .then(r => r.json())
     .then(data => {
-      // Only update if this popup is still open
-      if(marker.isPopupOpen() && data.data && data.data.length > 0){
+      // Only update if the same popup is still open
+      if(_openPopupSpan === String(span) && data.data && data.data.length > 0){
         marker.setPopupContent(buildPopupHTML(p, sales, data.data));
       }
     })
@@ -2664,8 +2666,12 @@ function openPopupWithHistory(marker, p, sales){
   } else {
     marker.setPopupContent(buildPopupHTML(p, sales, null));
     marker.openPopup();
+    _openPopupSpan = null;
   }
 }
+
+// Clear the open popup SPAN when any popup closes
+map.on('popupclose', function(){ _openPopupSpan = null; });
 
 function formatDate(ms){
   if(!ms) return "";
