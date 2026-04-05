@@ -1186,17 +1186,7 @@ function loadE911(){
           pane: 'e911Pane',
           icon: L.divIcon({
             className: '',
-            html: `<div style="
-              font-size:10px;
-              font-weight:bold;
-              color:#fff;
-              background:rgba(0,0,0,0.55);
-              border-radius:2px;
-              padding:0 2px;
-              white-space:nowrap;
-              pointer-events:none;
-              line-height:14px;
-            ">${num}</div>`,
+            html: '<div style="font-size:10px;font-weight:bold;color:#fff;background:rgba(0,0,0,0.55);border-radius:2px;padding:0 2px;white-space:nowrap;pointer-events:none;line-height:14px;">' + num + '</div>',
             iconAnchor: [0, 7],
           })
         });
