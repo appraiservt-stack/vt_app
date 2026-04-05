@@ -1623,6 +1623,7 @@ let popupTimer      = null;
 let hoverTimer      = null;
 let hoverEnabled    = true;
 let _openPopupSpan  = null;  // SPAN of the currently open popup, if any
+let _popupPinned    = false; // true = popup loaded full history, don't auto-close on mouseout
 
 // ===================================================
 // LOAD CODE TABLES FROM SERVER
@@ -2473,14 +2474,17 @@ function renderData(records){
     });
     marker.on('mouseout', function(){
       if(hoverTimer) clearTimeout(hoverTimer);
+      // Don't auto-close if popup is pinned (full history loaded)
+      if(_popupPinned) return;
       // If the popup is open and the cursor left the marker WITHOUT entering
       // the popup, close it. We use a short delay so that a mousemove from
       // marker → popup doesn't cause a flicker close.
       if(map.hasLayer(marker._popup || {}) || (marker.getPopup && marker.getPopup() && marker.getPopup().isOpen())){
         popupTimer = setTimeout(function(){
+          if(_popupPinned) return;  // check again after delay
           // Only close if the cursor is NOT inside the popup element
           const el = marker.getPopup() && marker.getPopup().getElement();
-          if(el && el.matches(':hover')) return;   // cursor is in the popup, leave it open
+          if(el && el.matches(':hover')) return;
           map.closePopup();
         }, 100);
       }
@@ -2667,12 +2671,11 @@ function openPopupWithHistory(marker, p, sales){
     .then(r => r.json())
     .then(data => {
       console.log('[popup] /history returned '+((data.data||[]).length)+' records, _openPopupSpan='+_openPopupSpan+' span='+span);
-      // Only update if the same popup is still open
       if(_openPopupSpan === String(span) && data.data && data.data.length > 0){
         console.log('[popup] UPDATING popup with full history');
+        // Pin the popup so mouseout won't auto-close it
+        _popupPinned = true;
         marker.setPopupContent(buildPopupHTML(p, sales, data.data));
-      } else {
-        console.log('[popup] NOT updating - span mismatch or no data');
       }
     })
     .catch(() => {});
@@ -2686,14 +2689,12 @@ function openPopupWithHistory(marker, p, sales){
 // Clear the open popup SPAN when any popup closes
 map.on('popupclose', function(){
   console.log('[popup] popupclose - scheduling clear of _openPopupSpan was '+_openPopupSpan);
-  // Use a short delay before clearing — setPopupContent fires popupclose then
-  // immediately popupopen, so a sync clear would break the guard.
   const spanAtClose = _openPopupSpan;
   setTimeout(function(){
-    // Only clear if no new popup opened in the meantime
     if(_openPopupSpan === spanAtClose){
-      console.log('[popup] clearing _openPopupSpan');
+      console.log('[popup] clearing _openPopupSpan and _popupPinned');
       _openPopupSpan = null;
+      _popupPinned   = false;
     }
   }, 50);
 });
