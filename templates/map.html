@@ -2673,9 +2673,17 @@ function openPopupWithHistory(marker, p, sales){
       console.log('[popup] /history returned '+((data.data||[]).length)+' records, _openPopupSpan='+_openPopupSpan+' span='+span);
       if(_openPopupSpan === String(span) && data.data && data.data.length > 0){
         console.log('[popup] UPDATING popup with full history');
-        // Pin the popup so mouseout won't auto-close it
-        _popupPinned = true;
-        marker.setPopupContent(buildPopupHTML(p, sales, data.data));
+        const html = buildPopupHTML(p, sales, data.data);
+        const popup = marker.getPopup();
+        if(popup && popup.isOpen() && popup._contentNode){
+          // Write directly to the DOM node — avoids setPopupContent which
+          // triggers popupclose/popupopen and breaks the guard
+          popup._content = html;
+          popup._contentNode.innerHTML = html;
+          popup.update();
+        } else {
+          marker.setPopupContent(html);
+        }
       }
     })
     .catch(() => {});
