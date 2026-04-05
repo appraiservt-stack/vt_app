@@ -1855,8 +1855,7 @@ function hasNameFilter(){
 // APPLY FILTERS
 // ===================================================
 function applyFilters(){
-  filte since results could be
-  // anywhere in VT. Zoom to results so the user can find them.
+  // Filter results could be anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
     const params = buildFilterParams();
     params.set("xmin", "-73.5");
