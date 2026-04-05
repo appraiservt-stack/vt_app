@@ -1196,6 +1196,112 @@ function loadE911(){
 map.on('moveend zoomend', loadE911);
 
 // ============================================================
+// ROAD NAME LABELS — VT E911 road centerline layer
+// Fetches road segments for current viewport, places street
+// name label at the midpoint of each unique segment.
+// Shows at zoom 15+. Works on any basemap.
+// ============================================================
+const ROAD_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Emergency_RDS_line_SP_v1/FeatureServer/0/query';
+const ROAD_MIN_ZOOM = 15;
+
+if(!map.getPane('roadPane')){
+  const rp = map.createPane('roadPane');
+  rp.style.zIndex = 440;  // above parcels, below e911 numbers
+  rp.style.pointerEvents = 'none';
+}
+
+const roadLabelLayer    = L.layerGroup();
+let   roadLabelGeoLayer = null;
+let   roadLabelOn       = false;
+let   roadFetchCtrl     = null;
+
+function loadRoadLabels(){
+  if(!roadLabelOn) return;
+  if(map.getZoom() < ROAD_MIN_ZOOM){
+    if(roadLabelGeoLayer){ roadLabelLayer.removeLayer(roadLabelGeoLayer); roadLabelGeoLayer = null; }
+    return;
+  }
+
+  if(roadFetchCtrl) roadFetchCtrl.abort();
+  roadFetchCtrl = new AbortController();
+  const signal = roadFetchCtrl.signal;
+
+  const b  = map.getBounds();
+  const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+  const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+  const env = `${sw.x},${sw.y},${ne.x},${ne.y}`;
+
+  const params = new URLSearchParams({
+    where:           '1=1',
+    geometry:        env,
+    geometryType:    'esriGeometryEnvelope',
+    inSR:            '102100',
+    spatialRel:      'esriSpatialRelIntersects',
+    outFields:       'PRIMARYNAME',
+    returnGeometry:  'true',
+    outSR:           '4326',
+    f:               'geojson',
+    resultRecordCount: '500',
+  });
+
+  fetch(ROAD_URL + '?' + params.toString(), { signal })
+  .then(r => r.json())
+  .then(geojson => {
+    if(signal.aborted) return;
+    if(roadLabelGeoLayer){ roadLabelLayer.removeLayer(roadLabelGeoLayer); roadLabelGeoLayer = null; }
+    if(!roadLabelOn) return;
+
+    // Place one label per road segment at its midpoint
+    const markers = [];
+    (geojson.features || []).forEach(feat => {
+      const name = (feat.properties && feat.properties.PRIMARYNAME) || '';
+      if(!name) return;
+      const coords = feat.geometry && feat.geometry.coordinates;
+      if(!coords || !coords.length) return;
+
+      // Get midpoint of the line
+      const mid = Math.floor(coords.length / 2);
+      const pt  = coords[mid];
+      if(!pt) return;
+      const latlng = [pt[1], pt[0]];
+
+      // Calculate rotation angle from segment direction
+      const p1 = coords[Math.max(0, mid - 1)];
+      const p2 = coords[Math.min(coords.length - 1, mid + 1)];
+      let angle = 0;
+      if(p1 && p2){
+        const dx = p2[0] - p1[0];
+        const dy = p2[1] - p1[1];
+        angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        // Keep text readable (flip if upside down)
+        if(angle > 90)  angle -= 180;
+        if(angle < -90) angle += 180;
+      }
+
+      markers.push(L.marker(latlng, {
+        pane: 'roadPane',
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="font-size:10px;font-weight:bold;color:#fff;background:none;' +
+                'white-space:nowrap;pointer-events:none;line-height:14px;' +
+                'text-shadow:1px 1px 2px #000,-1px -1px 2px #000,1px -1px 2px #000,-1px 1px 2px #000;' +
+                'transform:rotate(' + angle + 'deg);transform-origin:left center;">' +
+                name + '</div>',
+          iconAnchor: [0, 7],
+        }),
+        interactive: false,
+      }));
+    });
+
+    roadLabelGeoLayer = L.layerGroup(markers);
+    roadLabelLayer.addLayer(roadLabelGeoLayer);
+  })
+  .catch(err => { if(err.name !== 'AbortError') console.warn('Road label fetch error:', err); });
+}
+
+map.on('moveend zoomend', loadRoadLabels);
+
+// ============================================================
 // FEMA FLOOD ZONES — via Flask proxy + Esri MapServer export
 // Confirmed working: loads PNG tiles instantly, no CORS issues
 // Only shows AE, A, Floodway (excludes Zone X to avoid covering whole map)
@@ -1467,7 +1573,8 @@ L.control.layers(
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
   if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true;  loadParcels(); }
-  if(e.name === 'House Numbers (zoom 17+)'){ e911On   = true;  loadE911(); }
+  if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
+  if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
@@ -2173,8 +2280,7 @@ function renderApproxData(records){
       color:       markerColor,
       fillColor:   markerColor,
       fillOpacity: isSelected ? 1 : 0,
-      weight:      2.5,
-      dashArray:   '4 3'
+  4 3'
     });
 
     sales.forEach(s => {
@@ -4271,6 +4377,23 @@ function submitContactForm() {
 
  => {
     status.style.color = '#c0392b';
+    status.textContent = 'Network error. Please try again.';
+  });
+}
+</script>
+
+</body>
+</html>
+
+in.';
+  });
+}
+</script>
+
+</body>
+</html>
+
+e.color = '#c0392b';
     status.textContent = 'Network error. Please try again.';
   });
 }
