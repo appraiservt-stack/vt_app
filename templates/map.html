@@ -2526,7 +2526,14 @@ function renderData(records){
 
 // Helper: is a date filter currently active?
 function hasDateFilter(){
-  return !!(document.getElementById('dateFrom').value || document.getElementById('dateTo').value);
+  // Only treat as an active date filter if the user explicitly set the dates.
+  // The 12-month default pre-populated on startup is marked with data-is-default
+  // and should NOT count as an active filter for popup history display.
+  const df = document.getElementById('dateFrom');
+  const dt = document.getElementById('dateTo');
+  const fromActive = df.value && !df.dataset.isDefault;
+  const toActive   = dt.value && !dt.dataset.isDefault;
+  return !!(fromActive || toActive);
 }
 
 // Build one sale row for the popup
@@ -2643,18 +2650,20 @@ function buildPopupHTML(p, sales, historySales){
 // Open popup for a marker, fetching full history if date filter is active
 function openPopupWithHistory(marker, p, sales){
   const span = p.span || (sales[0] && sales[0].span);
+
+  // If popup is already open for this marker (e.g. from hover), don't collapse it.
+  // renderData re-calls this on pan/zoom - skip if popup is currently open.
+  if(marker.isPopupOpen()) return;
+
   if(span){
-    // Always fetch full history via /history — this returns ALL sales
-    // including $0 transfers (name changes, family transfers, refinances)
-    // which are excluded from the map display but should show in the popup.
-    // Show a quick placeholder first, then update when history arrives.
+    // Always fetch full history via /history — returns ALL sales including $0
     marker.setPopupContent(buildPopupHTML(p, sales, null));
     marker.openPopup();
     fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')))
     .then(r => r.json())
     .then(data => {
-      // Update popup if history returned any records
-      if(data.data && data.data.length > 0){
+      // Only update if this popup is still open
+      if(marker.isPopupOpen() && data.data && data.data.length > 0){
         marker.setPopupContent(buildPopupHTML(p, sales, data.data));
       }
     })
@@ -2848,9 +2857,19 @@ function initMapEvents(){
       const oneYearAgo = new Date(today);
       oneYearAgo.setFullYear(today.getFullYear() - 1);
       df.value = oneYearAgo.toISOString().split('T')[0];
+      // Track the default so hasDateFilter() can tell user-set apart from default
+      df.dataset.isDefault = 'true';
       // Leave dateTo blank so it defaults to "now" with no upper bound
     }
   })();
+
+  // Clear the default flag when user manually changes the date
+  document.getElementById('dateFrom').addEventListener('change', function(){
+    delete this.dataset.isDefault;
+  });
+  document.getElementById('dateTo').addEventListener('change', function(){
+    delete this.dataset.isDefault;
+  });
 
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
