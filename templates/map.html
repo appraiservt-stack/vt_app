@@ -2660,6 +2660,7 @@ function openPopupWithHistory(marker, p, sales){
   if(span){
     // Always fetch full history via /history — returns ALL sales including $0
     marker.setPopupContent(buildPopupHTML(p, sales, null));
+    marker._spanKey = String(span);  // store for popupopen restoration
     marker.openPopup();
     _openPopupSpan = String(span);
     fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')))
@@ -2683,7 +2684,29 @@ function openPopupWithHistory(marker, p, sales){
 }
 
 // Clear the open popup SPAN when any popup closes
-map.on('popupclose', function(){ console.log('[popup] popupclose - clearing _openPopupSpan was '+_openPopupSpan); _openPopupSpan = null; });
+map.on('popupclose', function(){
+  console.log('[popup] popupclose - scheduling clear of _openPopupSpan was '+_openPopupSpan);
+  // Use a short delay before clearing — setPopupContent fires popupclose then
+  // immediately popupopen, so a sync clear would break the guard.
+  const spanAtClose = _openPopupSpan;
+  setTimeout(function(){
+    // Only clear if no new popup opened in the meantime
+    if(_openPopupSpan === spanAtClose){
+      console.log('[popup] clearing _openPopupSpan');
+      _openPopupSpan = null;
+    }
+  }, 50);
+});
+map.on('popupopen', function(e){
+  // Restore _openPopupSpan from the marker's data when popup reopens
+  // (setPopupContent triggers close/open cycle which would clear it)
+  if(!_openPopupSpan && e.popup && e.popup._source){
+    const src = e.popup._source;
+    const ref = src._spanKey;
+    if(ref) _openPopupSpan = ref;
+  }
+  console.log('[popup] popupopen _openPopupSpan='+_openPopupSpan);
+});
 
 function formatDate(ms){
   if(!ms) return "";
