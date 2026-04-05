@@ -1278,16 +1278,19 @@ function loadRoadLabels(){
         if(angle < -90) angle += 180;
       }
 
+      // Wrap in a fixed-size container so rotation pivots around the label center
+      const html = '<div style="position:absolute;transform:translate(-50%,-50%) rotate(' + angle + 'deg);' +
+                   'transform-origin:center center;white-space:nowrap;pointer-events:none;' +
+                   'font-size:10px;font-weight:bold;color:#fff;background:none;line-height:14px;' +
+                   'text-shadow:1px 1px 2px #000,-1px -1px 2px #000,1px -1px 2px #000,-1px 1px 2px #000;">' +
+                   name + '</div>';
       markers.push(L.marker(latlng, {
         pane: 'roadPane',
         icon: L.divIcon({
           className: '',
-          html: '<div style="font-size:10px;font-weight:bold;color:#fff;background:none;' +
-                'white-space:nowrap;pointer-events:none;line-height:14px;' +
-                'text-shadow:1px 1px 2px #000,-1px -1px 2px #000,1px -1px 2px #000,-1px 1px 2px #000;' +
-                'transform:rotate(' + angle + 'deg);transform-origin:left center;">' +
-                name + '</div>',
-          iconAnchor: [0, 7],
+          html: html,
+          iconSize: [0, 0],   // zero size so Leaflet doesn't offset the anchor
+          iconAnchor: [0, 0], // anchor at the point itself; CSS translate handles centering
         }),
         interactive: false,
       }));
