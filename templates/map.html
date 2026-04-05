@@ -2288,7 +2288,7 @@ function renderApproxData(records){
       color:       markerColor,
       fillColor:   markerColor,
       fillOpacity: isSelected ? 1 : 0,
-      dashArray:   isApprox ? '4 3' : null,
+      dashArray:   isCentroid ? null : '4 3',  // dashed for geocoded, solid for centroid
     });
 
     sales.forEach(s => {
