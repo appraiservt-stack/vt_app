@@ -653,12 +653,19 @@ _NEEDED_FIELDS = (
     "LGTEx,LGTExDesc,Latitude,Longitude,MatchMthod,OBJECTID,PTT175Atch,"
     "PrPrVlPdTr,RlPrVlPdTr,TOWNNAME,TownBkNum,TownCtyOrT,TownGlCat,"
     "TownGlValu,TownGlYear,TownParcID,TownPgNum,TownSpan,TownSubdiv,"
-    "ValPdOrTrn,addBuyrNam,addSellNam,bCnDUs06,bUsePr,bUsePrDesc,"
+    "ValPdOrTrn,addBuyrNam,addSellNam,bCnDUs06,bUsePr,bUsePrDesc,bUsePrExpl,"
     "blCn1,blCn1Desc,blCn2,blCn2Desc,blCn3,blCn3Desc,blCnUnts05,blConstr20,"
-    "buyEntNam,buyFstNam,buyLstNam,buyrAdjPrp,closeDate,countyCode,devPrevCnv,"
-    "famMem,famMemDesc,intPrpType,intUDPdesc,landSize,prTxEx,prTxExDesc,"
-    "propLocCty,propLocStr,rntdAfter,rntdBefore,sUsePr,sUsePrDesc,schoolCode,"
-    "sellAq,sellAqDesc,sellEntNam,sellFstNam,sellLstNam,span,townCode"
+    "buyEntNam,buyFstNam,buyLstNam,buyrAdjPrp,buyerStrt,buyerCity,buyerState,buyerZip,"
+    "cUseEnCont,closeDate,countyCode,devPrevCnv,enrCrntUse,"
+    "ex99Elig,ex99TxDue,famMem,famMemDesc,financing,"
+    "GenRtTxDue,intPrpType,intPrTypOt,intUDP,intUDPdesc,landSize,"
+    "prTxEx,prTxExDesc,prResSRVal,propLocCty,propLocStr,"
+    "rntdAfter,rntdBefore,schoolCode,"
+    "SellerAcq,sellAq,sellAqDesc,sellAqOthr,sellEntNam,sellFstNam,sellLstNam,"
+    "sellerStrt,sellerCity,sellerSt,sellerZip,"
+    "span,spRteTxDue,sUsePr,sUsePrDesc,sUsePrExpl,"
+    "tenantPrch,tlSpRteDue,townCode,TotlTaxDue,TownDteRec,"
+    "VlSbjGnRte"
 )
 
 
@@ -2770,7 +2777,7 @@ def ptt172(filename=None):  # noqa: C901
             draw_row(lbl, _cs(bv),
                      _cd("building_types", bv) or rec.get(bdk,""))
     draw_row("F4", "", f"Tenant prior to transfer: {_yn(rec.get('tenantPurchase'))}", plain=True)
-    draw_row("F5", "", f"Financing: {rec.get('financing') or '—'}", plain=True)
+    draw_row("F5", "", f"Financing: {rec.get('financing') or 'Not specified'}", plain=True)
 
     # ---- Section G ----
     section_hdr("Section G — Current Use")
