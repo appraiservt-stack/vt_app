@@ -2298,9 +2298,6 @@ function renderApproxData(records){
     const dotRef = { marker, sales, prop: p, fromApproxLayer: true };
     sales.forEach(s => {
       markerRefs[s.id] = dotRef;
-      // Enrich each approx sale with price/date/building data from the server.
-      // This runs for standalone orange/green dots that didn't merge into a black dot.
-      if(s.price == null) enrichApproxSale(s, dotRef);
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
