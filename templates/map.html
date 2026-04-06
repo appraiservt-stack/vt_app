@@ -2295,12 +2295,8 @@ function renderApproxData(records){
       dashArray:   isCentroid ? null : '4 3',  // dashed for geocoded, solid for centroid
     });
 
-    const dotRef = { marker, sales, prop: p, fromApproxLayer: true };
     sales.forEach(s => {
-      markerRefs[s.id] = dotRef;
-      // Enrich each approx sale with price/date/building data from the server.
-      // This runs for standalone orange/green dots that didn't merge into a black dot.
-      if(s.price == null) enrichApproxSale(s, dotRef);
+      markerRefs[s.id] = { marker, sales, prop: p, fromApproxLayer: true };
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
@@ -2478,7 +2474,20 @@ function renderData(records){
     });
     marker.on('mouseout', function(){
       if(hoverTimer) clearTimeout(hoverTimer);
-      // Popup stays open after hover — user must click X or map to close
+      // Don't auto-close if popup is pinned (full history loaded)
+      if(_popupPinned) return;
+      // If the popup is open and the cursor left the marker WITHOUT entering
+      // the popup, close it. We use a short delay so that a mousemove from
+      // marker → popup doesn't cause a flicker close.
+      if(map.hasLayer(marker._popup || {}) || (marker.getPopup && marker.getPopup() && marker.getPopup().isOpen())){
+        popupTimer = setTimeout(function(){
+          if(_popupPinned) return;  // check again after delay
+          // Only close if the cursor is NOT inside the popup element
+          const el = marker.getPopup() && marker.getPopup().getElement();
+          if(el && el.matches(':hover')) return;
+          map.closePopup();
+        }, 100);
+      }
     });
 
     markersLayer.addLayer(marker);
@@ -2633,100 +2642,80 @@ function buildPopupHTML(p, sales, historySales){
     ? `<div style="font-size:10px;color:#888;text-align:center;padding:2px 0;">&#9651; scroll to see all ${totalSales} sales &#9651;</div>`
     : '';
 
-  // Condo address search widget — shown when any sale has buildingConstruction1 5/05
-  const allSales = historySales || sales;
-  const isCondo = allSales.some(s =>
-    String(s.buildingConstruction1||s.buildingType||'').replace(/^0+/,'') === '5'
-  );
-  let condoWidget = '';
-  if(isCondo){
-    // Pre-fill with street number + street name, strip unit info
-    const sampleAddr = (allSales[0] && allSales[0].address) || '';
-    const baseAddr   = sampleAddr.replace(/[,\s]+(unit|apt|suite|ste|#).*/i, '').trim();
-    const town       = p.trustedTown || p.city || '';
-    const widgetId   = 'condoSearch_' + Date.now();
-    condoWidget = `
-      <div style="border-top:1px solid #ddd;margin-top:6px;padding-top:5px;">
-        <div style="font-size:10px;color:#555;margin-bottom:3px;">&#x1F50D; Search all units at this address:</div>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <input id="${widgetId}" type="text" value="${baseAddr}"
-            style="flex:1;font-size:10px;padding:2px 4px;border:1px solid #bbb;border-radius:3px;"
-            placeholder="Street number and name"/>
-          <button onclick="doCondoSearch('${widgetId}','${town.replace(/'/g,"\\'")}')"
-            style="font-size:10px;padding:2px 6px;background:#4285F4;color:white;
-                   border:none;border-radius:3px;cursor:pointer;white-space:nowrap;">
-            Search
-          </button>
-        </div>
-        <div id="${widgetId}_results" style="margin-top:4px;"></div>
-      </div>`;
-  }
-
   return `${header}
     ${scrollNote}
     <div style="max-height:340px; overflow-y:auto; overscroll-behavior:contain;">
       ${rows}
-    </div>
-    ${condoWidget}`;
-}
-
-// Execute condo address search and update the results div in the popup
-function doCondoSearch(inputId, town){
-  const input = document.getElementById(inputId);
-  if(!input) return;
-  const addr = input.value.trim();
-  if(!addr) return;
-  const resultsDiv = document.getElementById(inputId + '_results');
-  if(resultsDiv) resultsDiv.innerHTML = '<span style="font-size:10px;color:#888;">Searching...</span>';
-
-  fetch('/search_address?address=' + encodeURIComponent(addr) + '&town=' + encodeURIComponent(town))
-  .then(r => r.json())
-  .then(data => {
-    if(!resultsDiv) return;
-    const recs = data.data || [];
-    if(!recs.length){
-      resultsDiv.innerHTML = '<span style="font-size:10px;color:#888;">No sales found at that address.</span>';
-      return;
-    }
-    let html = `<div style="font-size:10px;color:#555;margin-bottom:2px;">${recs.length} sale(s) found:</div>`;
-    html += '<div style="max-height:200px;overflow-y:auto;overscroll-behavior:contain;">';
-    recs.forEach(s => { html += buildSaleRow(s, false); });
-    html += '</div>';
-    resultsDiv.innerHTML = html;
-  })
-  .catch(() => {
-    if(resultsDiv) resultsDiv.innerHTML = '<span style="font-size:10px;color:red;">Search failed. Try again.</span>';
-  });
+    </div>`;
 }
 
 // Open popup for a marker, fetching full history if date filter is active
 function openPopupWithHistory(marker, p, sales){
   const span = p.span || (sales[0] && sales[0].span);
+  console.log('[popup] openPopupWithHistory span='+span+' _openPopupSpan='+_openPopupSpan+' stack='+new Error().stack.split('\n')[2].trim());
 
-  marker.setPopupContent(buildPopupHTML(p, sales, null));
-  marker.openPopup();
+  // If a popup is already open for this SPAN (e.g. renderData recreated the
+  // marker while the user was hovering), skip — don't collapse the open popup.
+  if(_openPopupSpan && _openPopupSpan === String(span)){
+    console.log('[popup] SKIPPED - already open');
+    return;
+  }
 
-  // Fetch full history to show $0 sales and sales outside the date filter.
-  // Only fetch if a span is available. Use DOM update to avoid
-  // triggering Leaflet's close/open cycle.
   if(span){
+    // Always fetch full history via /history — returns ALL sales including $0
+    marker.setPopupContent(buildPopupHTML(p, sales, null));
+    marker._spanKey = String(span);  // store for popupopen restoration
+    marker.openPopup();
+    _openPopupSpan = String(span);
     fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')))
     .then(r => r.json())
     .then(data => {
-      if(data.data && data.data.length > 0){
+      console.log('[popup] /history returned '+((data.data||[]).length)+' records, _openPopupSpan='+_openPopupSpan+' span='+span);
+      if(_openPopupSpan === String(span) && data.data && data.data.length > 0){
+        console.log('[popup] UPDATING popup with full history');
+        const html = buildPopupHTML(p, sales, data.data);
         const popup = marker.getPopup();
         if(popup && popup.isOpen() && popup._contentNode){
-          const html = buildPopupHTML(p, sales, data.data);
+          // Write directly to the DOM node — avoids setPopupContent which
+          // triggers popupclose/popupopen and breaks the guard
           popup._content = html;
           popup._contentNode.innerHTML = html;
+          popup.update();
+        } else {
+          marker.setPopupContent(html);
         }
       }
     })
     .catch(() => {});
+  } else {
+    marker.setPopupContent(buildPopupHTML(p, sales, null));
+    marker.openPopup();
+    _openPopupSpan = null;
   }
 }
 
-
+// Clear the open popup SPAN when any popup closes
+map.on('popupclose', function(){
+  console.log('[popup] popupclose - scheduling clear of _openPopupSpan was '+_openPopupSpan);
+  const spanAtClose = _openPopupSpan;
+  setTimeout(function(){
+    if(_openPopupSpan === spanAtClose){
+      console.log('[popup] clearing _openPopupSpan and _popupPinned');
+      _openPopupSpan = null;
+      _popupPinned   = false;
+    }
+  }, 50);
+});
+map.on('popupopen', function(e){
+  // Restore _openPopupSpan from the marker's data when popup reopens
+  // (setPopupContent triggers close/open cycle which would clear it)
+  if(!_openPopupSpan && e.popup && e.popup._source){
+    const src = e.popup._source;
+    const ref = src._spanKey;
+    if(ref) _openPopupSpan = ref;
+  }
+  console.log('[popup] popupopen _openPopupSpan='+_openPopupSpan);
+});
 
 function formatDate(ms){
   if(!ms) return "";
@@ -2778,51 +2767,29 @@ function updateSelCount(){
 // POPUP TIMING
 // ===================================================
 // Popup opens on marker mouseover (700ms delay).
-// Closes when cursor moves more than 120px from the popup element.
-// Polls every 200ms. 600ms grace period on open. 12s hard fallback.
-let _proximityTimer = null;
-let _mouseX = 0, _mouseY = 0;
-document.addEventListener('mousemove', function(e){ _mouseX = e.clientX; _mouseY = e.clientY; });
-
-function startProximityWatch(){
-  if(_proximityTimer) clearInterval(_proximityTimer);
-  const THRESHOLD = 120;
-  const started = Date.now();
-  _proximityTimer = setInterval(function(){
-    // Grace period: don't close for first 600ms after opening
-    if(Date.now() - started < 600) return;
-    const popup = document.querySelector('.leaflet-popup');
-    if(!popup){ stopProximityWatch(); return; }
-    const r = popup.getBoundingClientRect();
-    const dx = Math.max(r.left - _mouseX, 0, _mouseX - r.right);
-    const dy = Math.max(r.top  - _mouseY, 0, _mouseY - r.bottom);
-    if(Math.sqrt(dx*dx + dy*dy) > THRESHOLD){
-      stopProximityWatch();
-      map.closePopup();
-    }
-  }, 200);
-}
-
-function stopProximityWatch(){
-  if(_proximityTimer){ clearInterval(_proximityTimer); _proximityTimer = null; }
-}
-
+// It closes when the mouse leaves the popup element itself.
+// We attach a mouseleave listener to the popup wrapper after it is added to the DOM.
 map.on('popupopen', function(e){
   hoverEnabled = false;
   if(popupTimer) clearTimeout(popupTimer);
+
   setTimeout(function(){
     const el = e.popup.getElement();
     if(!el) return;
+
+    // Prevent scroll wheel inside popup from zooming the map
     L.DomEvent.disableScrollPropagation(el);
-    startProximityWatch();
+
+    // Close when cursor leaves the popup element
+    el.addEventListener('mouseleave', function onLeave(){
+      el.removeEventListener('mouseleave', onLeave);
+      map.closePopup();
+    });
   }, 0);
 });
 map.on('popupclose', function(){
-  stopProximityWatch();
   hoverEnabled = true;
   if(popupTimer) clearTimeout(popupTimer);
-  _openPopupSpan = null;
-  _popupPinned   = false;
 });
 
 // ===================================================
