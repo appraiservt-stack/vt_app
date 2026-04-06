@@ -2261,48 +2261,6 @@ def history():
     where = f"CAST(span AS VARCHAR(20)) LIKE '%{span_raw}%'"
     features = fetch_all_features(where)
 
-    # Check if any returned record is a condo (blCn1 = '5' or '05')
-    is_condo = any(
-        str(f.get('attributes', {}).get('blCn1', '')).lstrip('0') == '5'
-        for f in features
-    )
-
-    if is_condo and features:
-        # Extract base street address by stripping unit/apt/suite info
-        sample_addr = (features[0].get('attributes', {}).get('propLocStr') or '').upper().strip()
-        sample_town = (features[0].get('attributes', {}).get('propLocCty') or '').strip()
-
-        # Strip unit designators: ", UNIT", " UNIT", " APT", " STE", " #"
-        import re as _re
-        base_addr = _re.split(
-            r'[,\s]+(UNIT|APT|SUITE|STE|#)\b',
-            sample_addr,
-            flags=_re.I
-        )[0].strip()
-
-        if base_addr and sample_town:
-            # Build a flexible query using the street number + last word of
-            # the street name to handle abbreviation variants like:
-            # "76 VT ROUTE 12A" vs "76 VERMONT ROUTE 12A" vs "76 ROUTE 12A"
-            parts = base_addr.split()
-            street_num  = parts[0] if parts else ''
-            street_tail = parts[-1] if len(parts) > 1 else ''
-            safe_town   = sample_town.replace("'", "''")
-
-            addr_where = (
-                f"UPPER(propLocStr) LIKE '{street_num}%{street_tail}%' "
-                f"AND propLocCty = '{safe_town}'"
-            )
-            addr_features = fetch_all_features(addr_where)
-
-            # Merge, deduplicate by OBJECTID
-            existing_ids = {f.get('attributes', {}).get('OBJECTID') for f in features}
-            for af in addr_features:
-                oid = af.get('attributes', {}).get('OBJECTID')
-                if oid not in existing_ids:
-                    features.append(af)
-                    existing_ids.add(oid)
-
     # Parse filters without date range so all sales are returned
     empty_filters = {k: "" for k in [
         "counties", "towns", "date_from", "date_to", "price_low", "price_high",
