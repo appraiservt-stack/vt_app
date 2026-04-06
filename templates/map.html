@@ -2178,6 +2178,13 @@ function initApproxCache(){
 function loadApproxData(){
   if(!approxCacheReady) return;
 
+  // Don't render approx dots at statewide zoom — too many records flood the map.
+  // At zoom < 9 the dots aren't useful anyway (too zoomed out to identify).
+  if(map.getZoom() < 9){
+    approxLayer.clearLayers();
+    return;
+  }
+
   const b        = map.getBounds();
   const params   = buildFilterParams();
   const counties = (params.get('counties') || '').split(',').filter(Boolean);
@@ -2205,7 +2212,7 @@ function loadApproxData(){
     }
     if(dateFrom || dateTo){
       const d = p.date ? new Date(p.date) : null;
-      if(!d) return true; // static cache has no dates — don't exclude
+      if(!d) return true; // no date in cache — include regardless of date filter
     }
     if(priceLow > 0 && (p.price || 0) < priceLow)   return false;
     if(priceHigh < Infinity && (p.price || 0) > priceHigh) return false;
