@@ -2245,7 +2245,8 @@ function renderApproxData(records){
     if(p.span && String(p.span) !== '0'){
       const spanKey = String(p.span).trim();
       const existing = spanDotLookup[spanKey];
-      if(existing && existing.marker){
+      // Only merge if the marker is still on the map (not cleared by a pan)
+      if(existing && existing.marker && markersLayer.hasLayer(existing.marker)){
         existing.sales.push(p);
         markerRefs[p.id] = existing;
         if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
@@ -2258,7 +2259,8 @@ function renderApproxData(records){
     if(!merged && p.address){
       const addrKey = (normalizeAddr(p.address) + '|' + (p.trustedCountyCode || ''));
       const existing = addressDotLookup[addrKey];
-      if(existing && existing.marker){
+      // Only merge if the marker is still on the map (not cleared by a pan)
+      if(existing && existing.marker && markersLayer.hasLayer(existing.marker)){
         existing.sales.push(p);
         markerRefs[p.id] = existing;
         if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
