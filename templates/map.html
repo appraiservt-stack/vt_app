@@ -2196,7 +2196,19 @@ function loadApproxData(){
 
   const visible = approxCache.filter(p => {
     if(p.lat == null || p.lon == null) return false;
-    if(!b.contains([p.lat, p.lon]))    return false;
+    // For centroid records (town-center placeholder), use a generous buffer so
+    // the dot stays visible even when the exact centroid point is near the edge
+    // of the viewport (prevents the dot from blinking out on slight pans).
+    if(p.isCentroid){
+      const buf = 0.15; // ~10 miles — keeps centroid dot visible across the town
+      const expanded = L.latLngBounds(
+        [b.getSouth() - buf, b.getWest() - buf],
+        [b.getNorth() + buf, b.getEast() + buf]
+      );
+      if(!expanded.contains([p.lat, p.lon])) return false;
+    } else {
+      if(!b.contains([p.lat, p.lon])) return false;
+    }
     // Exclude $0 transfers from map display.
     // Approx cache records have price=null (fetched on click) — don't exclude those.
     if(p.price !== null && (p.price || 0) <= 0) return false;
@@ -2544,11 +2556,9 @@ function renderData(records){
   reapplyDrawnShapes();
 
   // After renderData populates spanDotLookup and addressDotLookup,
-  // call loadApproxData() so it always runs with fresh lookups.
-  // loadApproxData() is NOT called from onMoveEnd/onZoomEnd — only from here.
-  // This prevents the race condition where onMoveEnd fires loadApproxData()
-  // before renderData has rebuilt the black dots (stale spanDotLookup/addressDotLookup).
-  loadApproxData();
+  // run a merge pass on already-rendered approx records.
+  // This handles the case where approx cache loaded before black dots.
+  if(approxCacheReady) mergeApproxIntoBlackDots();
 }
 
 // ===================================================
@@ -2917,8 +2927,8 @@ function clearAllCheckboxes(){
 // MAP EVENTS & INIT — attached AFTER codes load
 // Named handlers so they can be temporarily detached during fitBounds.
 // ===================================================
-function onMoveEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
-function onZoomEnd(){ loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); } // loadData handled by moveend which always follows zoomend
+function onMoveEnd(){ loadData(); loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
+function onZoomEnd(){ loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); } // loadData handled by moveend which always follows zoomend
 
 function initMapEvents(){
   restoreBdySettings();

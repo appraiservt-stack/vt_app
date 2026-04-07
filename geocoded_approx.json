@@ -43023,15 +43023,16 @@
     "geocoded_at": "2026-04-04"
   },
   "387151": {
-    "lat": null,
-    "lon": null,
+    "lat": 43.7595726,
+    "lon": -72.7825868,
     "address": "LOT 10, SOUTH HILL ROAD",
     "city": "Stockbridge",
     "trustedTown": "Stockbridge",
     "trustedCountyCode": "14",
     "trustedCountyName": "Windsor",
-    "method": null,
-    "geocoded_at": "2026-04-04"
+    "method": "manual_nominatim",
+    "geocoded_at": "2026-04-07",
+    "note": "Vacant land lot, no house number. Geocoded to road centerline via Nominatim."
   },
   "388170": {
     "lat": null,

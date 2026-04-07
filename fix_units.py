@@ -70,10 +70,28 @@ data['282392'] = {
     'note': 'Same parcel as OBJECTID 163338. Geocoded as 2232 VT Route 14 North, Randolph.',
 }
 
+# ── Lot 10 South Hill Road, Stockbridge — vacant land, no house number ────────
+# Nominatim result for "South Hill Road, Stockbridge, Vermont":
+#   lat=43.7595726, lon=-72.7825868  (road-level coords, Windsor County)
+# isCentroid will be False since coords are now set — shown as orange dashed circle.
+data['387151'] = {
+    'lat': 43.7595726,
+    'lon': -72.7825868,
+    'address': 'LOT 10, SOUTH HILL ROAD',
+    'city': 'Stockbridge',
+    'trustedTown': 'Stockbridge',
+    'trustedCountyCode': '14',
+    'trustedCountyName': 'Windsor',
+    'method': 'manual_nominatim',
+    'geocoded_at': '2026-04-07',
+    'note': 'Vacant land lot, no house number. Geocoded to road centerline via Nominatim.',
+}
+
 with open(OUTPUT, 'w') as f:
     json.dump(data, f, indent=2)
 
 print('Done.')
 print('  Fixed 213103 and 260586 (76 VT Route 12A units)')
 print('  Fixed 163338 and 282392 (2232 VT Route 14 → Randolph)')
+print('  Fixed 387151 (Lot 10 South Hill Road, Stockbridge)')
 print('Total records:', len(data))
