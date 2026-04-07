@@ -2544,13 +2544,11 @@ function renderData(records){
   reapplyDrawnShapes();
 
   // After renderData populates spanDotLookup and addressDotLookup,
-  // run a merge pass on already-rendered approx records.
-  // This handles the case where approx cache loaded before black dots.
-  if(approxCacheReady) mergeApproxIntoBlackDots();
-
-  // Note: do NOT call loadApproxData() here — it causes flickering because
-  // moveend fires loadData() -> renderData() -> loadApproxData() repeatedly.
-  // The approxLayer is managed independently via pan/zoom events.
+  // call loadApproxData() so it always runs with fresh lookups.
+  // loadApproxData() is NOT called from onMoveEnd/onZoomEnd — only from here.
+  // This prevents the race condition where onMoveEnd fires loadApproxData()
+  // before renderData has rebuilt the black dots (stale spanDotLookup/addressDotLookup).
+  loadApproxData();
 }
 
 // ===================================================
@@ -2919,8 +2917,8 @@ function clearAllCheckboxes(){
 // MAP EVENTS & INIT — attached AFTER codes load
 // Named handlers so they can be temporarily detached during fitBounds.
 // ===================================================
-function onMoveEnd(){ loadData(); loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
-function onZoomEnd(){ loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); } // loadData handled by moveend which always follows zoomend
+function onMoveEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
+function onZoomEnd(){ loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); } // loadData handled by moveend which always follows zoomend
 
 function initMapEvents(){
   restoreBdySettings();
