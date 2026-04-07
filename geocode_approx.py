@@ -632,7 +632,19 @@ def main():
         existing = {}
         print("No existing file — starting fresh.")
 
-    already_done = set(existing.keys())
+    # Records with null coords are eligible for retry — E911 may now resolve
+    # addresses that previously failed SPAN and Nominatim.
+    # Records with manual_* methods are kept as-is (hand-entered coords).
+    MANUAL_METHODS = {'manual_nominatim', 'manual_sibling'}
+    already_done = set(
+        k for k, v in existing.items()
+        if v.get('lat') is not None  # has coords — skip
+        or (v.get('method') or '') in MANUAL_METHODS  # manual — keep
+    )
+
+    null_count = sum(1 for v in existing.values() if v.get('lat') is None
+                     and (v.get('method') or '') not in MANUAL_METHODS)
+    print(f"Records with null coords (will retry): {null_count:,}")
 
     # Load VT codes
     school_to_town, town_to_county, town_centroids, county_names = load_vt_codes()
@@ -640,11 +652,11 @@ def main():
     # Fetch approx records
     approx_records = fetch_all_approx(school_to_town, town_to_county)
 
-    # Only process new records
+    # Process new records AND null-coord records (retry with E911)
     to_process = [r for r in approx_records if str(r["objectid"]) not in already_done]
 
-    print(f"\nNew records to process: {len(to_process):,}")
-    print(f"Already in file:        {len(already_done):,}")
+    print(f"\nRecords to process: {len(to_process):,}  (new + null-coord retries)")
+    print(f"Already resolved:   {len(already_done):,}")
 
     if not to_process:
         print("Nothing new to process. File is up to date.")
