@@ -1373,7 +1373,17 @@ def data_approx_all():
             # Serve these here so records with null/bad ArcGIS geometry still appear.
             # If /data also returns the record, both land at identical coords and
             # merge into one popup via markerRefs grouping.
-            is_centroid_flag = False
+            #
+            # Precise methods (rooftop / interpolated / SPAN-matched) get
+            # isCentroid=False — exact viewport bounds check.
+            # Road-level / manual / centroid methods get isCentroid=True so
+            # the JS applies a 0.15-degree buffer, keeping the dot visible
+            # even when the user is viewing the town center and the road is
+            # a couple of miles away.
+            precise_methods = {'rooftop', 'range_interpolated', 'interpolated',
+                               'span_matched', 'e911_matched'}
+            method_val = (entry.get('method') or '').lower()
+            is_centroid_flag = method_val not in precise_methods
         else:
             # Null-coord record — couldn't be geocoded.
             # Fall back to town centroid so it shows as an orange circle.
