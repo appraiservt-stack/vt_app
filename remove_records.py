@@ -46,6 +46,11 @@ REMOVE = [
     # Remove from cache so they re-geocode using corrected centroid logic.
     244617,  # 112 BEAVER HOLLOW RD, Londonderry — schoolCode=100->Isle La Motte (wrong)
     322859,  # ROUTE 9, Wilmington — schoolCode=246->Winooski (wrong), should use Wilmington centroid
+
+    # Property Address (ESITE) records that were incorrectly added to approx cache
+    # with wrong coordinates. Removing forces resolve_coordinates to use the
+    # correct ArcGIS coordinates instead.
+    345517,  # 374 CHICKADEE DR LOT 75, Pownal — appears near Rochester (wrong), ArcGIS has correct coords
 ]
 
 with open(OUTPUT) as f:

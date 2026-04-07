@@ -174,7 +174,7 @@ def coords_in_county(lat, lon, county_code):
     return lat_min <= lat <= lat_max and lon_min <= lon <= lon_max
 
 
-def resolve_coordinates(raw_lat, raw_lon, trusted_town, object_id=None, match_method=None, prop_city_for_centroid=None):
+def resolve_coordinates(raw_lat, raw_lon, trusted_town, object_id=None, match_method=None, prop_city_for_centroid=None, prop_loc_str=None):
     """Return (lat, lon, approx, is_centroid) for a record.
 
     Uses MatchMthod as the primary signal for coordinate quality:
@@ -192,12 +192,20 @@ def resolve_coordinates(raw_lat, raw_lon, trusted_town, object_id=None, match_me
 
     mm = (match_method or "").strip().lower()
 
-    # Tier 1: good geocode — trust coordinates
+    # Tier 1: good geocode — trust coordinates.
+    # Exception: if the address has no house number (e.g. "SOUTH HILL ROAD",
+    # "LOT 10, SOUTH HILL ROAD"), ArcGIS geocoded to an arbitrary road point.
+    # Treat these as approx so they show as orange circles, not black dots.
     if mm in _GOOD_MATCH_METHODS:
+        addr_str = (prop_loc_str or '').strip()
+        addr_has_number = bool(addr_str and addr_str[0].isdigit())
         if (raw_lat is not None and raw_lon is not None and
                 VT_LAT_MIN <= raw_lat <= VT_LAT_MAX and
                 VT_LON_MIN <= raw_lon <= VT_LON_MAX):
-            return raw_lat, raw_lon, False, False
+            if addr_has_number:
+                return raw_lat, raw_lon, False, False   # black dot
+            else:
+                return raw_lat, raw_lon, True, False    # orange circle (approx)
         # Good match method but coords out of VT — fall through to centroid
 
     # Tier 2: parcel centroid match — approximate but usable coordinates
@@ -806,7 +814,8 @@ def feature_to_record(f, filters):
                 loc_info["trustedTown"],
                 object_id=attr.get("OBJECTID"),
                 match_method=attr.get("MatchMthod"),
-                prop_city_for_centroid=attr.get("propLocCty")
+                prop_city_for_centroid=attr.get("propLocCty"),
+                prop_loc_str=attr.get("propLocStr")
             )
         )),
 

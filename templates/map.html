@@ -2226,7 +2226,9 @@ function loadApproxData(){
 }
 
 function renderApproxData(records){
-  approxLayer.clearLayers();
+  // Don't clear while a popup is open for an approx dot — it would
+  // delete the dot mid-hover and make it disappear until next pan.
+  if(!_openPopupSpan) approxLayer.clearLayers();
   if(!records.length) return;
 
   // Group by coordinates. For centroid records, first check if a black dot
