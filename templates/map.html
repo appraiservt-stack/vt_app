@@ -2643,9 +2643,24 @@ function buildPopupHTML(p, sales, historySales){
   // Sales rows (scrollable)
   let rows = '';
   if(historySales && historySales.length > 0){
-    const filteredIds = new Set(sales.map(s => String(s.id)));
-    const olderSales   = historySales.filter(s => !filteredIds.has(String(s.id)));
-    const currentSales = historySales.filter(s =>  filteredIds.has(String(s.id)));
+    // Split by actual date range rather than by ID membership.
+    // ID-based split fails for condo groups where approx records bypass date filter.
+    const dfVal = document.getElementById('dateFrom').value;
+    const dtVal = document.getElementById('dateTo').value;
+    const dfMs  = dfVal ? new Date(dfVal).getTime() : null;
+    const dtMs  = dtVal ? new Date(dtVal).getTime() : null;
+
+    const isWithinFilter = (s) => {
+      if(!dfMs && !dtMs) return true;  // no filter active
+      const d = s.date;
+      if(!d) return true;              // no date on record — include in current
+      if(dfMs && d < dfMs) return false;
+      if(dtMs && d > dtMs) return false;
+      return true;
+    };
+
+    const olderSales   = historySales.filter(s => !isWithinFilter(s));
+    const currentSales = historySales.filter(s =>  isWithinFilter(s));
     if(olderSales.length > 0){
       rows += `<div style="font-size:10px;color:#888;margin:2px 0;">&#x1F4C5; Older sales (outside date filter)</div>`;
       olderSales.forEach(s => { rows += buildSaleRow(s, true); });
