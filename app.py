@@ -1380,10 +1380,15 @@ def data_approx_all():
             # the JS applies a 0.15-degree buffer, keeping the dot visible
             # even when the user is viewing the town center and the road is
             # a couple of miles away.
-            precise_methods = {'rooftop', 'range_interpolated', 'interpolated',
-                               'span_matched', 'e911_matched'}
+            # Precise: has a real address and was geocoded to it.
+            # Imprecise: road-only, manual road-level, or any other fallback
+            # that doesn't pin the record to a specific address.
+            # Imprecise records get isCentroid=True so the JS applies a
+            # 0.15-degree viewport buffer, keeping them visible when the user
+            # is viewing the town center rather than the exact road location.
+            imprecise_methods = {'manual_nominatim', 'road_nominatim'}
             method_val = (entry.get('method') or '').lower()
-            is_centroid_flag = method_val not in precise_methods
+            is_centroid_flag = method_val in imprecise_methods
         else:
             # Null-coord record — couldn't be geocoded.
             # Fall back to town centroid so it shows as an orange circle.
