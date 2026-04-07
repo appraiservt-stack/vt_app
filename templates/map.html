@@ -2308,7 +2308,7 @@ function renderApproxData(records){
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
-      maxWidth:   380,
+      maxWidth:   600,
       maxHeight:  520,
       autoPan:    false,
       keepInView: false
@@ -2496,7 +2496,7 @@ function renderData(records){
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
-      maxWidth:   380,
+      maxWidth:   600,
       maxHeight:  520,
       autoPan:    false,
       keepInView: false
@@ -2679,7 +2679,8 @@ function buildPopupHTML(p, sales, historySales){
 
   return `${header}
     ${scrollNote}
-    <div style="max-height:340px; overflow-y:auto; overscroll-behavior:contain;">
+    <div style="max-height:340px; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;
+                resize:both; min-width:260px; min-height:80px;">
       ${rows}
     </div>`;
 }
