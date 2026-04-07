@@ -2332,16 +2332,26 @@ function loadApproxData(){
     // New dot — create and add
     const lat = (p.lat || 0) + 0.00005;
     const lon = (p.lon || 0) + 0.00005;
-    const isSelected = sales.some(s => selectedSales[s.id]);
-    const isCentroid = sales.some(s => s.isCentroid === true);
-    const markerColor = isSelected ? '#0066ff' : isCentroid ? '#2e7d32' : '#e65c00';
+    const isSelected    = sales.some(s => selectedSales[s.id]);
+    const isCentroid    = sales.some(s => s.isCentroid === true);
+    const isPrecise     = sales.some(s => s.preciselyCoded === true);
+    // Dot style:
+    //   preciselyCoded=true  -> black dot, same as ArcGIS PTT records
+    //   isCentroid=true      -> green circle, genuine unknown location
+    //   neither              -> orange dashed circle, road-level approximate
+    const baseColor   = (activeBase === 'satellite') ? 'red' : '#1a1a1a';
+    const markerColor = isSelected ? '#0066ff'
+                      : isPrecise  ? baseColor
+                      : isCentroid ? '#2e7d32'
+                      : '#e65c00';
 
     const marker = L.circleMarker([lat, lon], {
-      radius:      6,
+      radius:      isPrecise ? 5 : 6,
       color:       markerColor,
       fillColor:   markerColor,
       fillOpacity: isSelected ? 1 : 0,
-      dashArray:   isCentroid ? null : '4 3',
+      weight:      isPrecise ? 2 : 2.5,
+      dashArray:   (isCentroid || isPrecise) ? null : '4 3',
     });
 
     const entry = { marker, sales: [...sales], prop: p, fromApproxLayer: true };

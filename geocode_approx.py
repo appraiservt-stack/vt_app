@@ -2,17 +2,23 @@
 geocode_approx.py
 -----------------
 Fetches all approx-location (ungeocoded) property transfer records from the
-ArcGIS service and attempts to resolve their coordinates using two methods:
+ArcGIS service and attempts to resolve their coordinates using these methods
+in priority order:
 
-  1. SPAN lookup (primary) — queries the VT parcel layer by SPAN number.
-     Returns the parcel centroid. Fast, accurate, no wrong-town matches.
-     Works for ~40% of approx records (standard residential/land parcels).
+  1. E911 address point (VCGI) — exact Vermont address database. Most accurate.
+     Queries by house number + street name + town. Returns rooftop coords.
 
-  2. Nominatim geocoding (fallback) — used when SPAN lookup fails (timeshares,
-     condos, special parcels). Constrained to a bounding box around propLocCty
-     (the filer-entered town) to prevent wrong-town matches.
+  2. SPAN lookup — queries VT parcel layer by SPAN number.
+     Returns parcel centroid. Fast, accurate, no wrong-town matches.
 
-Records that fail both methods remain as red circles at the town centroid.
+  3. ArcGIS sibling lookup — for condo/unit addresses where the individual SPAN
+     isn't in the parcel layer. Finds another record at the same base address.
+
+  4. Nominatim geocoding — used when all above fail. Constrained to a bounding
+     box around propLocCty to prevent wrong-town matches.
+
+Records that fail all methods remain with null coords and are served at the
+town centroid fallback in app.py.
 
 Run from c:\\vt_app:
     python geocode_approx.py
@@ -47,6 +53,10 @@ PARCEL_URL = (
     "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/"
     "FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query"
 )
+E911_URL = (
+    "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/"
+    "FS_VCGI_OPENDATA_Emergency_ESITE_point_SP_v1/FeatureServer/0/query"
+)
 
 # ── Vermont bounds ─────────────────────────────────────────────────────────────
 VT_LAT_MIN, VT_LAT_MAX =  42.7,  45.1
@@ -70,7 +80,6 @@ COUNTY_BOUNDS = {
     "14": (43.10, 44.25, -72.95, -71.95),
 }
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def load_vt_codes():
@@ -90,6 +99,12 @@ def coords_in_county(lat, lon, county_code):
     return b[0] <= lat <= b[1] and b[2] <= lon <= b[3]
 
 
+def coords_in_vt(lat, lon):
+    return (lat is not None and lon is not None and
+            VT_LAT_MIN <= lat <= VT_LAT_MAX and
+            VT_LON_MIN <= lon <= VT_LON_MAX)
+
+
 # MatchMthod values (mirrors app.py)
 _GOOD_MATCH_METHODS = {
     'property address (esite)',
@@ -106,16 +121,11 @@ def is_approx(lat, lon, match_method=None, trusted_county=None):
     mm = (match_method or '').strip().lower()
 
     if mm in _GOOD_MATCH_METHODS:
-        if (lat is not None and lon is not None and
-                lat != 0 and lon != 0 and
-                VT_LAT_MIN <= lat <= VT_LAT_MAX and
-                VT_LON_MIN <= lon <= VT_LON_MAX):
+        if coords_in_vt(lat, lon) and lat != 0 and lon != 0:
             return False
 
     if mm in _APPROX_MATCH_METHODS:
-        if (lat is not None and lon is not None and
-                VT_LAT_MIN <= lat <= VT_LAT_MAX and
-                VT_LON_MIN <= lon <= VT_LON_MAX):
+        if coords_in_vt(lat, lon):
             return False
 
     return True
@@ -134,7 +144,166 @@ def has_street_number(address):
     return bool(re.match(r"^\d+\s+\S+", (address or "").strip()))
 
 
-# ── Method 1: SPAN lookup ──────────────────────────────────────────────────────
+def parse_street_number(address):
+    """Extract the numeric house number from the start of an address string."""
+    m = re.match(r"^(\d+)", (address or "").strip())
+    return int(m.group(1)) if m else None
+
+
+def normalize_street_name(address):
+    """
+    Extract and normalize the street name portion of an address for E911 matching.
+    Strips house number, unit suffixes, and common abbreviations.
+    Returns (house_number_str, street_name_str) or (None, None).
+
+    E911 uses abbreviated street types (RD, ST, DR, LN, AVE etc.)
+    and uppercase names. We normalize both sides to uppercase with
+    common expansions so PTT addresses like "SOUTH HILL ROAD" match
+    E911's "SOUTH HILL RD".
+    """
+    addr = (address or "").strip().upper()
+    # Strip unit suffixes
+    addr = re.sub(r',?\s*(UNIT|APT|SUITE|STE|LOT|#)\s*.*$', '', addr, flags=re.I).strip()
+
+    m = re.match(r'^(\d+)\s+(.+)$', addr)
+    if not m:
+        return None, None
+
+    house_num = m.group(1)
+    street    = m.group(2).strip()
+
+    # Expand common full-word street types to E911 abbreviations
+    TYPE_MAP = {
+        r'\bROAD\b':    'RD',
+        r'\bSTREET\b':  'ST',
+        r'\bAVENUE\b':  'AVE',
+        r'\bDRIVE\b':   'DR',
+        r'\bLANE\b':    'LN',
+        r'\bCOURT\b':   'CT',
+        r'\bCIRCLE\b':  'CIR',
+        r'\bBOULEVARD\b': 'BLVD',
+        r'\bHIGHWAY\b': 'HWY',
+        r'\bTERRACE\b': 'TER',
+        r'\bPLACE\b':   'PL',
+        r'\bTRAIL\b':   'TRL',
+        r'\bWAY\b':     'WAY',
+        # Vermont Route variants — normalize to "VT RTE" which E911 uses
+        r'\bVERMONT\s+ROUTE\b': 'VT RTE',
+        r'\bVT\s+ROUTE\b':      'VT RTE',
+        r'\bSTATE\s+ROUTE\b':   'VT RTE',
+        r'\bROUTE\b':            'RTE',
+        r'\bUS\s+ROUTE\b':      'US RTE',
+        r'\bUS\s+RT\b':         'US RTE',
+    }
+    for pattern, replacement in TYPE_MAP.items():
+        street = re.sub(pattern, replacement, street, flags=re.I)
+
+    return house_num, street.strip()
+
+
+# ── Method 1: E911 address point lookup ───────────────────────────────────────
+
+def e911_lookup(address, geocode_town, town_centroids):
+    """
+    Look up exact coordinates from the VCGI E911 address point layer.
+    Queries by house number + street name + town.
+
+    This is the most accurate method for Vermont addresses — VCGI maintains
+    E911 address points statewide. Results are rooftop or driveway-level.
+
+    Returns (lat, lon, method) or (None, None, None).
+    """
+    house_num, street = normalize_street_name(address)
+    if not house_num or not street:
+        return None, None, None
+
+    # Try the geocode_town first, then the resolved town if different
+    towns_to_try = []
+    town_upper = (geocode_town or '').strip().upper()
+    if town_upper:
+        towns_to_try.append(town_upper)
+    # Also try village->town mapping
+    resolved = VILLAGE_TO_TOWN.get(town_upper)
+    if resolved and resolved != town_upper:
+        towns_to_try.append(resolved)
+
+    for town in towns_to_try:
+        # E911 PRIMARYADDRESS is "{house_num} {street_name} {street_type}"
+        # We query by house number and town, then filter by street name match
+        # since PTT street names may differ slightly from E911 (ROAD vs RD etc.)
+        try:
+            params = {
+                "where":             f"HOUSE_NUMBER={house_num} AND TOWNNAME='{town}'",
+                "outFields":         "PRIMARYADDRESS,TOWNNAME,GPSX,GPSY,SPAN",
+                "f":                 "json",
+                "outSR":             "4326",
+                "resultRecordCount": 10,
+            }
+            r = requests.get(E911_URL, params=params, timeout=15)
+            feats = r.json().get("features", [])
+
+            for feat in feats:
+                a = feat["attributes"]
+                g = feat.get("geometry", {})
+                e911_addr = (a.get("PRIMARYADDRESS") or "").upper().strip()
+
+                # Extract street name from E911 address for fuzzy matching
+                e911_m = re.match(r'^\d+\s+(.+)$', e911_addr)
+                if not e911_m:
+                    continue
+                e911_street = e911_m.group(1).strip()
+
+                # Check if key words of the PTT street match E911's street
+                # Use word-overlap: at least the significant words must match
+                if not _street_names_match(street, e911_street):
+                    continue
+
+                lat = g.get("y") or a.get("GPSY")
+                lon = g.get("x") or a.get("GPSX")
+                try:
+                    lat = float(lat) if lat is not None else None
+                    lon = float(lon) if lon is not None else None
+                except (TypeError, ValueError):
+                    continue
+
+                if coords_in_vt(lat, lon):
+                    return lat, lon, "e911"
+
+        except Exception as e:
+            print(f" [e911 error: {e}]", end="")
+
+    return None, None, None
+
+
+def _street_names_match(ptt_street, e911_street):
+    """
+    Fuzzy match between a PTT street name and an E911 street name.
+    Both are already uppercase. Returns True if they refer to the same road.
+
+    Strategy: extract significant words (not type abbreviations, not
+    directionals) and check that they all appear in both strings.
+    """
+    SKIP_WORDS = {
+        'RD','ST','AVE','DR','LN','CT','CIR','BLVD','HWY','TER','PL',
+        'TRL','WAY','ROAD','STREET','AVENUE','DRIVE','LANE','COURT',
+        'CIRCLE','BOULEVARD','HIGHWAY','TERRACE','PLACE','TRAIL',
+        'N','S','E','W','NORTH','SOUTH','EAST','WEST',
+        'VT','RTE','ROUTE','US','RT',
+    }
+    def sig_words(s):
+        return {w for w in re.findall(r'\w+', s.upper()) if w not in SKIP_WORDS}
+
+    ptt_words  = sig_words(ptt_street)
+    e911_words = sig_words(e911_street)
+
+    if not ptt_words or not e911_words:
+        return False
+
+    # All significant PTT words must appear in E911 (or vice versa for short names)
+    return ptt_words <= e911_words or e911_words <= ptt_words
+
+
+# ── Method 2: SPAN lookup ──────────────────────────────────────────────────────
 
 def span_lookup(span_raw):
     """
@@ -165,7 +334,7 @@ def span_lookup(span_raw):
             c = feats[0].get("centroid", {})
             lat = c.get("y")
             lon = c.get("x")
-            if lat and lon and VT_LAT_MIN <= lat <= VT_LAT_MAX and VT_LON_MIN <= lon <= VT_LON_MAX:
+            if lat and lon and coords_in_vt(lat, lon):
                 return lat, lon, "span"
     except Exception as e:
         print(f" [span error: {e}]", end="")
@@ -173,33 +342,24 @@ def span_lookup(span_raw):
     return None, None, None
 
 
-# ── Method 2b: ArcGIS sibling lookup ─────────────────────────────────────────
-# For condo/unit addresses where the individual SPAN isn't in the parcel layer,
-# find another ArcGIS record at the same base address that HAS coordinates.
+# ── Method 3: ArcGIS sibling lookup ──────────────────────────────────────────
 
 def arcgis_sibling_lookup(address, school_code, county_bounds):
     """Find coordinates from another ArcGIS record at the same base address.
     Strips unit numbers and searches for any record with valid coords.
     Returns (lat, lon, method) or (None, None, None).
     """
-    # Strip unit suffix to get base address
     base = re.sub(r',?\s*(UNIT|APT|SUITE|STE|LOT|#)\s*.*$', '', address, flags=re.I).strip()
     if not base or not re.match(r'^\d+', base):
         return None, None, None
 
-    # Normalize the base address for matching:
-    # Remove VERMONT/VT prefix from road name so '76 VERMONT ROUTE 12A'
-    # matches siblings stored as '76 VT ROUTE 12A' or '76 ROUTE 12A'
     base_norm = re.sub(r'\bVERMONT\s+', '', base, flags=re.I)
     base_norm = re.sub(r'\bVT\s+', '', base_norm, flags=re.I).strip()
-    # Extract just the street number for a broad LIKE match
     street_num = base_norm.split()[0] if base_norm else ''
-    # Use street number + partial street name for the LIKE clause
     words = base_norm.split()
     partial = ' '.join(words[:2]) if len(words) >= 2 else base_norm
 
     try:
-        # schoolCode may be string or int - use numeric comparison
         try:
             sc_num = int(float(str(school_code)))
         except (TypeError, ValueError):
@@ -211,19 +371,17 @@ def arcgis_sibling_lookup(address, school_code, county_bounds):
             'outSR':    '4326',
             'resultRecordCount': 10,
         }
-        r = requests.get(ARCGIS_URL, params=params, timeout=15)
+        r = requests.get(PTT_URL, params=params, timeout=15)
         feats = r.json().get('features', [])
         for feat in feats:
             a = feat['attributes']
             g = feat.get('geometry', {})
             sibling_addr = (a.get('propLocStr') or '').upper()
-            # Verify sibling shares the same road name (not just same street number)
-            # Normalize sibling address the same way and check prefix matches
             sibling_norm = re.sub(r'\bVERMONT\s+', '', sibling_addr, flags=re.I)
             sibling_norm = re.sub(r'\bVT\s+', '', sibling_norm, flags=re.I)
             sibling_norm = re.sub(r',?\s*(UNIT|APT|SUITE|STE|LOT|#)\s*.*$', '', sibling_norm, flags=re.I).strip()
             if sibling_norm.upper() != base_norm.upper():
-                continue  # different road, skip
+                continue
             lat = g.get('y') or a.get('Latitude')
             lon = g.get('x') or a.get('Longitude')
             try:
@@ -231,16 +389,15 @@ def arcgis_sibling_lookup(address, school_code, county_bounds):
                 lon = float(lon) if lon is not None else None
             except (TypeError, ValueError):
                 continue
-            if lat and lon and VT_LAT_MIN <= lat <= VT_LAT_MAX and VT_LON_MIN <= lon <= VT_LON_MAX:
+            if lat and lon and coords_in_vt(lat, lon):
                 return lat, lon, 'arcgis_sibling'
     except Exception:
         pass
     return None, None, None
 
-# ── Method 3: Nominatim geocoding ─────────────────────────────────────────────
 
-# Village names that filers write as propLocCty but are not official town names.
-# Maps village/hamlet name -> parent town name (uppercase, matching town_centroids keys).
+# ── Method 4: Nominatim geocoding ─────────────────────────────────────────────
+
 VILLAGE_TO_TOWN = {
     'BELLOWS FALLS':         'ROCKINGHAM',
     'MORRISVILLE':           'MORRISTOWN',
@@ -291,14 +448,9 @@ VILLAGE_TO_TOWN = {
 
 
 def resolve_geocode_town(geocode_town, town_centroids):
-    """Resolve a propLocCty value (possibly a village name) to a town name
-    that exists in town_centroids. Returns the resolved town name or the
-    original if no mapping found."""
     key = (geocode_town or '').strip().upper()
-    # Direct match
     if key in town_centroids:
         return geocode_town
-    # Village -> town mapping
     mapped = VILLAGE_TO_TOWN.get(key)
     if mapped and mapped in town_centroids:
         return mapped.title()
@@ -308,13 +460,12 @@ def resolve_geocode_town(geocode_town, town_centroids):
 def nominatim_geocode(address, geocode_town, town_centroids):
     """
     Geocode address via Nominatim constrained to geocode_town's bbox.
-    geocode_town = propLocCty (filer-entered town name) for accuracy.
+    Only used when E911, SPAN, and sibling lookups all fail.
     Returns (lat, lon, method) or (None, None, None).
     """
     if not has_street_number(address):
         return None, None, None
 
-    # Resolve village names to parent town before centroid lookup
     resolved_town = resolve_geocode_town(geocode_town, town_centroids)
     centroid = town_centroids.get((resolved_town or "").upper())
     if centroid:
@@ -336,34 +487,26 @@ def nominatim_geocode(address, geocode_town, town_centroids):
         f"{address}, Vermont",
     ]
 
-    # Route directional variants — handles three cases:
-    #   1. Bare:        "2232 VERMONT ROUTE 14"    → try North, South, N, S, etc.
-    #   2. Abbreviated: "2232 VERMONT ROUTE 14N"   → also try full spelling (14 North)
-    #   3. Spaced abbr: "2232 VERMONT ROUTE 14 N"  → same as #2
     _DIR_EXPAND = {'N': 'North', 'S': 'South', 'E': 'East', 'W': 'West'}
-    _DIR_ABBREV = {'North': 'N', 'South': 'S', 'East': 'E', 'West': 'W'}
 
-    # Case 1: bare route number at end of address
     route_bare = re.search(r'(.*\bROUTE\s+(\d+))\s*$', address.strip(), re.I)
     if route_bare:
         base = route_bare.group(1)
         for full, abbr in [('North','N'),('South','S'),('East','E'),('West','W')]:
             queries.append(f"{base} {full}, {city_str}, Vermont")
             queries.append(f"{base} {full}, Vermont")
-            queries.append(f"{base}{abbr}, {city_str}, Vermont")   # e.g. ROUTE 14N
-            queries.append(f"{base} {abbr}, {city_str}, Vermont")  # e.g. ROUTE 14 N
+            queries.append(f"{base}{abbr}, {city_str}, Vermont")
+            queries.append(f"{base} {abbr}, {city_str}, Vermont")
 
-    # Case 2 & 3: address already ends in a directional abbreviation (14N / 14 N)
     route_abbr = re.search(
         r'(.*\bROUTE\s+(\d+))\s*([NSEW])\s*$',
         address.strip(),
         re.I
     )
     if route_abbr:
-        base    = route_abbr.group(1)               # e.g. "2232 VERMONT ROUTE 14"
-        abbr    = route_abbr.group(3).upper()        # e.g. "N"
-        full    = _DIR_EXPAND.get(abbr, abbr)        # e.g. "North"
-        # Add the fully-spelled version
+        base = route_abbr.group(1)
+        abbr = route_abbr.group(3).upper()
+        full = _DIR_EXPAND.get(abbr, abbr)
         queries.append(f"{base} {full}, {city_str}, Vermont")
         queries.append(f"{base} {full}, Vermont")
 
@@ -384,7 +527,7 @@ def nominatim_geocode(address, geocode_town, town_centroids):
             if results:
                 lat = float(results[0]["lat"])
                 lon = float(results[0]["lon"])
-                if VT_LAT_MIN <= lat <= VT_LAT_MAX and VT_LON_MIN <= lon <= VT_LON_MAX:
+                if coords_in_vt(lat, lon):
                     return lat, lon, "nominatim"
         except Exception:
             pass
@@ -459,7 +602,7 @@ def fetch_all_approx(school_to_town, town_to_county):
                     "geocode_town":   geocode_town,
                     "trusted_town":   school_town,
                     "trusted_county": trusted_county,
-                    "school_code_raw": sc,  # raw schoolCode for ArcGIS sibling lookup
+                    "school_code_raw": sc,
                 })
 
         print(f"  Fetched {total_fetched:,} records, {len(all_approx):,} approx so far...", end="\r")
@@ -507,13 +650,9 @@ def main():
         print("Nothing new to process. File is up to date.")
         return
 
-    # Estimate time: SPAN lookups ~0.5s each, Nominatim ~2s each
-    # Assume ~40% SPAN hits, ~20% Nominatim fallback
-    est_seconds = int(len(to_process) * 0.5 + len(to_process) * 0.2 * 2)
-    print(f"Estimated time:         ~{est_seconds//60} minutes")
     print("-" * 60)
 
-    span_success = span_fail = nom_success = nom_fail = skipped = 0
+    e911_success = span_success = sibling_success = nom_success = nom_fail = skipped = 0
 
     for i, rec in enumerate(to_process, 1):
         oid          = str(rec["objectid"])
@@ -529,34 +668,34 @@ def main():
 
         lat = lon = method = None
 
-        # Method 1: SPAN lookup
-        if span_raw:
+        # Method 1: E911 address point lookup (most accurate for VT addresses)
+        if has_street_number(address):
+            lat, lon, method = e911_lookup(address, geocode_town, town_centroids)
+            if lat:
+                e911_success += 1
+                print(f"E911 ({lat:.5f}, {lon:.5f})")
+
+        # Method 2: SPAN lookup (parcel centroid)
+        if lat is None and span_raw:
             lat, lon, method = span_lookup(span_raw)
             if lat:
                 span_success += 1
                 print(f"SPAN ({lat:.5f}, {lon:.5f})")
-            else:
-                span_fail += 1
 
-        # Method 2b: ArcGIS sibling lookup (condo/unit with no parcel record)
-        # Try whenever SPAN fails and there's a street number in the address
+        # Method 3: ArcGIS sibling (condo/unit, no parcel record)
         if lat is None and has_street_number(address):
-            # Get schoolCode - may be stored as string or int
             sc_raw = rec.get('school_code_raw')
             try:
                 sc_for_lookup = int(float(str(sc_raw))) if sc_raw is not None else 0
             except (TypeError, ValueError):
                 sc_for_lookup = 0
-            # Debug: show what we have
-            if sc_for_lookup == 0:
-                print(f" [sibling skip: school_code_raw={sc_raw!r}] ", end="")
-            else:
+            if sc_for_lookup > 0:
                 lat, lon, method = arcgis_sibling_lookup(address, sc_for_lookup, COUNTY_BOUNDS)
                 if lat:
-                    span_success += 1
+                    sibling_success += 1
                     print(f"ArcGIS sibling ({lat:.5f}, {lon:.5f})")
 
-        # Method 3: Nominatim fallback
+        # Method 4: Nominatim (last resort for addressed properties)
         if lat is None:
             lat, lon, method = nominatim_geocode(address, geocode_town, town_centroids)
             if lat:
@@ -593,8 +732,9 @@ def main():
         json.dump(existing, f, indent=2)
 
     print("-" * 60)
+    print(f"E911 resolved:      {e911_success:,}")
     print(f"SPAN resolved:      {span_success:,}")
-    print(f"SPAN not found:     {span_fail:,}")
+    print(f"Sibling resolved:   {sibling_success:,}")
     print(f"Nominatim resolved: {nom_success:,}")
     print(f"Nominatim failed:   {nom_fail:,}")
     print(f"Skipped (no addr):  {skipped:,}")
@@ -603,7 +743,7 @@ def main():
     print()
     print("Next steps:")
     print("  git add geocoded_approx.json")
-    print("  git commit -m \"Update geocoded approx records\"")
+    print('  git commit -m "Update geocoded approx records"')
     print("  git push origin main")
 
 

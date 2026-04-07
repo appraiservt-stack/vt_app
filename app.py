@@ -1422,6 +1422,11 @@ def data_approx_all():
             "lon":     lon,
             "approxLocation": True,
             "isCentroid":     is_centroid_flag,
+            # preciselyCoded=True means the address was geocoded to rooftop/
+            # address-point precision. The dot should render as black (same as
+            # ArcGIS PTT dots) since the location is just as trustworthy.
+            # preciselyCoded=False means road-level or centroid — orange/green.
+            "preciselyCoded": not is_centroid_flag,
             # Minimal fields — popup will fetch full details on click via /ptt172
             "price":   None,
             "date":    None,
