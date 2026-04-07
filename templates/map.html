@@ -2152,6 +2152,12 @@ let approxCacheReady = false;
 
 let approxCacheIds = new Set(); // fast O(1) lookup: is this id in approxCache?
 
+// Diff-based approx layer state.
+// Key = dot key string (coords or addr), Value = { marker, sales, dotRef }
+// Kept in sync by loadApproxData() — dots are added/removed individually,
+// never via clearLayers(). This eliminates all flicker from race conditions.
+let _approxVisible = {}; // currently rendered approx dots
+
 function initApproxCache(){
   fetch('/data/approx/all')
   .then(r => r.json())
@@ -2181,7 +2187,13 @@ function loadApproxData(){
   // Don't render approx dots at statewide zoom — too many records flood the map.
   // At zoom < 9 the dots aren't useful anyway (too zoomed out to identify).
   if(map.getZoom() < 9){
-    approxLayer.clearLayers();
+    // Remove all current approx dots individually (no clearLayers)
+    Object.keys(_approxVisible).forEach(k => {
+      const entry = _approxVisible[k];
+      approxLayer.removeLayer(entry.marker);
+      entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
+    });
+    _approxVisible = {};
     return;
   }
 
@@ -2194,27 +2206,17 @@ function loadApproxData(){
   const priceLow  = parseFloat(params.get('price_low'))  || 0;
   const priceHigh = parseFloat(params.get('price_high')) || Infinity;
 
-  const visible = approxCache.filter(p => {
+  // --- Step 1: compute which records pass all filters ----------------------
+  const passing = approxCache.filter(p => {
     if(p.lat == null || p.lon == null) return false;
-    // For centroid records (town-center placeholder), use a generous buffer so
-    // the dot stays visible even when the exact centroid point is near the edge
-    // of the viewport (prevents the dot from blinking out on slight pans).
-    if(p.isCentroid){
-      const buf = 0.15; // ~10 miles — keeps centroid dot visible across the town
-      const expanded = L.latLngBounds(
-        [b.getSouth() - buf, b.getWest() - buf],
-        [b.getNorth() + buf, b.getEast() + buf]
-      );
-      if(!expanded.contains([p.lat, p.lon])) return false;
-    } else {
-      if(!b.contains([p.lat, p.lon])) return false;
-    }
-    // Exclude $0 transfers from map display.
-    // Approx cache records have price=null (fetched on click) — don't exclude those.
+    // Centroid records use a 0.15-degree buffer so they stay visible
+    // even when the exact centroid point is near the viewport edge.
+    const inView = p.isCentroid
+      ? b.pad(0.15).contains([p.lat, p.lon])
+      : b.contains([p.lat, p.lon]);
+    if(!inView) return false;
     if(p.price !== null && (p.price || 0) <= 0) return false;
     if(counties.length){
-      // If county filter is active, records with no county info are excluded.
-      // This prevents junk-schoolCode records (0, 999) from leaking through.
       if(!p.trustedCountyCode) return false;
       if(!counties.includes(String(p.trustedCountyCode).padStart(2,'0'))) return false;
     }
@@ -2225,45 +2227,41 @@ function loadApproxData(){
     if(dateFrom || dateTo){
       const d = p.date ? new Date(p.date) : null;
       if(!d) return true; // no date in cache — include regardless of date filter
+      if(dateFrom && d < new Date(dateFrom)) return false;
+      if(dateTo   && d > new Date(dateTo))   return false;
     }
     if(priceLow > 0 && (p.price || 0) < priceLow)   return false;
     if(priceHigh < Infinity && (p.price || 0) > priceHigh) return false;
     return true;
   });
 
-  // True centroid fallbacks (isCentroid=true) -> orange circles in approxLayer.
-  // Geocoded records (isCentroid=false) -> orange circles too, but placed precisely.
-  // We keep all in approxLayer so renderData's clearLayers() doesn't wipe them.
-  renderApproxData(visible);
-}
-
-function renderApproxData(records){
-  // Don't clear while a popup is open for an approx dot — it would
-  // delete the dot mid-hover and make it disappear until next pan.
-  if(!_openPopupSpan) approxLayer.clearLayers();
-  if(!records.length) return;
-
-  // Group by coordinates. For centroid records, first check if a black dot
-  // already exists at the same address+town — if so, merge into it.
-  let grouped = {};
-  records.forEach(p => {
+  // --- Step 2: try to merge each passing record into a black dot -----------
+  // Records that merge into a black dot are removed from approxLayer.
+  // Records that don't merge stay in (or are added to) approxLayer.
+  const unmerged = [];
+  passing.forEach(p => {
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
 
-    // Try to merge into existing black dot via SPAN (most reliable) or address
     let merged = false;
 
-    // 1. SPAN-based merge — most accurate, property-specific
+    // 1. SPAN-based merge
     if(p.span && String(p.span) !== '0'){
-      const spanKey = String(p.span).trim();
-      const existing = spanDotLookup[spanKey];
-      // Only merge if the marker is still on the map (not cleared by a pan)
+      const existing = spanDotLookup[String(p.span).trim()];
       if(existing && existing.marker && markersLayer.hasLayer(existing.marker)){
-        existing.sales.push(p);
+        if(!existing.sales.find(s => s.id === p.id)) existing.sales.push(p);
         markerRefs[p.id] = existing;
         if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
           existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
         merged = true;
+        // Remove from approxLayer if it was there
+        const dotKey = _approxDotKey(p);
+        if(_approxVisible[dotKey]){
+          const entry = _approxVisible[dotKey];
+          if(!_openPopupSpan) approxLayer.removeLayer(entry.marker);
+          entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
+          delete _approxVisible[dotKey];
+        }
       }
     }
 
@@ -2271,43 +2269,71 @@ function renderApproxData(records){
     if(!merged && p.address){
       const addrKey = (normalizeAddr(p.address) + '|' + (p.trustedCountyCode || ''));
       const existing = addressDotLookup[addrKey];
-      // Only merge if the marker is still on the map (not cleared by a pan)
       if(existing && existing.marker && markersLayer.hasLayer(existing.marker)){
-        existing.sales.push(p);
+        if(!existing.sales.find(s => s.id === p.id)) existing.sales.push(p);
         markerRefs[p.id] = existing;
         if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
           existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
         merged = true;
+        const dotKey = _approxDotKey(p);
+        if(_approxVisible[dotKey]){
+          const entry = _approxVisible[dotKey];
+          if(!_openPopupSpan) approxLayer.removeLayer(entry.marker);
+          entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
+          delete _approxVisible[dotKey];
+        }
       }
     }
 
-    if(merged) return;
+    if(!merged) unmerged.push(p);
+  });
 
-    // Group by coordinates OR by normalized address+county
-    // so approx records at same address cluster into one dot
-    let key;
-    if(p.lat != null && p.lon != null){
-      key = (Math.round(p.lat * 10000) / 10000) + "|" + (Math.round(p.lon * 10000) / 10000);
-    } else if(p.address){
-      key = 'addr|' + normalizeAddr(p.address) + '|' + (p.trustedCountyCode || '');
-    } else {
-      key = (p.address || '') + '_' + (p.city || '');
-    }
+  // --- Step 3: group unmerged records by dot key ---------------------------
+  const grouped = {};
+  unmerged.forEach(p => {
+    const key = _approxDotKey(p);
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(p);
   });
 
+  // --- Step 4: diff — remove dots no longer needed ------------------------
+  const nextKeys = new Set(Object.keys(grouped));
+  Object.keys(_approxVisible).forEach(k => {
+    if(!nextKeys.has(k)){
+      const entry = _approxVisible[k];
+      // Don't remove a dot whose popup is currently open
+      if(_openPopupSpan && entry.sales.some(s => String(s.span) === _openPopupSpan)) return;
+      approxLayer.removeLayer(entry.marker);
+      entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
+      delete _approxVisible[k];
+    }
+  });
+
+  // --- Step 5: add new dots / update existing ones -------------------------
   Object.keys(grouped).forEach(key => {
     const sales = grouped[key];
     const p     = sales[0];
-    const lat   = (p.lat || 0) + 0.00005;
-    const lon   = (p.lon || 0) + 0.00005;
 
-    const isSelected  = sales.some(s => selectedSales[s.id]);
-    // Two distinct approx marker styles:
-    // isCentroid=true  -> GREEN circle: parked at town center, no specific location known
-    // isCentroid=false -> ORANGE circle: geocoded to specific address (SPAN/Nominatim)
-    const isCentroid  = sales.some(s => s.isCentroid === true);
+    if(_approxVisible[key]){
+      // Dot already on map — just refresh its popup if not open
+      const entry = _approxVisible[key];
+      // Merge any new sales into the existing entry
+      sales.forEach(s => {
+        if(!entry.sales.find(es => es.id === s.id)){
+          entry.sales.push(s);
+          markerRefs[s.id] = entry;
+        }
+      });
+      if(!_openPopupSpan || !entry.sales.some(s => String(s.span) === _openPopupSpan))
+        entry.marker.setPopupContent(buildPopupHTML(entry.sales[0], entry.sales, null));
+      return; // already visible — nothing to add
+    }
+
+    // New dot — create and add
+    const lat = (p.lat || 0) + 0.00005;
+    const lon = (p.lon || 0) + 0.00005;
+    const isSelected = sales.some(s => selectedSales[s.id]);
+    const isCentroid = sales.some(s => s.isCentroid === true);
     const markerColor = isSelected ? '#0066ff' : isCentroid ? '#2e7d32' : '#e65c00';
 
     const marker = L.circleMarker([lat, lon], {
@@ -2315,13 +2341,12 @@ function renderApproxData(records){
       color:       markerColor,
       fillColor:   markerColor,
       fillOpacity: isSelected ? 1 : 0,
-      dashArray:   isCentroid ? null : '4 3',  // dashed for geocoded, solid for centroid
+      dashArray:   isCentroid ? null : '4 3',
     });
 
-    const dotRef = { marker, sales, prop: p, fromApproxLayer: true };
-    sales.forEach(s => {
-      markerRefs[s.id] = dotRef;
-    });
+    const entry = { marker, sales: [...sales], prop: p, fromApproxLayer: true };
+    sales.forEach(s => { markerRefs[s.id] = entry; });
+    _approxVisible[key] = entry;
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
       maxWidth:   600,
@@ -2329,21 +2354,30 @@ function renderApproxData(records){
       autoPan:    false,
       keepInView: false
     });
-
     marker.on('mouseover', function(){
       if(!hoverEnabled) return;
-      hoverTimer = setTimeout(() => openPopupWithHistory(marker, p, sales), 700);
+      hoverTimer = setTimeout(() => openPopupWithHistory(marker, p, entry.sales), 700);
     });
     marker.on('mouseout', function(){
       if(hoverTimer) clearTimeout(hoverTimer);
     });
     marker.on('click', function(){
       if(hoverTimer) clearTimeout(hoverTimer);
-      openPopupWithHistory(marker, p, sales);
+      openPopupWithHistory(marker, p, entry.sales);
     });
 
     approxLayer.addLayer(marker);
   });
+}
+
+// Helper: compute the grouping key for an approx record.
+// Records that share a key are rendered as a single dot.
+function _approxDotKey(p){
+  if(p.lat != null && p.lon != null)
+    return (Math.round(p.lat * 10000) / 10000) + '|' + (Math.round(p.lon * 10000) / 10000);
+  if(p.address)
+    return 'addr|' + normalizeAddr(p.address) + '|' + (p.trustedCountyCode || '');
+  return (p.address || '') + '_' + (p.city || '');
 }
 
 // ===================================================
@@ -2424,6 +2458,13 @@ function renderData(records){
   markerRefs = {};
   addressDotLookup = {};  // reset address->coords lookup on each render
   spanDotLookup    = {};  // reset SPAN->marker lookup on each render
+  // Reset diff state so loadApproxData() re-evaluates every approx dot
+  // against the new spanDotLookup/addressDotLookup built below.
+  // Dots are physically removed here so the layer stays clean.
+  Object.keys(_approxVisible).forEach(k => {
+    approxLayer.removeLayer(_approxVisible[k].marker);
+  });
+  _approxVisible = {};
 
   let grouped = {};
   records.forEach(p => {
