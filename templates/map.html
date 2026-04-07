@@ -2308,7 +2308,7 @@ function renderApproxData(records){
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
-      maxWidth:   300,
+      maxWidth:   380,
       maxHeight:  520,
       autoPan:    false,
       keepInView: false
@@ -2496,7 +2496,7 @@ function renderData(records){
     });
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
-      maxWidth:   300,
+      maxWidth:   380,
       maxHeight:  520,
       autoPan:    false,
       keepInView: false
@@ -2600,7 +2600,7 @@ function buildSaleRow(s, dimmed){
         PTT-172
       </a>
     </div>
-    <span style="font-size:11px;">${addr}</span><br>
+    <span style="font-size:11px;word-break:break-word;">${addr}</span><br>
     <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
     ${chipsRow}
   </div>`;
@@ -2677,71 +2677,14 @@ function buildPopupHTML(p, sales, historySales){
     ? `<div style="font-size:10px;color:#888;text-align:center;padding:2px 0;">&#9651; scroll to see all ${totalSales} sales &#9651;</div>`
     : '';
 
-  // Condo address search widget — shown when any sale has buildingConstruction1 5/05
-  const allSales = historySales || sales;
-  const isCondo = allSales.some(s =>
-    String(s.buildingConstruction1||s.buildingType||'').replace(/^0+/,'') === '5'
-  );
-  let condoWidget = '';
-  if(isCondo){
-    // Pre-fill with street number + street name, strip unit info
-    const sampleAddr = (allSales[0] && allSales[0].address) || '';
-    const baseAddr   = sampleAddr.replace(/[,\s]+(unit|apt|suite|ste|#).*/i, '').trim();
-    const town       = p.trustedTown || p.city || '';
-    const widgetId   = 'condoSearch_' + Date.now();
-    condoWidget = `
-      <div style="border-top:1px solid #ddd;margin-top:6px;padding-top:5px;">
-        <div style="font-size:10px;color:#555;margin-bottom:3px;">&#x1F50D; Search all units at this address:</div>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <input id="${widgetId}" type="text" value="${baseAddr}"
-            style="flex:1;font-size:10px;padding:2px 4px;border:1px solid #bbb;border-radius:3px;"
-            placeholder="Street number and name"/>
-          <button onclick="doCondoSearch('${widgetId}','${town.replace(/'/g,"\\'")}')"
-            style="font-size:10px;padding:2px 6px;background:#4285F4;color:white;
-                   border:none;border-radius:3px;cursor:pointer;white-space:nowrap;">
-            Search
-          </button>
-        </div>
-        <div id="${widgetId}_results" style="margin-top:4px;"></div>
-      </div>`;
-  }
-
   return `${header}
     ${scrollNote}
     <div style="max-height:340px; overflow-y:auto; overscroll-behavior:contain;">
       ${rows}
-    </div>
-    ${condoWidget}`;
+    </div>`;
 }
 
-// Execute condo address search and update the results div in the popup
-function doCondoSearch(inputId, town){
-  const input = document.getElementById(inputId);
-  if(!input) return;
-  const addr = input.value.trim();
-  if(!addr) return;
-  const resultsDiv = document.getElementById(inputId + '_results');
-  if(resultsDiv) resultsDiv.innerHTML = '<span style="font-size:10px;color:#888;">Searching...</span>';
 
-  fetch('/search_address?address=' + encodeURIComponent(addr) + '&town=' + encodeURIComponent(town))
-  .then(r => r.json())
-  .then(data => {
-    if(!resultsDiv) return;
-    const recs = data.data || [];
-    if(!recs.length){
-      resultsDiv.innerHTML = '<span style="font-size:10px;color:#888;">No sales found at that address.</span>';
-      return;
-    }
-    let html = `<div style="font-size:10px;color:#555;margin-bottom:2px;">${recs.length} sale(s) found:</div>`;
-    html += '<div style="max-height:200px;overflow-y:auto;overscroll-behavior:contain;">';
-    recs.forEach(s => { html += buildSaleRow(s, false); });
-    html += '</div>';
-    resultsDiv.innerHTML = html;
-  })
-  .catch(() => {
-    if(resultsDiv) resultsDiv.innerHTML = '<span style="font-size:10px;color:red;">Search failed. Try again.</span>';
-  });
-}
 
 // Open popup for a marker, fetching full history if date filter is active
 function openPopupWithHistory(marker, p, sales){
