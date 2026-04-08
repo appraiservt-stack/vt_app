@@ -1969,6 +1969,10 @@ function hasNameFilter(){
 // APPLY FILTERS
 // ===================================================
 function applyFilters(){
+  // Clear existing dots immediately in ALL paths so stale unfiltered dots
+  // don't linger while the new filtered fetch is in flight.
+  markersLayer.clearLayers();
+  mhLayer.clearLayers();
 
   // Filter results could be anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
@@ -2007,8 +2011,6 @@ function applyFilters(){
     return;
   }
 
-  // Clear existing dots immediately so old data doesn't linger
-  markersLayer.clearLayers();
   document.getElementById("statusBar").textContent = "Loading...";
 
   // If exactly one county is selected, zoom to it automatically
