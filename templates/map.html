@@ -774,6 +774,10 @@ let TOWN_CENTROIDS = {}; // populated when codes load
 
 // Checkbox group filters: unchecked = no restriction for that group.
 // Any box checked = filter to ONLY those types. No filterApplied flag needed.
+
+// Gate: loadData() does nothing until the user clicks Apply at least once.
+// This prevents Railway from doing a heavy statewide fetch on page load.
+let _userHasApplied = false;
 let _ptt172DlMode = false; // false = open inline in browser; true = force download
 
 // ---- Screen capture stream (held open for the session) ----
@@ -1967,6 +1971,8 @@ function hasNameFilter(){
 // APPLY FILTERS
 // ===================================================
 function applyFilters(){
+  _userHasApplied = true; // unlock loadData() for pan/zoom after first apply
+
   // Filter results could be anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
     const params = buildFilterParams();
@@ -2100,6 +2106,9 @@ let _dataXhr = null;  // cancel in-flight data request on new move
 let _loadDataTimer = null; // debounce timer
 
 function loadData(){
+  // Don't load until the user has clicked Apply at least once.
+  if(!_userHasApplied) return;
+
   // If a name search cache is active, just re-render from it (no new fetch)
   if(nameSearchCache !== null){
     renderData(nameSearchCache);
