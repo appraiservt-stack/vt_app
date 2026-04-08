@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, Response, session, redirect, url_for
+from flask_compress import Compress
 import requests
 import json
 import csv
@@ -16,6 +17,7 @@ from datetime import datetime, timezone
 from functools import wraps
 
 app = Flask(__name__)
+Compress(app)  # gzip-compress all JSON/HTML responses automatically
 # Secret key for session encryption — set FLASK_SECRET_KEY env var in Railway
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "vt-prop-dev-secret-change-in-prod")
 from datetime import timedelta
