@@ -506,43 +506,51 @@ def build_where_clause(filters):
             except Exception:
                 pass
 
+    # ----------------------------------------------------------------
+    # String field filters — ArcGIS stores these as zero-padded 2-digit
+    # strings ('01', '02', etc.). Codes from vt_codes.json are '1', '2'
+    # etc. We must zero-pad AND single-quote each value in the SQL.
+    # ----------------------------------------------------------------
+    def str_in_clause(field, raw_codes_str):
+        """Build a quoted, zero-padded IN clause for a string field."""
+        codes = [str(c).strip().zfill(2) for c in raw_codes_str.split('|') if c.strip()]
+        if not codes:
+            return None
+        quoted = ','.join(f"'{c}'" for c in codes)
+        return f"{field} IN ({quoted})"
+
     # Interest type — actual field name: intPrpType
     if filters["interest"]:
-        codes = filters["interest"].split("|")
-        codes_sql = ",".join(codes)
-        clauses.append(f"intPrpType IN ({codes_sql})")
+        clause = str_in_clause("intPrpType", filters["interest"])
+        if clause: clauses.append(clause)
 
     # Building construction — check blCn1, blCn2, blCn3 (preparer can use any slot)
     if filters["building"]:
-        codes = filters["building"].split("|")
-        codes_sql = ",".join(codes)
+        codes = [str(c).strip().zfill(2) for c in filters["building"].split('|') if c.strip()]
+        quoted = ','.join(f"'{c}'" for c in codes)
         clauses.append(
-            f"(blCn1 IN ({codes_sql}) OR blCn2 IN ({codes_sql}) OR blCn3 IN ({codes_sql}))"
+            f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
         )
 
     # Seller use of property — actual field name: sUsePr
     if filters["seller_use"]:
-        codes = filters["seller_use"].split("|")
-        codes_sql = ",".join(codes)
-        clauses.append(f"sUsePr IN ({codes_sql})")
+        clause = str_in_clause("sUsePr", filters["seller_use"])
+        if clause: clauses.append(clause)
 
     # Buyer use of property — actual field name: bUsePr
     if filters["buyer_use"]:
-        codes = filters["buyer_use"].split("|")
-        codes_sql = ",".join(codes)
-        clauses.append(f"bUsePr IN ({codes_sql})")
+        clause = str_in_clause("bUsePr", filters["buyer_use"])
+        if clause: clauses.append(clause)
 
     # PTT exemption — actual field name: prTxEx
     if filters["ptt_exemption"]:
-        codes = filters["ptt_exemption"].split("|")
-        codes_sql = ",".join(codes)
-        clauses.append(f"prTxEx IN ({codes_sql})")
+        clause = str_in_clause("prTxEx", filters["ptt_exemption"])
+        if clause: clauses.append(clause)
 
     # Grand list category — actual field name: TownGlCat
     if filters["grand_list"]:
-        codes = filters["grand_list"].split("|")
-        codes_sql = ",".join(codes)
-        clauses.append(f"TownGlCat IN ({codes_sql})")
+        clause = str_in_clause("TownGlCat", filters["grand_list"])
+        if clause: clauses.append(clause)
 
     # ---------------------------------------------------------------
     # Name / SPAN / Street filters — pushed into SQL LIKE so ArcGIS
