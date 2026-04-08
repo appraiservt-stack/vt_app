@@ -2529,6 +2529,16 @@ function renderData(records){
     );
     const isCondoGroup = isCondo && sales.length > 1;
 
+    // Detect mobile home without land:
+    //   TownGrandListCategory === '3' (03 = Mobile Home Unlanded)
+    //   AND landSize is 0 or null (sale did not involve land)
+    // Show badge for ANY count (even 1) so user always knows it's a mobile home park sale.
+    const isMobileHome = sales.some(s => {
+      const glCat = String(s.TownGrandListCategory || '').replace(/^0+/, '');
+      const ls    = s.landSize;
+      return glCat === '3' && (ls === 0 || ls === null || ls === undefined);
+    });
+
     const marker = L.circleMarker([lat, lon], {
       radius:      isApprox ? 6 : 5,
       color:       markerColor,
@@ -2538,7 +2548,7 @@ function renderData(records){
       dashArray:   isApprox ? "4 3" : null
     });
 
-    // Badge marker for condo groups — overlaid number showing unit count
+    // Badge marker for condo groups — purple overlaid number showing unit count
     let badgeMarker = null;
     if(isCondoGroup){
       badgeMarker = L.marker([lat, lon], {
@@ -2551,6 +2561,27 @@ function renderData(records){
                 sales.length + '</div>',
           iconSize:   [14, 14],
           iconAnchor: [7, 7],
+        }),
+        interactive: false,
+        pane: 'markerPane'
+      });
+      markersLayer.addLayer(badgeMarker);
+    }
+
+    // Badge marker for mobile home (no land) — teal, always shown even for single sale
+    // so user knows this is a mobile home park sale without land transfer.
+    if(isMobileHome){
+      badgeMarker = L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="background:#00897B;color:#fff;border-radius:50%;' +
+                'width:14px;height:14px;font-size:9px;font-weight:bold;' +
+                'display:flex;align-items:center;justify-content:center;' +
+                'border:1px solid #fff;pointer-events:none;' +
+                'margin-left:8px;margin-top:-8px;">M' +
+                (sales.length > 1 ? sales.length : '') + '</div>',
+          iconSize:   [14, 14],
+          iconAnchor: [-2, 14],
         }),
         interactive: false,
         pane: 'markerPane'
