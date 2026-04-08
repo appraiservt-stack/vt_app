@@ -346,6 +346,13 @@
         <label>High:</label>
         <input type="number" id="landHigh" placeholder="No maximum" min="0" step="0.01">
       </div>
+      <div class="filter-row" style="margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
+          <input type="checkbox" id="noLandCheck"
+                 onchange="if(this.checked){ document.getElementById('landLow').value=''; document.getElementById('landHigh').value=''; }">
+          No land (sale did not involve land)
+        </label>
+      </div>
     </div>
 
     <!-- ===== BUILDING TYPE ===== -->
@@ -765,9 +772,8 @@ let nameSearchCache       = null;  // null when no cache; array of records when 
 let CODES = {};
 let TOWN_CENTROIDS = {}; // populated when codes load
 
-// filterApplied tracks whether the user has clicked Apply at least once.
-// Checkbox groups are always active (all checked by default on startup).
-let filterApplied = true;  // true from the start so checkboxes apply immediately
+// Checkbox group filters: unchecked = no restriction for that group.
+// Any box checked = filter to ONLY those types. No filterApplied flag needed.
 let _ptt172DlMode = false; // false = open inline in browser; true = force download
 
 // ---- Screen capture stream (held open for the session) ----
@@ -1599,6 +1605,7 @@ let markersLayer = L.layerGroup().addTo(map);
 // This layer is only refreshed when filters change — never on pan/zoom —
 // so centroid-placed dots stay visible regardless of viewport position.
 let approxLayer  = L.layerGroup().addTo(map);
+let mhLayer      = L.layerGroup().addTo(map); // mobile home collector dots
 // approxCache loaded once at startup via initApproxCache()
 // Address lookup: normalized "ADDRESS|TOWN" -> {lat, lon} for merging approx into black dots
 let addressDotLookup = {};
@@ -1888,37 +1895,29 @@ function buildFilterParams(){
   if(ll) params.set("land_low", ll);
   if(lh) params.set("land_high", lh);
 
-  // -------------------------------------------------------
-  // Checkbox groups — only send filter params if:
-  //   1. Apply has been clicked at least once (filterApplied), AND
-  //   2. Fewer than all options are checked (partial selection)
-  // On initial load, all checkbox groups are treated as "no restriction".
-  // -------------------------------------------------------
-  if(filterApplied){
-    const bldg = getCheckedCodes("buildingList");
-    if(bldg.length > 0 && bldg.length < Object.keys(CODES.building_types || {}).length)
-      params.set("building", bldg.join("|"));
+  // Checkbox groups: any checked = filter to only those types.
+  // Empty group = no restriction (param not sent to backend).
+  const bldg = getCheckedCodes("buildingList");
+  if(bldg.length > 0) params.set("building", bldg.join("|"));
 
-    const interest = getCheckedCodes("interestList");
-    if(interest.length > 0 && interest.length < Object.keys(CODES.interest_types || {}).length)
-      params.set("interest", interest.join("|"));
+  const interest = getCheckedCodes("interestList");
+  if(interest.length > 0) params.set("interest", interest.join("|"));
 
-    const su = getCheckedCodes("sellerUseList");
-    if(su.length > 0 && su.length < Object.keys(CODES.use_of_property || {}).length)
-      params.set("seller_use", su.join("|"));
+  const su = getCheckedCodes("sellerUseList");
+  if(su.length > 0) params.set("seller_use", su.join("|"));
 
-    const bu = getCheckedCodes("buyerUseList");
-    if(bu.length > 0 && bu.length < Object.keys(CODES.use_of_property || {}).length)
-      params.set("buyer_use", bu.join("|"));
+  const bu = getCheckedCodes("buyerUseList");
+  if(bu.length > 0) params.set("buyer_use", bu.join("|"));
 
-    const gl = getCheckedCodes("grandListList");
-    if(gl.length > 0 && gl.length < Object.keys(CODES.grand_list_categories || {}).length)
-      params.set("grand_list", gl.join("|"));
+  const gl = getCheckedCodes("grandListList");
+  if(gl.length > 0) params.set("grand_list", gl.join("|"));
 
-    const ptt = getCheckedCodes("pttList");
-    if(ptt.length > 0 && ptt.length < Object.keys(CODES.ptt_exemptions || {}).length)
-      params.set("ptt_exemption", ptt.join("|"));
-  }
+  const ptt = getCheckedCodes("pttList");
+  if(ptt.length > 0) params.set("ptt_exemption", ptt.join("|"));
+
+  // No Land checkbox — sends landSize=0 exact match
+  const noLand = document.getElementById("noLandCheck");
+  if(noLand && noLand.checked) params.set("no_land", "1");
 
   // Names / SPAN
   const se = document.getElementById("sellerEntity").value.trim();
@@ -1980,6 +1979,7 @@ function applyFilters(){
     .then(r => r.json())
     .then(data => {
       nameSearchCache = data.data || [];
+      renderMHCollectors(data.mhCollectors || []);
       let bounds = null;
       nameSearchCache.forEach(p => {
         if(p.lat != null && p.lon != null){
@@ -2129,7 +2129,11 @@ function loadData(){
 
     fetch("/data?" + params.toString(), { signal: ctrl.signal })
     .then(r => r.json())
-    .then(data => { _dataXhr = null; renderData(data.data || []); })
+    .then(data => {
+      _dataXhr = null;
+      renderData(data.data || []);
+      renderMHCollectors(data.mhCollectors || []);
+    })
     .catch(e => { if(e.name !== 'AbortError') console.warn('Data fetch error:', e); });
   }, 150); // 150ms debounce
 }
@@ -2465,6 +2469,7 @@ function enrichApproxSale(approxRecord, dotRef){
 // ===================================================
 function renderData(records){
   markersLayer.clearLayers();
+  mhLayer.clearLayers();  // clear mobile home collector dots on each render
   markerRefs = {};
   addressDotLookup = {};  // reset address->coords lookup on each render
   spanDotLookup    = {};  // reset SPAN->marker lookup on each render
@@ -2642,6 +2647,93 @@ function renderData(records){
   // Called here (not from onMoveEnd) so loadApproxData always sees complete
   // spanDotLookup / addressDotLookup — eliminates the pan race condition.
   loadApproxData();
+}
+
+// ===================================================
+// MOBILE HOME COLLECTOR DOTS
+// ===================================================
+
+function renderMHCollectors(collectors){
+  mhLayer.clearLayers();
+  if(!collectors || !collectors.length) return;
+
+  collectors.forEach(c => {
+    const lat   = c.lat;
+    const lon   = c.lon;
+    const sales = c.mhSales || [];
+    const count = c.mhCount || sales.length;
+    const town  = c.town || '';
+
+    // Teal dot
+    const marker = L.circleMarker([lat, lon], {
+      radius:      5,
+      color:       '#00897B',
+      fillColor:   '#00897B',
+      fillOpacity: 0,
+      weight:      2,
+    });
+
+    // Teal M-badge offset upper-right
+    const badge = L.marker([lat, lon], {
+      icon: L.divIcon({
+        className: '',
+        html: '<div style="background:#00897B;color:#fff;border-radius:50%;' +
+              'width:16px;height:16px;font-size:9px;font-weight:bold;' +
+              'display:flex;align-items:center;justify-content:center;' +
+              'border:1.5px solid #fff;pointer-events:none;">M' +
+              (count > 1 ? count : '') + '</div>',
+        iconSize:   [16, 16],
+        iconAnchor: [-2, 16],
+      }),
+      interactive: false,
+      pane: 'markerPane'
+    });
+
+    // Build popup HTML listing all sales
+    let popupHtml = '<div style="font-size:12px;font-weight:bold;margin-bottom:4px;">' +
+      '&#127968; Mobile Home Sales (no land) — ' + town + '</div>';
+    popupHtml += '<div style="font-size:10px;color:#555;margin-bottom:6px;">' +
+      count + ' sale' + (count !== 1 ? 's' : '') +
+      ' in this town within current filters. Location is approximate.</div>';
+    popupHtml += '<div style="max-height:280px;overflow-y:auto;">';
+    sales.forEach(s => {
+      const price = s.price ? '$' + Number(s.price).toLocaleString() : 'N/A';
+      const date  = s.date ? s.date.split('T')[0] : 'N/A';
+      const addr  = s.address || 'Address unknown';
+      const seller = [s.sellerLastName, s.sellerFirstName].filter(Boolean).join(', ') ||
+                     s.sellerEntityName || '';
+      const buyer  = [s.buyerLastName,  s.buyerFirstName ].filter(Boolean).join(', ') ||
+                     s.buyerEntityName  || '';
+      popupHtml += '<div style="border-top:1px solid #eee;padding:4px 0;">' +
+        '<b>' + addr + '</b><br>' +
+        date + ' &mdash; ' + price + '<br>' +
+        (seller ? 'Seller: ' + seller + '<br>' : '') +
+        (buyer  ? 'Buyer: '  + buyer  + '<br>' : '') +
+        '</div>';
+    });
+    popupHtml += '</div>';
+
+    marker.bindPopup(popupHtml, {
+      maxWidth:   420,
+      maxHeight:  480,
+      autoPan:    false,
+      keepInView: false
+    });
+    marker.on('mouseover', function(){
+      if(!hoverEnabled) return;
+      hoverTimer = setTimeout(() => marker.openPopup(), 700);
+    });
+    marker.on('mouseout', function(){
+      if(hoverTimer) clearTimeout(hoverTimer);
+    });
+    marker.on('click', function(){
+      if(hoverTimer) clearTimeout(hoverTimer);
+      marker.openPopup();
+    });
+
+    mhLayer.addLayer(marker);
+    mhLayer.addLayer(badge);
+  });
 }
 
 // ===================================================
@@ -3039,22 +3131,13 @@ function initMapEvents(){
 
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
-  // Fire initial load immediately (no debounce)
-  if(_loadDataTimer) clearTimeout(_loadDataTimer);
-  const b = map.getBounds();
-  const params = buildFilterParams();
-  const latPad = (b.getNorth() - b.getSouth()) * 0.10;
-  const lonPad = (b.getEast()  - b.getWest())  * 0.10;
-  params.set("xmin", b.getWest()  - lonPad);
-  params.set("ymin", b.getSouth() - latPad);
-  params.set("xmax", b.getEast()  + lonPad);
-  params.set("ymax", b.getNorth() + latPad);
-  document.getElementById("statusBar").textContent = "Loading...";
-  fetch("/data?" + params.toString())
-  .then(r => r.json())
-  .then(data => { renderData(data.data || []); });
+  // No dot load on startup — user must select criteria and click Apply.
+  // County boundaries load immediately to give visual context and warm up Railway.
+  document.getElementById("statusBar").textContent =
+    "Ready — select your search criteria above and click Apply Filters.";
 
-  // Fetch pre-geocoded approx records once — fast static file, filters client-side
+  // Fetch pre-geocoded approx records in the background — fast static file.
+  // Dots from approx cache will appear once the user applies filters.
   initApproxCache();
 }
 

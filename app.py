@@ -392,6 +392,7 @@ def parse_filters(args):
     # --- Land size range ---
     f["land_low"]     = args.get("land_low", "")
     f["land_high"]    = args.get("land_high", "")
+    f["no_land"]      = args.get("no_land", "")   # "1" = landSize=0 exact match
 
     # --- Street address (contains) ---
     f["street"]       = args.get("street", "").strip()
@@ -487,17 +488,21 @@ def build_where_clause(filters):
             pass
 
     # Land size range — actual field name: landSize
-    if filters["land_low"]:
-        try:
-            clauses.append(f"landSize >= {float(filters['land_low'])}")
-        except Exception:
-            pass
-
-    if filters["land_high"]:
-        try:
-            clauses.append(f"landSize <= {float(filters['land_high'])}")
-        except Exception:
-            pass
+    # no_land=1 means exact zero (sale did not involve land) — takes priority
+    # over land_low/land_high range since they are mutually exclusive.
+    if filters.get("no_land") == "1":
+        clauses.append("landSize = 0")
+    else:
+        if filters["land_low"]:
+            try:
+                clauses.append(f"landSize >= {float(filters['land_low'])}")
+            except Exception:
+                pass
+        if filters["land_high"]:
+            try:
+                clauses.append(f"landSize <= {float(filters['land_high'])}")
+            except Exception:
+                pass
 
     # Interest type — actual field name: intPrpType
     if filters["interest"]:
@@ -505,11 +510,13 @@ def build_where_clause(filters):
         codes_sql = ",".join(codes)
         clauses.append(f"intPrpType IN ({codes_sql})")
 
-    # Building construction — actual field name: blCn1
+    # Building construction — check blCn1, blCn2, blCn3 (preparer can use any slot)
     if filters["building"]:
         codes = filters["building"].split("|")
         codes_sql = ",".join(codes)
-        clauses.append(f"blCn1 IN ({codes_sql})")
+        clauses.append(
+            f"(blCn1 IN ({codes_sql}) OR blCn2 IN ({codes_sql}) OR blCn3 IN ({codes_sql}))"
+        )
 
     # Seller use of property — actual field name: sUsePr
     if filters["seller_use"]:
@@ -1348,9 +1355,66 @@ def data():
                 "buyerLastName":    rec["buyerLastName"],
                 "buyerFirstName":   rec["buyerFirstName"],
                 "buyerEntityName":  rec["buyerEntityName"],
+                # Used by mobile home collector logic and JS badge detection
+                "TownGrandListCategory": rec["TownGrandListCategory"],
+                "landSize":              rec["landSize"],
             })
 
-    return jsonify({"data": results})
+    # ----------------------------------------------------------------
+    # Mobile Home Collector dots
+    # Group all records with TownGlCat='3' AND landSize=0 by town.
+    # Each town gets one collector entry placed at a consistent offset
+    # from the town centroid (upper-right, ~0.5 miles) so it never
+    # overlaps the green centroid circle and is findable town-to-town.
+    # The JS renders these as a teal badge dot separate from normal dots.
+    # ----------------------------------------------------------------
+    mh_by_town = {}  # town_key -> list of full sale records
+    regular_results = []
+    for r in results:
+        gl_cat = str(r.get("TownGrandListCategory") or "").strip().lstrip("0") or "0"
+        land   = r.get("landSize")
+        is_mh_unlanded = (gl_cat == "3" and (land == 0 or land is None))
+        if is_mh_unlanded:
+            town_key = (r.get("trustedTown") or r.get("city") or "Unknown").title()
+            if town_key not in mh_by_town:
+                mh_by_town[town_key] = []
+            mh_by_town[town_key].append(r)
+        else:
+            regular_results.append(r)
+
+    # Build collector dot entries - one per town
+    mh_collectors = []
+    for town_key, sales in mh_by_town.items():
+        centroid = TOWN_CENTROIDS.get(town_key.upper())
+        if centroid:
+            # Offset ~0.008 deg NE (~0.5 miles) so it doesn't overlap the
+            # green centroid circle which sits at the exact centroid coords.
+            clat = centroid["lat"] + 0.008
+            clon = centroid["lon"] + 0.008
+        else:
+            # No centroid - use coords of first sale that has them, or skip
+            first_with_coords = next((s for s in sales if s.get("lat") and s.get("lon")), None)
+            if not first_with_coords:
+                # Add them to regular results as-is
+                regular_results.extend(sales)
+                continue
+            clat = first_with_coords["lat"]
+            clon = first_with_coords["lon"]
+
+        first = sales[0]
+        mh_collectors.append({
+            "isMHCollector":    True,
+            "mhSales":          sales,
+            "mhCount":          len(sales),
+            "town":             town_key,
+            "lat":              clat,
+            "lon":              clon,
+            "trustedTown":      first.get("trustedTown"),
+            "trustedCountyCode": first.get("trustedCountyCode"),
+            "trustedCountyName": first.get("trustedCountyName"),
+        })
+
+    return jsonify({"data": regular_results, "mhCollectors": mh_collectors})
 
 
 @app.route("/data/approx/all")
