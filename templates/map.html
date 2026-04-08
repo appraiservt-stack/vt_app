@@ -1972,6 +1972,8 @@ function hasNameFilter(){
 // ===================================================
 function applyFilters(){
   _userHasApplied = true; // unlock loadData() for pan/zoom after first apply
+  // Load approx cache on first Apply only (deferred from startup to keep initial load instant)
+  if(!approxCacheReady && approxCache === null) initApproxCache();
 
   // Filter results could be anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
@@ -3141,13 +3143,9 @@ function initMapEvents(){
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
   // No dot load on startup — user must select criteria and click Apply.
-  // County boundaries load immediately to give visual context and warm up Railway.
+  // Nothing hits the server until Apply is clicked.
   document.getElementById("statusBar").textContent =
     "Ready — select your search criteria above and click Apply Filters.";
-
-  // Fetch pre-geocoded approx records in the background — fast static file.
-  // Dots from approx cache will appear once the user applies filters.
-  initApproxCache();
 }
 
 loadCodes();
