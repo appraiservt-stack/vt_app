@@ -670,12 +670,33 @@ _NEEDED_FIELDS = (
     "countyCode,TOWNNAME"
 )
 
+# Full field list — used only by /ptt172 and export endpoints where all
+# fields are needed. Never used for the map /data endpoint.
+_FULL_FIELDS = (
+    "LGTEx,LGTExDesc,Latitude,Longitude,MatchMthod,OBJECTID,PTT175Atch,"
+    "PrPrVlPdTr,RlPrVlPdTr,TOWNNAME,TownBkNum,TownCtyOrT,TownGlCat,"
+    "TownGlValu,TownGlYear,TownParcID,TownPgNum,TownSpan,TownSubdiv,"
+    "ValPdOrTrn,addBuyrNam,addSellNam,bCnDUs06,bUsePr,bUsePrDesc,bUsePrExpl,"
+    "blCn1,blCn1Desc,blCn2,blCn2Desc,blCn3,blCn3Desc,blCnUnts05,blConstr20,"
+    "buyEntNam,buyFstNam,buyLstNam,buyrAdjPrp,buyerStrt,buyerCity,buyerState,buyerZip,"
+    "cUseEnCont,closeDate,countyCode,devPrevCnv,enrCrntUse,"
+    "ex99Elig,ex99TxDue,famMem,famMemDesc,financing,"
+    "GenRtTxDue,intPrpType,intPrTypOt,intUDP,intUDPdesc,landSize,"
+    "prTxEx,prTxExDesc,prResSRVal,propLocCty,propLocStr,"
+    "rntdAfter,rntdBefore,schoolCode,"
+    "SellerAcq,sellAq,sellAqDesc,sellAqOthr,sellEntNam,sellFstNam,sellLstNam,"
+    "sellerStrt,sellerCity,sellerSt,sellerZip,"
+    "span,spRteTxDue,sUsePr,sUsePrDesc,sUsePrExpl,"
+    "tenantPrch,tlSpRteDue,townCode,TotlTaxDue,TownDteRec,"
+    "VlSbjGnRte"
+)
 
-def fetch_features(where, geometry_params=None, max_records=2000):
+
+def fetch_features(where, geometry_params=None, max_records=2000, fields=None):
     """Fetch features from ArcGIS. geometry_params is optional bbox dict."""
     params = {
         "where":             where,
-        "outFields":         _NEEDED_FIELDS,
+        "outFields":         fields or _NEEDED_FIELDS,
         "f":                 "json",
         "outSR":             "4326",
         "resultRecordCount": max_records,
@@ -699,7 +720,7 @@ def fetch_features(where, geometry_params=None, max_records=2000):
         return []
 
 
-def fetch_all_features(where, geometry_params=None):
+def fetch_all_features(where, geometry_params=None, fields=None):
     """
     Page through ArcGIS results to get ALL matching records.
     Optional geometry_params adds a bbox filter to constrain the result set
@@ -713,7 +734,7 @@ def fetch_all_features(where, geometry_params=None):
     while True:
         params = {
             "where":             where,
-            "outFields":         _NEEDED_FIELDS,
+            "outFields":         fields or _NEEDED_FIELDS,
             "f":                 "json",
             "outSR":             "4326",
             "resultRecordCount": page_size,
@@ -1518,7 +1539,7 @@ def data_approx_enrich():
     except (TypeError, ValueError):
         return jsonify({"sale": None})
 
-    features = fetch_features(f"OBJECTID={obj_id_int}", max_records=1)
+    features = fetch_features(f"OBJECTID={obj_id_int}", max_records=1, fields=_FULL_FIELDS)
     if not features:
         return jsonify({"sale": None})
 
@@ -1565,7 +1586,7 @@ def data_approx():
     where   = build_where_clause(filters)
     requested_counties = set(filters["counties"].split(",")) if filters["counties"] else set()
 
-    features = fetch_all_features(where)
+    features = fetch_all_features(where, fields=_FULL_FIELDS)
 
     results = []
     for f in features:
@@ -1652,9 +1673,9 @@ def _export_inner():
     if selected_ids:
         ids_sql = ",".join(selected_ids)
         where = f"({where}) AND OBJECTID IN ({ids_sql})"
-        features = fetch_features(where, max_records=len(selected_ids) + 10)
+        features = fetch_features(where, max_records=len(selected_ids) + 10, fields=_FULL_FIELDS)
     else:
-        features = fetch_all_features(where)
+        features = fetch_all_features(where, fields=_FULL_FIELDS)
 
     records = []
     for f in features:
@@ -2038,7 +2059,7 @@ def _export_grouped_inner():
             continue
         ids_sql  = ",".join(ids)
         where    = f"OBJECTID IN ({ids_sql})"
-        features = fetch_features(where, max_records=len(ids) + 10)
+        features = fetch_features(where, max_records=len(ids) + 10, fields=_FULL_FIELDS)
         recs = []
         for f in features:
             rec = feature_to_record(f, filters)
@@ -2259,7 +2280,7 @@ def search_address():
         f"UPPER(propLocStr) LIKE '{safe_addr}%' "
         f"AND propLocCty = '{safe_town}'"
     )
-    features = fetch_all_features(where)
+    features = fetch_all_features(where, fields=_FULL_FIELDS)
 
     # Use empty filters so no date/price/type filtering is applied
     empty_filters = {k: "" for k in [
@@ -2318,7 +2339,7 @@ def history():
 
     # Primary fetch: all records matching this SPAN
     where = f"CAST(span AS VARCHAR(20)) LIKE '%{span_raw}%'"
-    features = fetch_all_features(where)
+    features = fetch_all_features(where, fields=_FULL_FIELDS)
 
     # Parse filters without date range so all sales are returned
     empty_filters = {k: "" for k in [
@@ -2364,7 +2385,7 @@ def ptt172_preview():
     if not rec_id:
         return jsonify({"error": "Missing id"}), 400
 
-    features = fetch_features(f"OBJECTID = {rec_id}", max_records=1)
+    features = fetch_features(f"OBJECTID = {rec_id}", max_records=1, fields=_FULL_FIELDS)
     if not features:
         return jsonify({"error": "Record not found"}), 404
 
@@ -2503,7 +2524,7 @@ def ptt172(filename=None):  # noqa: C901
         return jsonify({"error": "Missing id parameter"}), 400
 
     where    = f"OBJECTID = {rec_id}"
-    features = fetch_features(where, max_records=1)
+    features = fetch_features(where, max_records=1, fields=_FULL_FIELDS)
     if not features:
         return jsonify({"error": "Record not found"}), 404
 
