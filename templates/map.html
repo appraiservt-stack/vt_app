@@ -775,9 +775,7 @@ let TOWN_CENTROIDS = {}; // populated when codes load
 // Checkbox group filters: unchecked = no restriction for that group.
 // Any box checked = filter to ONLY those types. No filterApplied flag needed.
 
-// Gate: loadData() does nothing until the user clicks Apply at least once.
-// This prevents Railway from doing a heavy statewide fetch on page load.
-let _userHasApplied = false;
+// loadData() fires freely — statewide 6-month load on startup is fast enough.
 let _ptt172DlMode = false; // false = open inline in browser; true = force download
 
 // ---- Screen capture stream (held open for the session) ----
@@ -1971,9 +1969,6 @@ function hasNameFilter(){
 // APPLY FILTERS
 // ===================================================
 function applyFilters(){
-  _userHasApplied = true; // unlock loadData() for pan/zoom after first apply
-  // Load approx cache on first Apply only (deferred from startup to keep initial load instant)
-  if(!approxCacheReady && approxCache === null) initApproxCache();
 
   // Filter results could be anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
@@ -2108,9 +2103,6 @@ let _dataXhr = null;  // cancel in-flight data request on new move
 let _loadDataTimer = null; // debounce timer
 
 function loadData(){
-  // Don't load until the user has clicked Apply at least once.
-  if(!_userHasApplied) return;
-
   // If a name search cache is active, just re-render from it (no new fetch)
   if(nameSearchCache !== null){
     renderData(nameSearchCache);
@@ -3133,19 +3125,19 @@ function initMapEvents(){
     // Only set if both fields are currently empty (don't override a saved state)
     if(!df.value && !dt.value){
       const today = new Date();
-      const oneYearAgo = new Date(today);
-      oneYearAgo.setFullYear(today.getFullYear() - 1);
-      df.value = oneYearAgo.toISOString().split('T')[0];
+      const sixMonthsAgo = new Date(today);
+      sixMonthsAgo.setMonth(today.getMonth() - 6);
+      df.value = sixMonthsAgo.toISOString().split('T')[0];
       // Leave dateTo blank so it defaults to "now" with no upper bound
     }
   })();
 
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
-  // No dot load on startup — user must select criteria and click Apply.
-  // Nothing hits the server until Apply is clicked.
-  document.getElementById("statusBar").textContent =
-    "Ready — select your search criteria above and click Apply Filters.";
+  // Fire statewide 6-month load immediately on startup
+  loadData();
+  // Fetch pre-geocoded approx records once at startup
+  initApproxCache();
 }
 
 loadCodes();
