@@ -37,7 +37,8 @@ CHUNK_SIZE = 500  # OBJECTIDs per ArcGIS query (safe limit)
 def fetch_existing_objectids(objectids):
     """
     Given a list of OBJECTIDs, return the subset that still exist in ArcGIS.
-    Queries in chunks to stay within URL limits.
+    Uses POST requests to avoid URL length limits (GET with 500 IDs exceeds
+    ArcGIS server limits and returns an empty response, not an error).
     """
     existing = set()
     total = len(objectids)
@@ -45,14 +46,15 @@ def fetch_existing_objectids(objectids):
     for i in range(0, total, CHUNK_SIZE):
         chunk = objectids[i:i + CHUNK_SIZE]
         id_list = ','.join(str(x) for x in chunk)
-        params = {
-            "where":             f"OBJECTID IN ({id_list})",
-            "outFields":         "OBJECTID",
-            "returnIdsOnly":     "true",
-            "f":                 "json",
+        # POST avoids URL length limits that silently break large GET requests
+        payload = {
+            "where":         f"OBJECTID IN ({id_list})",
+            "outFields":     "OBJECTID",
+            "returnIdsOnly": "true",
+            "f":             "json",
         }
         try:
-            r = requests.get(PTT_URL, params=params, timeout=30)
+            r = requests.post(PTT_URL, data=payload, timeout=30)
             data = r.json()
             if data.get("error"):
                 print(f"  ArcGIS error on chunk {i//CHUNK_SIZE + 1}: {data['error']}")
