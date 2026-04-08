@@ -2678,9 +2678,14 @@ function buildPopupHTML(p, sales, historySales){
   const headerTown = p.trustedTown || p.city || '';
   if(headerTown)
     header += `<i>${headerTown}, ${p.trustedCountyName || ''}</i><br>`;
-  // Show appropriate warning based on location accuracy
-  const hasCentroid  = sales.some(s => s.isCentroid === true);
-  const hasGeocoded  = sales.some(s => s.approxLocation && s.isCentroid === false);
+  // Show approximate location warning only when the PRIMARY sale record
+  // (the one whose coordinates placed the dot) has approxLocation=true.
+  // Do NOT show the warning just because a merged approx sale is in the
+  // history array — that would wrongly label precise ArcGIS dots as approximate.
+  const primarySale  = sales[0];
+  const hasCentroid  = primarySale && primarySale.isCentroid === true;
+  const hasGeocoded  = primarySale && primarySale.approxLocation && !primarySale.isCentroid
+                       && primarySale.preciselyCoded === false;
   if(hasCentroid)
     header += `<span style="font-size:10px;color:#2e7d32;">&#9888; Approximate location (town center) &mdash; could not determine specific address.</span><br>`;
   else if(hasGeocoded)
