@@ -656,23 +656,16 @@ def apply_python_filters(record, filters):
 
 # Only the ArcGIS fields actually used by app.py — omitting 41 unused fields
 # cuts payload size by ~47% and speeds up ArcGIS response + JSON parsing.
+# Slim map-tier fields — only what's needed to place dots, build badges,
+# and show the hover popup preview (price, date, address, type, interest).
+# Full PTT-172 detail is fetched on demand via /ptt172 when user clicks.
+# Reduces /data payload from ~5.5 MB to ~600 KB for a typical county load.
 _NEEDED_FIELDS = (
-    "LGTEx,LGTExDesc,Latitude,Longitude,MatchMthod,OBJECTID,PTT175Atch,"
-    "PrPrVlPdTr,RlPrVlPdTr,TOWNNAME,TownBkNum,TownCtyOrT,TownGlCat,"
-    "TownGlValu,TownGlYear,TownParcID,TownPgNum,TownSpan,TownSubdiv,"
-    "ValPdOrTrn,addBuyrNam,addSellNam,bCnDUs06,bUsePr,bUsePrDesc,bUsePrExpl,"
-    "blCn1,blCn1Desc,blCn2,blCn2Desc,blCn3,blCn3Desc,blCnUnts05,blConstr20,"
-    "buyEntNam,buyFstNam,buyLstNam,buyrAdjPrp,buyerStrt,buyerCity,buyerState,buyerZip,"
-    "cUseEnCont,closeDate,countyCode,devPrevCnv,enrCrntUse,"
-    "ex99Elig,ex99TxDue,famMem,famMemDesc,financing,"
-    "GenRtTxDue,intPrpType,intPrTypOt,intUDP,intUDPdesc,landSize,"
-    "prTxEx,prTxExDesc,prResSRVal,propLocCty,propLocStr,"
-    "rntdAfter,rntdBefore,schoolCode,"
-    "SellerAcq,sellAq,sellAqDesc,sellAqOthr,sellEntNam,sellFstNam,sellLstNam,"
-    "sellerStrt,sellerCity,sellerSt,sellerZip,"
-    "span,spRteTxDue,sUsePr,sUsePrDesc,sUsePrExpl,"
-    "tenantPrch,tlSpRteDue,townCode,TotlTaxDue,TownDteRec,"
-    "VlSbjGnRte"
+    "OBJECTID,propLocStr,propLocCty,Latitude,Longitude,MatchMthod,"
+    "span,schoolCode,ValPdOrTrn,closeDate,"
+    "blCn1,blCn1Desc,blCn2,blCn3,TownGlCat,landSize,"
+    "intUDPdesc,intPrpType,"
+    "countyCode,TOWNNAME"
 )
 
 
@@ -1312,6 +1305,7 @@ def data():
             if str(actual_county).zfill(2) not in requested_counties:
                 continue  # Wrong county — drop
         results.append({
+                # Core map fields — kept minimal for fast payload
                 "id":               rec["id"],
                 "address":          rec["address"],
                 "city":             rec["city"],
@@ -1325,39 +1319,17 @@ def data():
                 "schoolCode":        rec["schoolCode"],
                 "span":              rec["span"],
                 "correctedCounty":   rec["correctedCounty"],
-                # Extra fields for popup display and tooltips
-                "interestUndivPercentDesc": rec["interestUndivPercentDesc"],
+                "approxLocation":    rec["approxLocation"],
+                "isCentroid":        rec.get("isCentroid", rec["approxLocation"]),
+                # Popup preview fields
                 "buildingConstruction1Desc": rec["buildingConstruction1Desc"],
-                "sellerUseOfPropertyDesc": rec["sellerUseOfPropertyDesc"],
-                "buyerUseOfPropertyDesc":  rec["buyerUseOfPropertyDesc"],
-                # Code fields for tooltip display
-                "propertyTaxExemption":    rec["propertyTaxExemption"],
-                "propertyTaxExemptionDesc": rec["propertyTaxExemptionDesc"],
-                "familyMember":            rec["familyMember"],
-                "familyMemberDesc":        rec["familyMemberDesc"],
-                "LGTExemption":            rec["LGTExemption"],
-                "LGTExemptionDesc":        rec["LGTExemptionDesc"],
-                "sellerAcquire":           rec["sellerAcquire"],
-                "sellerAcquireDesc":       rec["sellerAcquireDesc"],
-                "interestPropertyType":    rec["interestPropertyType"],
-                "buildingConstruction1":   rec["buildingConstruction1"],
-                "buildingConstruction2":   rec["buildingConstruction2"],
-                "buildingConstruction2Desc": rec["buildingConstruction2Desc"],
-                "buildingConstruction3":   rec["buildingConstruction3"],
-                "buildingConstruction3Desc": rec["buildingConstruction3Desc"],
-                "sellerUseOfProperty":     rec["sellerUseOfProperty"],
-                "buyerUseOfProperty":      rec["buyerUseOfProperty"],
-                "approxLocation":          rec["approxLocation"],
-                "isCentroid":              rec.get("isCentroid", rec["approxLocation"]),
-                "sellerLastName":   rec["sellerLastName"],
-                "sellerFirstName":  rec["sellerFirstName"],
-                "sellerEntityName": rec["sellerEntityName"],
-                "buyerLastName":    rec["buyerLastName"],
-                "buyerFirstName":   rec["buyerFirstName"],
-                "buyerEntityName":  rec["buyerEntityName"],
-                # Used by mobile home collector logic and JS badge detection
-                "TownGrandListCategory": rec["TownGrandListCategory"],
-                "landSize":              rec["landSize"],
+                "interestUndivPercentDesc":  rec["interestUndivPercentDesc"],
+                # Badge detection fields
+                "buildingConstruction1":  rec["buildingConstruction1"],
+                "buildingConstruction2":  rec["buildingConstruction2"],
+                "buildingConstruction3":  rec["buildingConstruction3"],
+                "TownGrandListCategory":  rec["TownGrandListCategory"],
+                "landSize":               rec["landSize"],
             })
 
     # ----------------------------------------------------------------
