@@ -1663,7 +1663,11 @@ function loadCodes(){
     buildCheckboxList('buyerUseList',  CODES.use_of_property);
     buildCheckboxList('grandListList', CODES.grand_list_categories);
     buildCheckboxList('pttList',       CODES.ptt_exemptions);
-    // Now safe to start the map
+    // Pre-check startup defaults: Single Family (2) + Fee Simple (1)
+    // All other checkboxes remain unchecked.
+    setCheckedCode('buildingList', '2');  // Single Family Dwelling
+    setCheckedCode('interestList', '1');  // Fee Simple
+    // Now safe to start the map — fires loadData() with defaults applied
     initMapEvents();
   });
 }
@@ -1680,6 +1684,12 @@ function buildCheckboxList(containerId, codesObj){
     div.innerHTML = `<label><input type="checkbox" data-code="${code}"> ${desc}</label>`;
     el.appendChild(div);
   });
+}
+
+// Check a single checkbox by its data-code value within a container.
+function setCheckedCode(containerId, code){
+  const el = document.querySelector(`#${containerId} input[data-code="${code}"]`);
+  if(el) el.checked = true;
 }
 
 function checkAllIn(containerId){
@@ -2443,8 +2453,16 @@ function loadApproxData(){
     sales.forEach(s => { markerRefs[s.id] = entry; });
     _approxVisible[key] = entry;
 
-    // Condo badge for approx layer dots — exclude timeshares
-    const approxIsCondo = sales.some(s =>
+    // Approx badge visibility uses same active filter sets as markersLayer
+    const _abldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
+    const _aint     = new Set(getCheckedCodes('interestList').map(c => c.padStart(2,'0')));
+    const _agl      = new Set(getCheckedCodes('grandListList').map(c => c.padStart(2,'0')));
+    const _noLand   = document.getElementById('noLandCheck')?.checked || false;
+    const _condoSel = _abldg.has('05');
+    const _mhSel    = _noLand || _agl.has('03');
+
+    // Condo badge for approx layer dots — exclude timeshares, only when condo selected
+    const approxIsCondo = _condoSel && sales.some(s =>
       String(s.buildingConstruction1 || '').replace(/^0+/,'') === '5' &&
       String(s.intPrpType || '').replace(/^0+/,'') !== '5'
     );
@@ -2465,8 +2483,8 @@ function loadApproxData(){
       approxLayer.addLayer(condoBadge);
     }
 
-    // Mobile home badge for approx layer dots
-    const approxIsMH = sales.some(s => {
+    // Mobile home badge for approx layer dots — only when MH filter active
+    const approxIsMH = _mhSel && sales.some(s => {
       const gl = String(s.TownGrandListCategory || '').replace(/^0+/,'');
       return gl === '3' && (s.landSize === 0 || s.landSize == null);
     });
@@ -2653,19 +2671,25 @@ function renderData(records){
                       : isApprox   ? "#e65c00"
                       : baseColor;
 
-    // Detect condo group: multiple sales with blCn1='5' AND not timeshare.
-    // Timeshares are excluded — they have their own gold collector dot.
-    const isCondo = sales.some(s =>
+    // Active filter sets — used for badge visibility
+    const activeBldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
+    const activeInterest = new Set(getCheckedCodes('interestList').map(c => c.padStart(2,'0')));
+    const activeGL      = new Set(getCheckedCodes('grandListList').map(c => c.padStart(2,'0')));
+    const noLandActive  = document.getElementById('noLandCheck')?.checked || false;
+    const condoSelected = activeBldg.has('05');
+    const tsSelected    = activeInterest.has('05');
+    const mhSelected    = noLandActive || activeGL.has('03');
+
+    // Detect condo group: multiple sales with blCn1='5' AND not timeshare
+    // AND condo is in the active building type filter.
+    const isCondo = condoSelected && sales.some(s =>
       String(s.buildingConstruction1 || s.blCn1 || '').replace(/^0+/, '') === '5' &&
       String(s.intPrpType || '').replace(/^0+/, '') !== '5'
     );
     const isCondoGroup = isCondo && sales.length > 1;
 
-    // Detect mobile home without land:
-    //   TownGrandListCategory === '3' (03 = Mobile Home Unlanded)
-    //   AND landSize is 0 or null (sale did not involve land)
-    // Show badge for ANY count (even 1) so user always knows it's a mobile home park sale.
-    const isMobileHome = sales.some(s => {
+    // Mobile home without land badge — only when No Land or Grand List 03 is selected.
+    const isMobileHome = mhSelected && sales.some(s => {
       const glCat = String(s.TownGrandListCategory || '').replace(/^0+/, '');
       const ls    = s.landSize;
       return glCat === '3' && (ls === 0 || ls === null || ls === undefined);
@@ -3152,7 +3176,8 @@ function openPopupWithHistory(marker, p, sales){
   )];
   if(!spans.length) return;
 
-  // Determine if this is a timeshare popup
+  // Determine if this is a timeshare popup.
+  // intPrpType is now served in both /data (slim) and /data/approx/all.
   const isTimeshare = sales.some(s =>
     String(s.intPrpType || '').replace(/^0+/,'') === '5'
   );

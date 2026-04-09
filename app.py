@@ -1361,6 +1361,7 @@ def data():
                 "buildingConstruction3":  rec["buildingConstruction3"],
                 "TownGrandListCategory":  rec["TownGrandListCategory"],
                 "landSize":               rec["landSize"],
+                "intPrpType":             rec["interestPropertyType"],
             })
 
     # ----------------------------------------------------------------
