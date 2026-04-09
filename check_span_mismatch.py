@@ -30,25 +30,14 @@ PTT_URL = (
 )
 
 def normalize_span(raw):
-    """
-    Normalize a SPAN to a consistent format for comparison.
-    Handles both formats:
-      - 11-digit raw:  44113911228
-      - Dashed format: 441-139-11228
-    Returns the dashed format, or None if invalid.
-    """
+    """Both span and TownSpan are stored as raw 11-digit strings in ArcGIS.
+    Just strip whitespace — no dash conversion needed."""
     if not raw:
         return None
-    s = str(raw).strip().replace("-", "").replace(" ", "")
-    if not s.isdigit():
+    s = str(raw).strip()
+    if not s:
         return None
-    if len(s) == 11:
-        return f"{s[:3]}-{s[3:6]}-{s[6:]}"
-    if len(s) == 10:
-        # Some older records are 10 digits — pad to 11
-        s = s.zfill(11)
-        return f"{s[:3]}-{s[3:6]}-{s[6:]}"
-    return None
+    return s
 
 
 def fetch_page(offset, page_size=2000):
@@ -154,8 +143,9 @@ def main():
     print(f"Output saved to: {OUTPUT_FILE}")
     print()
     print("Column definitions:")
-    print("  Section_C_SPAN  — SPAN entered by preparer in Section C of PTT-172")
-    print("  TownClerk_SPAN  — SPAN entered by town clerk")
+    print("  Section_C_SPAN  — SPAN entered by preparer in Section C (raw 11-digit)")
+    print("  TownClerk_SPAN  — SPAN entered by town clerk (raw 11-digit)")
+    print("  Both are direct string comparisons — no normalization applied.")
     print("  A mismatch may indicate a data entry error, re-parceling, or")
     print("  a condo/timeshare where the unit SPAN differs from the land SPAN.")
 
