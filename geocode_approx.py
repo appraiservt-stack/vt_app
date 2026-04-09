@@ -549,7 +549,7 @@ def fetch_all_approx(school_to_town, town_to_county):
     while True:
         params = {
             "where":             "ValPdOrTrn > 0",
-            "outFields":         "OBJECTID,span,propLocStr,propLocCty,schoolCode,Latitude,Longitude,MatchMthod,"
+            "outFields":         "OBJECTID,span,propLocStr,propLocCty,TOWNNAME,schoolCode,Latitude,Longitude,MatchMthod,"
                                  "intPrpType,blCn1,blCn2,blCn3,TownGlCat,sUsePr,bUsePr,prTxEx,landSize,closeDate,ValPdOrTrn",
             "f":                 "json",
             "outSR":             "4326",
@@ -591,6 +591,23 @@ def fetch_all_approx(school_to_town, town_to_county):
             school_town    = school_to_town.get(sc_int)
             trusted_county = town_to_county.get(school_town) if school_town else None
             prop_loc_city  = (a.get("propLocCty") or "").strip().title()
+            arcgis_townname = (a.get("TOWNNAME") or "").strip().title()
+
+            # If TOWNNAME or propLocCty disagrees with school_town, trust the
+            # explicit town fields over the school code lookup. School codes
+            # are sometimes entered incorrectly (e.g. Chelsea code on a
+            # Cavendish property). propLocCty/TOWNNAME are more reliable.
+            if arcgis_townname and school_town and arcgis_townname != school_town:
+                resolved = town_to_county.get(arcgis_townname)
+                if resolved:
+                    school_town    = arcgis_townname
+                    trusted_county = resolved
+            elif prop_loc_city and school_town and prop_loc_city != school_town:
+                resolved = town_to_county.get(prop_loc_city)
+                if resolved:
+                    school_town    = prop_loc_city
+                    trusted_county = resolved
+
             geocode_town   = prop_loc_city if prop_loc_city else (school_town or "")
             match_method   = a.get("MatchMthod") or ""
 

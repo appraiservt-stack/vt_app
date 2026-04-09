@@ -87,6 +87,24 @@ data['387151'] = {
     'note': 'Vacant land lot, no house number. Geocoded to road centerline via Nominatim.',
 }
 
+# ── OID 286176: Old Bailey Road, Cavendish — wrong schoolCode (044=Chelsea) ─
+# ArcGIS has schoolCode='044' (Chelsea) but TOWNNAME='Cavendish'.
+# trustedTown was set to Chelsea causing wrong centroid placement.
+# Coords from ArcGIS geometry: lat=43.35583660000003, lon=-72.64897219999995
+# (MatchMthod='Property Address (Composite)' so coords are reliable)
+data['286176'] = {
+    'lat': 43.35583660000003,
+    'lon': -72.64897219999995,
+    'address': 'OLD BAILEY ROAD',
+    'city': 'Cavendish',
+    'trustedTown': 'Cavendish',
+    'trustedCountyCode': '14',
+    'trustedCountyName': 'Windsor',
+    'method': 'manual_sibling',
+    'geocoded_at': '2026-04-09',
+    'note': 'schoolCode=044 (Chelsea) is wrong in ArcGIS. TOWNNAME=Cavendish is correct.',
+}
+
 with open(OUTPUT, 'w') as f:
     json.dump(data, f, indent=2)
 
@@ -94,4 +112,5 @@ print('Done.')
 print('  Fixed 213103 and 260586 (76 VT Route 12A units)')
 print('  Fixed 163338 and 282392 (2232 VT Route 14 → Randolph)')
 print('  Fixed 387151 (Lot 10 South Hill Road, Stockbridge)')
+print('  Fixed 286176 (Old Bailey Road, Cavendish — wrong schoolCode 044=Chelsea)')
 print('Total records:', len(data))
