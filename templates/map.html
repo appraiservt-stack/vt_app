@@ -2273,27 +2273,34 @@ function loadApproxData(){
       if(lh < Infinity && (p.landSize || 0) > lh) return false;
     }
 
-    // Checkbox filters — only apply if field is stored (non-null)
-    // If field is null in cache, record passes (unknown = include)
-    if(fInterest.length && p.intPrpType != null){
+    // Checkbox filters — if a filter is active and the field is null
+    // (not stored in cache), exclude the record. Unknown type should not
+    // pass a type filter — it would show incorrect results.
+    if(fInterest.length){
+      if(p.intPrpType == null) return false;
       if(!fInterest.includes(String(p.intPrpType).padStart(2,'0'))) return false;
     }
-    if(fBuilding.length && (p.buildingConstruction1 != null || p.buildingConstruction2 != null || p.buildingConstruction3 != null)){
+    if(fBuilding.length){
       const bldgCodes = [
         p.buildingConstruction1, p.buildingConstruction2, p.buildingConstruction3
       ].filter(Boolean).map(c => String(c).padStart(2,'0'));
-      if(bldgCodes.length && !fBuilding.some(c => bldgCodes.includes(c))) return false;
+      if(!bldgCodes.length) return false; // null = exclude when filter active
+      if(!fBuilding.some(c => bldgCodes.includes(c))) return false;
     }
-    if(fSellerUse.length && p.sellerUseOfProperty != null){
+    if(fSellerUse.length){
+      if(p.sellerUseOfProperty == null) return false;
       if(!fSellerUse.includes(String(p.sellerUseOfProperty).padStart(2,'0'))) return false;
     }
-    if(fBuyerUse.length && p.buyerUseOfProperty != null){
+    if(fBuyerUse.length){
+      if(p.buyerUseOfProperty == null) return false;
       if(!fBuyerUse.includes(String(p.buyerUseOfProperty).padStart(2,'0'))) return false;
     }
-    if(fPttEx.length && p.propertyTaxExemption != null){
+    if(fPttEx.length){
+      if(p.propertyTaxExemption == null) return false;
       if(!fPttEx.includes(String(p.propertyTaxExemption).padStart(2,'0'))) return false;
     }
-    if(fGrandList.length && p.TownGrandListCategory != null){
+    if(fGrandList.length){
+      if(p.TownGrandListCategory == null) return false;
       if(!fGrandList.includes(String(p.TownGrandListCategory).padStart(2,'0'))) return false;
     }
 
