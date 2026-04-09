@@ -1523,7 +1523,56 @@ def data_approx_all():
             "buyerFirstName": None,
             "buyerEntityName": None,
         })
-    return jsonify({"data": results})
+    # ----------------------------------------------------------------
+    # Timeshare Collector dots
+    # Group centroid-fallback timeshare records (intPrpType='05',
+    # isCentroid=True) by town into single collector dots.
+    # Rendering hundreds of overlapping markers at the same centroid
+    # point kills Leaflet performance (762 markers in Stowe alone).
+    # One dot per town with a count badge replaces them all.
+    # Records with real coords (preciselyCoded=True) stay as individual dots.
+    # ----------------------------------------------------------------
+    ts_by_town   = {}  # town_key -> list of result records
+    regular_results = []
+    for r in results:
+        int_type = str(r.get("intPrpType") or "").lstrip("0") or "0"
+        is_ts_centroid = (int_type == "5" and r.get("isCentroid") is True)
+        if is_ts_centroid:
+            town_key = (r.get("trustedTown") or r.get("city") or "Unknown").title()
+            ts_by_town.setdefault(town_key, []).append(r)
+        else:
+            regular_results.append(r)
+
+    ts_collectors = []
+    for town_key, sales in ts_by_town.items():
+        centroid = TOWN_CENTROIDS.get(town_key.upper())
+        if centroid:
+            # Offset slightly SW of centroid so it doesn't overlap
+            # the green centroid circle (which sits at exact centroid)
+            clat = centroid["lat"] - 0.008
+            clon = centroid["lon"] - 0.008
+        else:
+            first = next((s for s in sales if s.get("lat") and s.get("lon")), None)
+            if not first:
+                regular_results.extend(sales)
+                continue
+            clat = first["lat"]
+            clon = first["lon"]
+
+        first = sales[0]
+        ts_collectors.append({
+            "isTSCollector":    True,
+            "tsSales":          sales,
+            "tsCount":          len(sales),
+            "town":             town_key,
+            "lat":              clat,
+            "lon":              clon,
+            "trustedTown":      first.get("trustedTown"),
+            "trustedCountyCode": first.get("trustedCountyCode"),
+            "trustedCountyName": first.get("trustedCountyName"),
+        })
+
+    return jsonify({"data": regular_results, "tsCollectors": ts_collectors})
 
 
 @app.route("/data/approx/enrich")
