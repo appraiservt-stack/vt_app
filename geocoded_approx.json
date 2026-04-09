@@ -514,7 +514,18 @@
     "trustedCountyCode": "12",
     "trustedCountyName": "Washington",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "1",
+    "sUsePr": "9",
+    "bUsePr": "9",
+    "prTxEx": "18",
+    "landSize": 1.11,
+    "closeDate": 1548219600000,
+    "ValPdOrTrn": 246300
   },
   "152472": {
     "lat": 43.7298264,
@@ -525,7 +536,18 @@
     "trustedCountyCode": "14",
     "trustedCountyName": "Windsor",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "20",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "2",
+    "sUsePr": "1",
+    "bUsePr": "9",
+    "prTxEx": "0",
+    "landSize": 37.5,
+    "closeDate": 1561698000000,
+    "ValPdOrTrn": 1
   },
   "152475": {
     "lat": 43.085419452967336,
@@ -536,7 +558,18 @@
     "trustedCountyCode": "02",
     "trustedCountyName": "Bennington",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "3",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "15",
+    "sUsePr": "2",
+    "bUsePr": "2",
+    "prTxEx": "0",
+    "landSize": 6.3,
+    "closeDate": 1563944400000,
+    "ValPdOrTrn": 82000
   },
   "152478": {
     "lat": 43.47628692018535,
@@ -547,7 +580,18 @@
     "trustedCountyCode": "14",
     "trustedCountyName": "Windsor",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "3",
+    "blCn1": "1",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "15",
+    "sUsePr": "3",
+    "bUsePr": "9",
+    "prTxEx": "0",
+    "landSize": 0.24,
+    "closeDate": 1571374800000,
+    "ValPdOrTrn": 1
   },
   "152479": {
     "lat": null,
@@ -558,7 +602,18 @@
     "trustedCountyCode": "12",
     "trustedCountyName": "Washington",
     "method": null,
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "5",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "13",
+    "sUsePr": "2",
+    "bUsePr": "2",
+    "prTxEx": "0",
+    "landSize": 0,
+    "closeDate": 1546232400000,
+    "ValPdOrTrn": 55000
   },
   "152482": {
     "lat": 44.5541354,
@@ -569,7 +624,18 @@
     "trustedCountyCode": "04",
     "trustedCountyName": "Chittenden",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "5",
+    "sUsePr": "2",
+    "bUsePr": "1",
+    "prTxEx": "0",
+    "landSize": 0.01,
+    "closeDate": 1568696400000,
+    "ValPdOrTrn": 500000
   },
   "152484": {
     "lat": null,
@@ -580,7 +646,18 @@
     "trustedCountyCode": "08",
     "trustedCountyName": "Lamoille",
     "method": null,
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "20",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "13",
+    "sUsePr": "2",
+    "bUsePr": "2",
+    "prTxEx": "0",
+    "landSize": 0,
+    "closeDate": 1559538000000,
+    "ValPdOrTrn": 8400
   },
   "152485": {
     "lat": 42.758455382820806,
@@ -591,7 +668,18 @@
     "trustedCountyCode": "13",
     "trustedCountyName": "Windham",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "1",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "2",
+    "sUsePr": "3",
+    "bUsePr": "3",
+    "prTxEx": "0",
+    "landSize": 56.26,
+    "closeDate": 1577077200000,
+    "ValPdOrTrn": 140650
   },
   "152486": {
     "lat": 43.18985746419762,
@@ -602,7 +690,18 @@
     "trustedCountyCode": "13",
     "trustedCountyName": "Windham",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "5",
+    "sUsePr": "9",
+    "bUsePr": "1",
+    "prTxEx": "0",
+    "landSize": 1.5,
+    "closeDate": 1565845200000,
+    "ValPdOrTrn": 136000
   },
   "152488": {
     "lat": 44.31109735123003,
@@ -613,7 +712,18 @@
     "trustedCountyCode": "03",
     "trustedCountyName": "Caledonia",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "2",
+    "sUsePr": "2",
+    "bUsePr": "2",
+    "prTxEx": "0",
+    "landSize": 10.1,
+    "closeDate": 1569560400000,
+    "ValPdOrTrn": 296500
   },
   "152491": {
     "lat": 42.79887302226557,
@@ -624,7 +734,18 @@
     "trustedCountyCode": "02",
     "trustedCountyName": "Bennington",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "2",
+    "sUsePr": "2",
+    "bUsePr": "1",
+    "prTxEx": "0",
+    "landSize": 12.12,
+    "closeDate": 1565326800000,
+    "ValPdOrTrn": 290000
   },
   "152493": {
     "lat": 44.6126657389982,
@@ -635,7 +756,18 @@
     "trustedCountyCode": "08",
     "trustedCountyName": "Lamoille",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "1",
+    "sUsePr": "1",
+    "bUsePr": "1",
+    "prTxEx": "0",
+    "landSize": 5,
+    "closeDate": 1565240400000,
+    "ValPdOrTrn": 228000
   },
   "152494": {
     "lat": 44.32734153036435,
@@ -646,7 +778,18 @@
     "trustedCountyCode": "12",
     "trustedCountyName": "Washington",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "2",
+    "sUsePr": "1",
+    "bUsePr": "1",
+    "prTxEx": "19",
+    "landSize": 11.1,
+    "closeDate": 1554872400000,
+    "ValPdOrTrn": 50000
   },
   "152495": {
     "lat": 44.0916875,
@@ -657,7 +800,18 @@
     "trustedCountyCode": "09",
     "trustedCountyName": "Orange",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "2",
+    "sUsePr": "1",
+    "bUsePr": "4",
+    "prTxEx": "0",
+    "landSize": 179.2,
+    "closeDate": 1574053200000,
+    "ValPdOrTrn": 400000
   },
   "152496": {
     "lat": 44.8789517586713,
@@ -668,7 +822,18 @@
     "trustedCountyCode": "10",
     "trustedCountyName": "Orleans",
     "method": "span",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "1",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "15",
+    "sUsePr": "3",
+    "bUsePr": "3",
+    "prTxEx": "0",
+    "landSize": 15,
+    "closeDate": 1559883600000,
+    "ValPdOrTrn": 60000
   },
   "152511": {
     "lat": 44.93330332184543,
@@ -3784,7 +3949,18 @@
     "trustedCountyCode": "09",
     "trustedCountyName": "Orange",
     "method": null,
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "4",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "4",
+    "sUsePr": "1",
+    "bUsePr": "1",
+    "prTxEx": "0",
+    "landSize": 0,
+    "closeDate": 1549342800000,
+    "ValPdOrTrn": 11500
   },
   "158265": {
     "lat": null,
@@ -16054,7 +16230,18 @@
     "trustedCountyCode": "04",
     "trustedCountyName": "Chittenden",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "8",
+    "blCn1": "4",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "3",
+    "sUsePr": "1",
+    "bUsePr": "9",
+    "prTxEx": "0",
+    "landSize": 0,
+    "closeDate": 1594789200000,
+    "ValPdOrTrn": 8000
   },
   "182368": {
     "lat": null,
@@ -16778,7 +16965,18 @@
     "trustedCountyCode": "10",
     "trustedCountyName": "Orleans",
     "method": null,
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "1",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "3",
+    "sUsePr": "2",
+    "bUsePr": "7",
+    "prTxEx": "0",
+    "landSize": 1,
+    "closeDate": 1598590800000,
+    "ValPdOrTrn": 25900
   },
   "183679": {
     "lat": null,
@@ -17433,7 +17631,18 @@
     "trustedCountyCode": "02",
     "trustedCountyName": "Bennington",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": "20",
+    "blCn3": null,
+    "TownGlCat": "3",
+    "sUsePr": "9",
+    "bUsePr": "1",
+    "prTxEx": "0",
+    "landSize": 0,
+    "closeDate": 1591678800000,
+    "ValPdOrTrn": 132642
   },
   "184898": {
     "lat": null,
@@ -39593,7 +39802,18 @@
     "trustedCountyCode": "10",
     "trustedCountyName": "Orleans",
     "method": null,
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "8",
+    "blCn1": "1",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "15",
+    "sUsePr": "3",
+    "bUsePr": "3",
+    "prTxEx": "0",
+    "landSize": 1,
+    "closeDate": 1625547600000,
+    "ValPdOrTrn": 500
   },
   "232995": {
     "lat": null,
@@ -48873,7 +49093,18 @@
     "trustedCountyCode": "09",
     "trustedCountyName": "Orange",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "2",
+    "sUsePr": "1",
+    "bUsePr": "2",
+    "prTxEx": "0",
+    "landSize": 30,
+    "closeDate": 1641186000000,
+    "ValPdOrTrn": 510000
   },
   "250260": {
     "lat": null,
@@ -49344,7 +49575,18 @@
     "trustedCountyCode": "02",
     "trustedCountyName": "Bennington",
     "method": null,
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": null,
+    "blCn2": null,
+    "blCn3": "4",
+    "TownGlCat": "3",
+    "sUsePr": "9",
+    "bUsePr": "1",
+    "prTxEx": "0",
+    "landSize": 0,
+    "closeDate": 1657602000000,
+    "ValPdOrTrn": 10
   },
   "251571": {
     "lat": null,
@@ -51609,7 +51851,18 @@
     "trustedCountyCode": "12",
     "trustedCountyName": "Washington",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "1",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "4",
+    "sUsePr": "1",
+    "bUsePr": "1",
+    "prTxEx": "0",
+    "landSize": 0.7,
+    "closeDate": 1664946000000,
+    "ValPdOrTrn": 78000
   },
   "256037": {
     "lat": null,
@@ -58865,7 +59118,18 @@
     "trustedCountyCode": "11",
     "trustedCountyName": "Rutland",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "8",
+    "blCn1": "1",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "5",
+    "sUsePr": "7",
+    "bUsePr": "2",
+    "prTxEx": "7",
+    "landSize": 0.2,
+    "closeDate": 1652677200000,
+    "ValPdOrTrn": 310000
   },
   "272994": {
     "lat": 44.49834013040069,
@@ -61659,7 +61923,18 @@
     "trustedCountyCode": "10",
     "trustedCountyName": "Orleans",
     "method": "nominatim",
-    "geocoded_at": "2026-04-03"
+    "geocoded_at": "2026-04-03",
+    "intPrpType": "1",
+    "blCn1": "3",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "3",
+    "sUsePr": "1",
+    "bUsePr": "9",
+    "prTxEx": "0",
+    "landSize": 0,
+    "closeDate": 1654578000000,
+    "ValPdOrTrn": 24000
   },
   "279146": {
     "lat": 44.11392412356282,
@@ -62637,7 +62912,18 @@
     "trustedCountyName": "Windsor",
     "method": "manual_sibling",
     "geocoded_at": "2026-04-09",
-    "note": "schoolCode=044 (Chelsea) is wrong in ArcGIS. TOWNNAME=Cavendish is correct."
+    "note": "schoolCode=044 (Chelsea) is wrong in ArcGIS. TOWNNAME=Cavendish is correct.",
+    "intPrpType": "7",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "6",
+    "sUsePr": "2",
+    "bUsePr": "2",
+    "prTxEx": "5",
+    "landSize": 103,
+    "closeDate": 1678165200000,
+    "ValPdOrTrn": 79000
   },
   "286399": {
     "lat": null,
@@ -78794,7 +79080,18 @@
     "trustedCountyCode": "03",
     "trustedCountyName": "Caledonia",
     "method": "nominatim",
-    "geocoded_at": "2026-04-04"
+    "geocoded_at": "2026-04-04",
+    "intPrpType": "01",
+    "blCn1": null,
+    "blCn2": null,
+    "blCn3": "02",
+    "TownGlCat": "01",
+    "sUsePr": "01",
+    "bUsePr": "01",
+    "prTxEx": "00",
+    "landSize": 0.21,
+    "closeDate": 1722859200000,
+    "ValPdOrTrn": 490000
   },
   "342579": {
     "lat": null,
@@ -80415,7 +80712,18 @@
     "trustedCountyCode": "09",
     "trustedCountyName": "Orange",
     "method": "nominatim",
-    "geocoded_at": "2026-04-04"
+    "geocoded_at": "2026-04-04",
+    "intPrpType": "01",
+    "blCn1": "02",
+    "blCn2": "03",
+    "blCn3": null,
+    "TownGlCat": "01",
+    "sUsePr": "02",
+    "bUsePr": "02",
+    "prTxEx": "00",
+    "landSize": 0.78,
+    "closeDate": 1722254400000,
+    "ValPdOrTrn": 83130
   },
   "353014": {
     "lat": null,
@@ -82197,7 +82505,18 @@
     "trustedCountyCode": "12",
     "trustedCountyName": "Washington",
     "method": "nominatim",
-    "geocoded_at": "2026-04-04"
+    "geocoded_at": "2026-04-04",
+    "intPrpType": "01",
+    "blCn1": "02",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "01",
+    "sUsePr": "01",
+    "bUsePr": "01",
+    "prTxEx": "00",
+    "landSize": 2.13,
+    "closeDate": 1734350400000,
+    "ValPdOrTrn": 13000
   },
   "357797": {
     "lat": null,
@@ -84094,7 +84413,18 @@
     "trustedCountyCode": "11",
     "trustedCountyName": "Rutland",
     "method": "nominatim",
-    "geocoded_at": "2026-04-04"
+    "geocoded_at": "2026-04-04",
+    "intPrpType": "01",
+    "blCn1": null,
+    "blCn2": "03",
+    "blCn3": "04",
+    "TownGlCat": "03",
+    "sUsePr": "03",
+    "bUsePr": "03",
+    "prTxEx": "00",
+    "landSize": 0,
+    "closeDate": 1739880000000,
+    "ValPdOrTrn": 23000
   },
   "360191": {
     "lat": null,
@@ -85255,7 +85585,18 @@
     "trustedCountyCode": "14",
     "trustedCountyName": "Windsor",
     "method": "nominatim",
-    "geocoded_at": "2026-04-04"
+    "geocoded_at": "2026-04-04",
+    "intPrpType": "07",
+    "blCn1": "04",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "03",
+    "sUsePr": "01",
+    "bUsePr": "01",
+    "prTxEx": "00",
+    "landSize": 0,
+    "closeDate": 1741435200000,
+    "ValPdOrTrn": 7500
   },
   "365123": {
     "lat": null,
@@ -96446,7 +96787,18 @@
     "trustedCountyName": "Orange",
     "method": "manual_nominatim",
     "geocoded_at": "2026-04-05",
-    "note": "Same parcel as OBJECTID 163338. Geocoded as 2232 VT Route 14 North, Randolph."
+    "note": "Same parcel as OBJECTID 163338. Geocoded as 2232 VT Route 14 North, Randolph.",
+    "intPrpType": "1",
+    "blCn1": "2",
+    "blCn2": null,
+    "blCn3": null,
+    "TownGlCat": "1",
+    "sUsePr": "1",
+    "bUsePr": "1",
+    "prTxEx": "5",
+    "landSize": 1.05,
+    "closeDate": 1673931600000,
+    "ValPdOrTrn": 0
   },
   "160622": {
     "lat": null,
