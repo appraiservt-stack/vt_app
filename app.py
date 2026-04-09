@@ -2380,10 +2380,13 @@ def history():
     show older sales above the dotted-line divider even when a date range
     filter is active on the main map.
 
-    For condos (blCn1 = '5' or '05'), also fetches all other units at the
-    same building address so the full project history is visible.
+    Timeshare isolation: pass is_timeshare=1 to get only timeshare sales.
+    Without that flag, timeshare sales (intPrpType='05') are excluded.
+    This prevents timeshare history from bleeding into condo/fee-simple
+    popups and vice versa.
     """
-    span_raw = request.args.get("span", "").strip().replace("-", "")
+    span_raw      = request.args.get("span", "").strip().replace("-", "")
+    is_timeshare  = request.args.get("is_timeshare", "0") == "1"
     if not span_raw:
         return jsonify({"data": []})
 
@@ -2403,25 +2406,35 @@ def history():
     results = []
     for f in features:
         rec = feature_to_record(f, empty_filters)
-        if rec is not None:
-            results.append({
-                "id":              rec["id"],
-                "address":         rec["address"],
-                "price":           rec["ValuePaidOrTransferred"],
-                "date":            rec["closingDate"],
-                "lat":             rec["lat"],
-                "lon":             rec["lon"],
-                "sellerLastName":  rec["sellerLastName"],
-                "sellerFirstName": rec["sellerFirstName"],
-                "sellerEntityName":rec["sellerEntityName"],
-                "buyerLastName":   rec["buyerLastName"],
-                "buyerFirstName":  rec["buyerFirstName"],
-                "buyerEntityName": rec["buyerEntityName"],
-                "buildingConstruction1Desc": rec["buildingConstruction1Desc"],
-                "interestUndivPercentDesc":  rec["interestUndivPercentDesc"],
-                "approxLocation":  rec["approxLocation"],
-                "isCentroid":      rec.get("isCentroid", rec["approxLocation"]),
-            })
+        if rec is None:
+            continue
+        # Timeshare isolation: timeshare records only appear in timeshare
+        # popups; non-timeshare records only appear in non-timeshare popups.
+        int_type = str(rec.get("interestPropertyType") or "").lstrip("0") or "0"
+        rec_is_ts = (int_type == "5")
+        if is_timeshare and not rec_is_ts:
+            continue   # non-timeshare sale in a timeshare popup — skip
+        if not is_timeshare and rec_is_ts:
+            continue   # timeshare sale in a non-timeshare popup — skip
+
+        results.append({
+            "id":              rec["id"],
+            "address":         rec["address"],
+            "price":           rec["ValuePaidOrTransferred"],
+            "date":            rec["closingDate"],
+            "lat":             rec["lat"],
+            "lon":             rec["lon"],
+            "sellerLastName":  rec["sellerLastName"],
+            "sellerFirstName": rec["sellerFirstName"],
+            "sellerEntityName":rec["sellerEntityName"],
+            "buyerLastName":   rec["buyerLastName"],
+            "buyerFirstName":  rec["buyerFirstName"],
+            "buyerEntityName": rec["buyerEntityName"],
+            "buildingConstruction1Desc": rec["buildingConstruction1Desc"],
+            "interestUndivPercentDesc":  rec["interestUndivPercentDesc"],
+            "approxLocation":  rec["approxLocation"],
+            "isCentroid":      rec.get("isCentroid", rec["approxLocation"]),
+        })
 
     return jsonify({"data": results})
 

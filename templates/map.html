@@ -1603,12 +1603,16 @@ map.on('overlayremove', function(e){
 });
 
 let markersLayer = L.layerGroup().addTo(map);
+// Add tsLayer to map now so it sits above markersLayer in z-order
+tsLayer.addTo(map);
 // Approx markers (town-centroid fallbacks) live in a separate layer.
 // This layer is only refreshed when filters change — never on pan/zoom —
 // so centroid-placed dots stay visible regardless of viewport position.
 let approxLayer  = L.layerGroup().addTo(map);
 let mhLayer      = L.layerGroup().addTo(map); // mobile home collector dots
-let tsLayer      = L.layerGroup().addTo(map); // timeshare collector dots
+// tsLayer added AFTER markersLayer so TS collector dots render on top
+// of black dots and are not overwritten when black dots load.
+let tsLayer      = L.layerGroup(); // added to map after markersLayer initialises
 // approxCache loaded once at startup via initApproxCache()
 // Address lookup: normalized "ADDRESS|TOWN" -> {lat, lon} for merging approx into black dots
 let addressDotLookup = {};
@@ -2369,8 +2373,13 @@ function loadApproxData(){
   });
 
   // --- Step 3: group unmerged records by dot key ---------------------------
+  // Exclude centroid timeshares — they render via the TS collector (tsLayer)
+  // not as individual approx dots. Rendering them here would cause hundreds
+  // of overlapping markers at the same town centroid.
   const grouped = {};
   unmerged.forEach(p => {
+    const intType = String(p.intPrpType || '').replace(/^0+/,'') || '0';
+    if(p.isCentroid && intType === '5') return; // handled by tsLayer
     const key = _approxDotKey(p);
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(p);
@@ -2438,9 +2447,10 @@ function loadApproxData(){
     sales.forEach(s => { markerRefs[s.id] = entry; });
     _approxVisible[key] = entry;
 
-    // Condo badge for approx layer dots
+    // Condo badge for approx layer dots — exclude timeshares
     const approxIsCondo = sales.some(s =>
-      String(s.buildingConstruction1 || '').replace(/^0+/,'') === '5'
+      String(s.buildingConstruction1 || '').replace(/^0+/,'') === '5' &&
+      String(s.intPrpType || '').replace(/^0+/,'') !== '5'
     );
     const approxIsCondoGroup = approxIsCondo && sales.length > 1;
     if(approxIsCondoGroup){
@@ -2647,9 +2657,11 @@ function renderData(records){
                       : isApprox   ? "#e65c00"
                       : baseColor;
 
-    // Detect condo group: multiple sales with blCn1 = '5' or '05'
+    // Detect condo group: multiple sales with blCn1='5' AND not timeshare.
+    // Timeshares are excluded — they have their own gold collector dot.
     const isCondo = sales.some(s =>
-      String(s.buildingConstruction1 || s.blCn1 || '').replace(/^0+/, '') === '5'
+      String(s.buildingConstruction1 || s.blCn1 || '').replace(/^0+/, '') === '5' &&
+      String(s.intPrpType || '').replace(/^0+/, '') !== '5'
     );
     const isCondoGroup = isCondo && sales.length > 1;
 
@@ -2925,25 +2937,48 @@ function renderTSCollectors(collectors){
       pane: 'markerPane'
     });
 
-    // Popup listing all sales
+    // Group sales by base street address (strip unit/week suffix)
+    function tsBaseAddr(addr){
+      if(!addr) return 'Unknown';
+      // Strip unit/week/type descriptions after the base address
+      return addr.replace(/,?\s*(UNIT|APT|WEEK|WEEKS|TYPE|WEE|LOT|#|ONE|TWO|THREE|FOUR|FIVE)\b.*/i, '').trim();
+    }
+
+    // Sort newest first
+    const sorted = [...sales].sort((a,b) => (b.date||0) - (a.date||0));
+
+    // Group by base address
+    const groups = {};
+    sorted.forEach(s => {
+      const base = tsBaseAddr(s.address || '');
+      if(!groups[base]) groups[base] = [];
+      groups[base].push(s);
+    });
+
+    // Build popup HTML
     let popupHtml = '<div style="font-size:12px;font-weight:bold;margin-bottom:4px;">' +
       '&#9670; Timeshare Sales — ' + town + '</div>';
     popupHtml += '<div style="font-size:10px;color:#555;margin-bottom:6px;">' +
       count + ' sale' + (count !== 1 ? 's' : '') +
-      ' in this town within current filters. Location is approximate.</div>';
-    popupHtml += '<div style="max-height:280px;overflow-y:auto;">';
-    sales.forEach(s => {
-      const price  = s.price ? '$' + Number(s.price).toLocaleString() : 'N/A';
-      const date   = s.date  ? new Date(s.date).toISOString().split('T')[0] : 'N/A';
-      const addr   = s.address || 'Address unknown';
-      const seller = [s.sellerLastName, s.sellerFirstName].filter(Boolean).join(', ') || s.sellerEntityName || '';
-      const buyer  = [s.buyerLastName,  s.buyerFirstName ].filter(Boolean).join(', ') || s.buyerEntityName  || '';
-      popupHtml += '<div style="border-top:1px solid #eee;padding:4px 0;">' +
-        '<b>' + addr + '</b><br>' +
-        date + ' &mdash; ' + price + '<br>' +
-        (seller ? 'Seller: ' + seller + '<br>' : '') +
-        (buyer  ? 'Buyer: '  + buyer  + '<br>' : '') +
-        '</div>';
+      ' in this town within current date/price filters.</div>';
+    popupHtml += '<div style="max-height:320px;overflow-y:auto;">';
+
+    Object.keys(groups).sort().forEach(base => {
+      const grpSales = groups[base];
+      popupHtml += '<div style="background:#f5f0e0;padding:3px 6px;margin:4px 0 2px;' +
+        'font-size:11px;font-weight:bold;border-left:3px solid #B8860B;">' +
+        base + ' (' + grpSales.length + ')</div>';
+      grpSales.forEach(s => {
+        const price  = s.price ? '$' + Number(s.price).toLocaleString() : 'N/A';
+        const date   = s.date  ? new Date(s.date).toISOString().split('T')[0] : 'N/A';
+        const seller = [s.sellerLastName, s.sellerFirstName].filter(Boolean).join(', ') || s.sellerEntityName || '';
+        const buyer  = [s.buyerLastName,  s.buyerFirstName ].filter(Boolean).join(', ') || s.buyerEntityName  || '';
+        popupHtml += '<div style="border-bottom:1px solid #eee;padding:3px 0 3px 6px;font-size:11px;">' +
+          date + ' &mdash; ' + price + '<br>' +
+          (seller ? '<span style="color:#555;">Seller: ' + seller + '</span><br>' : '') +
+          (buyer  ? '<span style="color:#555;">Buyer: '  + buyer  + '</span><br>' : '') +
+          '</div>';
+      });
     });
     popupHtml += '</div>';
 
@@ -3121,10 +3156,16 @@ function openPopupWithHistory(marker, p, sales){
   )];
   if(!spans.length) return;
 
+  // Determine if this is a timeshare popup
+  const isTimeshare = sales.some(s =>
+    String(s.intPrpType || '').replace(/^0+/,'') === '5'
+  );
+  const tsParam = isTimeshare ? '&is_timeshare=1' : '';
+
   // Fetch /history for each unique SPAN, then merge all results
   Promise.all(
     spans.map(span =>
-      fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')))
+      fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')) + tsParam)
       .then(r => r.json())
       .then(d => d.data || [])
       .catch(() => [])
