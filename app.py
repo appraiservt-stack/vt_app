@@ -447,7 +447,14 @@ def build_where_clause(filters):
     the county-bounds coordinate validation (not a data filter).
     """
     # Always exclude $0 transfers (refinances, name changes, family transfers, etc.)
-    clauses = ["ValPdOrTrn > 0"]
+    # Base exclusions for map display:
+    # - Timeshares (intPrpType='05') go to the TS collector dot, never black dots
+    # - Unlanded mobile homes (TownGlCat='03' AND landSize=0) go to MH collector dot
+    clauses = [
+        "ValPdOrTrn > 0",
+        "intPrpType <> '05'",
+        "NOT (TownGlCat = '03' AND landSize = 0)",
+    ]
 
     # County filter
     # ArcGIS has inconsistent countyCode padding — some records use '9', others '09'.
@@ -1364,61 +1371,150 @@ def data():
                 "intPrpType":             rec["interestPropertyType"],
             })
 
-    # ----------------------------------------------------------------
-    # Mobile Home Collector dots
-    # Group all records with TownGlCat='3' AND landSize=0 by town.
-    # Each town gets one collector entry placed at a consistent offset
-    # from the town centroid (upper-right, ~0.5 miles) so it never
-    # overlaps the green centroid circle and is findable town-to-town.
-    # The JS renders these as a teal badge dot separate from normal dots.
-    # ----------------------------------------------------------------
-    mh_by_town = {}  # town_key -> list of full sale records
-    regular_results = []
-    for r in results:
-        gl_cat = str(r.get("TownGrandListCategory") or "").strip().lstrip("0") or "0"
-        land   = r.get("landSize")
-        is_mh_unlanded = (gl_cat == "3" and (land == 0 or land is None))
-        if is_mh_unlanded:
-            town_key = (r.get("trustedTown") or r.get("city") or "Unknown").title()
-            if town_key not in mh_by_town:
-                mh_by_town[town_key] = []
-            mh_by_town[town_key].append(r)
-        else:
-            regular_results.append(r)
+    return jsonify({"data": results})
 
-    # Build collector dot entries - one per town
-    mh_collectors = []
-    for town_key, sales in mh_by_town.items():
+
+def _build_collector_response(where, collector_type, args):
+    """
+    Shared logic for /data/timeshares and /data/mh.
+    Fetches all matching records from ArcGIS for the current viewport,
+    groups by trustedTown, returns list of collector entries.
+
+    collector_type: 'ts' or 'mh'
+    Centroid offsets differ so dots don't overlap:
+      ts  -> SW offset (-0.008, -0.008)
+      mh  -> NE offset (+0.008, +0.008)
+    """
+    # Parse location + date + price filters only (no type filters—those are baked into where)
+    filters  = parse_filters(args)
+    bbox     = {
+        "xmin": args.get("xmin"), "ymin": args.get("ymin"),
+        "xmax": args.get("xmax"), "ymax": args.get("ymax"),
+    }
+    has_bbox = all(bbox[k] for k in bbox)
+
+    # Add date filter if present
+    date_clauses = []
+    if filters.get("date_from"):
+        date_clauses.append(f"closeDate >= date '{filters['date_from']}'")
+    if filters.get("date_to"):
+        date_clauses.append(f"closeDate <= date '{filters['date_to']}'")
+    full_where = where
+    if date_clauses:
+        full_where += " AND " + " AND ".join(date_clauses)
+
+    # Price filters
+    if filters.get("price_low"):
+        try:
+            full_where += f" AND ValPdOrTrn >= {float(filters['price_low'])}"
+        except ValueError:
+            pass
+    if filters.get("price_high"):
+        try:
+            full_where += f" AND ValPdOrTrn <= {float(filters['price_high'])}"
+        except ValueError:
+            pass
+
+    # County/town filters
+    if filters.get("counties"):
+        counties = filters["counties"].split(",")
+        padded   = ",".join(f"'{c.strip().zfill(2)}'" for c in counties)
+        full_where += f" AND countyCode IN ({padded})"
+    if filters.get("towns"):
+        towns = [t.strip().upper() for t in filters["towns"].split(",")]
+        town_sql = ",".join(f"'{t}'" for t in towns)
+        full_where += f" AND UPPER(TOWNNAME) IN ({town_sql})"
+
+    geo_params = None
+    if has_bbox:
+        try:
+            geo_params = {
+                "geometry":     f"{float(bbox['xmin'])},{float(bbox['ymin'])},{float(bbox['xmax'])},{float(bbox['ymax'])}",
+                "geometryType": "esriGeometryEnvelope",
+                "inSR":         "4326",
+                "spatialRel":   "esriSpatialRelIntersects",
+            }
+        except (TypeError, ValueError):
+            pass
+
+    features = fetch_all_features(full_where, geometry_params=geo_params, fields=_FULL_FIELDS)
+
+    # Group by trusted town
+    by_town = {}
+    for feat in features:
+        rec = feature_to_record(feat, {})
+        if not rec:
+            continue
+        town_key = (rec.get("trustedTown") or rec.get("city") or "Unknown").title()
+        by_town.setdefault(town_key, []).append(rec)
+
+    lat_off = -0.008 if collector_type == "ts" else +0.008
+    lon_off = -0.008 if collector_type == "ts" else +0.008
+
+    collectors = []
+    for town_key, recs in by_town.items():
         centroid = TOWN_CENTROIDS.get(town_key.upper())
         if centroid:
-            # Offset ~0.008 deg NE (~0.5 miles) so it doesn't overlap the
-            # green centroid circle which sits at the exact centroid coords.
-            clat = centroid["lat"] + 0.008
-            clon = centroid["lon"] + 0.008
+            clat = centroid["lat"] + lat_off
+            clon = centroid["lon"] + lon_off
         else:
-            # No centroid - use coords of first sale that has them, or skip
-            first_with_coords = next((s for s in sales if s.get("lat") and s.get("lon")), None)
-            if not first_with_coords:
-                # Add them to regular results as-is
-                regular_results.extend(sales)
+            first = next((r for r in recs if r.get("lat") and r.get("lon")), None)
+            if not first:
                 continue
-            clat = first_with_coords["lat"]
-            clon = first_with_coords["lon"]
+            clat = first["lat"]
+            clon = first["lon"]
 
-        first = sales[0]
-        mh_collectors.append({
-            "isMHCollector":    True,
-            "mhSales":          sales,
-            "mhCount":          len(sales),
+        first = recs[0]
+        sale_list = []
+        for r in recs:
+            sale_list.append({
+                "id":              r["id"],
+                "address":         r["address"],
+                "price":           r["ValuePaidOrTransferred"],
+                "date":            r["closingDate"],
+                "sellerLastName":  r["sellerLastName"],
+                "sellerFirstName": r["sellerFirstName"],
+                "sellerEntityName":r["sellerEntityName"],
+                "buyerLastName":   r["buyerLastName"],
+                "buyerFirstName":  r["buyerFirstName"],
+                "buyerEntityName": r["buyerEntityName"],
+                "buildingConstruction1Desc": r["buildingConstruction1Desc"],
+                "intPrpType":      r["interestPropertyType"],
+            })
+
+        collectors.append({
             "town":             town_key,
             "lat":              clat,
             "lon":              clon,
-            "trustedTown":      first.get("trustedTown"),
+            "count":            len(sale_list),
+            "sales":            sale_list,
             "trustedCountyCode": first.get("trustedCountyCode"),
             "trustedCountyName": first.get("trustedCountyName"),
         })
 
-    return jsonify({"data": regular_results, "mhCollectors": mh_collectors})
+    return collectors
+
+
+@app.route("/data/timeshares")
+@login_required
+def data_timeshares():
+    """Return timeshare sales grouped by town for the TS collector dots.
+    All intPrpType='05' records, no $0 sales, respects date/price/location filters.
+    """
+    where = "ValPdOrTrn > 0 AND intPrpType = '05'"
+    collectors = _build_collector_response(where, "ts", request.args)
+    return jsonify({"tsCollectors": collectors})
+
+
+@app.route("/data/mh")
+@login_required
+def data_mh():
+    """Return unlanded mobile home sales grouped by town for the MH collector dots.
+    All TownGlCat='03' AND landSize=0 records, no $0 sales, respects filters.
+    """
+    where = "ValPdOrTrn > 0 AND TownGlCat = '03' AND landSize = 0"
+    collectors = _build_collector_response(where, "mh", request.args)
+    return jsonify({"mhCollectors": collectors})
 
 
 @app.route("/data/approx/all")
@@ -1524,56 +1620,7 @@ def data_approx_all():
             "buyerFirstName": None,
             "buyerEntityName": None,
         })
-    # ----------------------------------------------------------------
-    # Timeshare Collector dots
-    # Group centroid-fallback timeshare records (intPrpType='05',
-    # isCentroid=True) by town into single collector dots.
-    # Rendering hundreds of overlapping markers at the same centroid
-    # point kills Leaflet performance (762 markers in Stowe alone).
-    # One dot per town with a count badge replaces them all.
-    # Records with real coords (preciselyCoded=True) stay as individual dots.
-    # ----------------------------------------------------------------
-    ts_by_town   = {}  # town_key -> list of result records
-    regular_results = []
-    for r in results:
-        int_type = str(r.get("intPrpType") or "").lstrip("0") or "0"
-        is_ts_centroid = (int_type == "5" and r.get("isCentroid") is True)
-        if is_ts_centroid:
-            town_key = (r.get("trustedTown") or r.get("city") or "Unknown").title()
-            ts_by_town.setdefault(town_key, []).append(r)
-        else:
-            regular_results.append(r)
-
-    ts_collectors = []
-    for town_key, sales in ts_by_town.items():
-        centroid = TOWN_CENTROIDS.get(town_key.upper())
-        if centroid:
-            # Offset slightly SW of centroid so it doesn't overlap
-            # the green centroid circle (which sits at exact centroid)
-            clat = centroid["lat"] - 0.008
-            clon = centroid["lon"] - 0.008
-        else:
-            first = next((s for s in sales if s.get("lat") and s.get("lon")), None)
-            if not first:
-                regular_results.extend(sales)
-                continue
-            clat = first["lat"]
-            clon = first["lon"]
-
-        first = sales[0]
-        ts_collectors.append({
-            "isTSCollector":    True,
-            "tsSales":          sales,
-            "tsCount":          len(sales),
-            "town":             town_key,
-            "lat":              clat,
-            "lon":              clon,
-            "trustedTown":      first.get("trustedTown"),
-            "trustedCountyCode": first.get("trustedCountyCode"),
-            "trustedCountyName": first.get("trustedCountyName"),
-        })
-
-    return jsonify({"data": regular_results, "tsCollectors": ts_collectors})
+    return jsonify({"data": results})
 
 
 @app.route("/data/approx/enrich")

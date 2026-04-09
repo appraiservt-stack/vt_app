@@ -1984,8 +1984,8 @@ function applyFilters(){
   // don't linger while the new filtered fetch is in flight.
   markersLayer.clearLayers();
   mhLayer.clearLayers();
-  // Re-render TS collectors with updated filters from cached data
-  renderTSCollectors(_cachedTSCollectors);
+  tsLayer.clearLayers();
+  // TS and MH collectors re-fetch from server via loadData() parallel fetches
 
   // Filter results could be anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
@@ -1999,8 +1999,6 @@ function applyFilters(){
     .then(r => r.json())
     .then(data => {
       nameSearchCache = data.data || [];
-      renderMHCollectors(data.mhCollectors || []);
-      renderTSCollectors(data.tsCollectors || []);
       let bounds = null;
       nameSearchCache.forEach(p => {
         if(p.lat != null && p.lon != null){
@@ -2145,15 +2143,30 @@ function loadData(){
 
     const ctrl = new AbortController();
     _dataXhr = ctrl;
+    const p = params.toString();
 
-    fetch("/data?" + params.toString(), { signal: ctrl.signal })
-    .then(r => r.json())
-    .then(data => {
+    // Fetch main data, timeshares, and MH collectors in parallel
+    const fInterest = (params.get('interest') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
+    const fBuilding = (params.get('building') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
+    const noLandCk  = document.getElementById('noLandCheck')?.checked || false;
+    const activeGL  = (params.get('grand_list') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
+    const showTS    = fInterest.length === 0 || fInterest.includes('05');
+    const showMH    = noLandCk || activeGL.includes('03') ||
+                      fBuilding.length === 0 || fBuilding.includes('04');
+
+    const fetches = [
+      fetch("/data?" + p, { signal: ctrl.signal }).then(r => r.json()),
+      showTS ? fetch("/data/timeshares?" + p).then(r => r.json()) : Promise.resolve({tsCollectors:[]}),
+      showMH ? fetch("/data/mh?" + p).then(r => r.json())         : Promise.resolve({mhCollectors:[]}),
+    ];
+
+    Promise.all(fetches)
+    .then(([data, tsData, mhData]) => {
       _dataXhr = null;
       renderData(data.data || []);
-      renderMHCollectors(data.mhCollectors || []);
+      renderTSCollectors(tsData.tsCollectors || []);
+      renderMHCollectors(mhData.mhCollectors || []);
     })
-    // tsCollectors come from approx cache, not /data — handled in initApproxCache
     .catch(e => { if(e.name !== 'AbortError') console.warn('Data fetch error:', e); });
   }, 150); // 150ms debounce
 }
@@ -2181,7 +2194,6 @@ let approxCacheIds = new Set(); // fast O(1) lookup: is this id in approxCache?
 // Kept in sync by loadApproxData() — dots are added/removed individually,
 // never via clearLayers(). This eliminates all flicker from race conditions.
 let _approxVisible = {}; // currently rendered approx dots
-let _cachedTSCollectors = []; // cached from /data/approx/all, re-filtered on Apply
 
 function initApproxCache(){
   fetch('/data/approx/all')
@@ -2202,8 +2214,6 @@ function initApproxCache(){
       }
     });
     loadApproxData();
-    _cachedTSCollectors = data.tsCollectors || [];
-    renderTSCollectors(_cachedTSCollectors);
   })
   .catch(e => console.warn('Approx cache load error:', e));
 }
@@ -2806,87 +2816,107 @@ function renderData(records){
 // MOBILE HOME COLLECTOR DOTS
 // ===================================================
 
+// ===================================================
+// SHARED COLLECTOR DOT RENDERER
+// Used by MH, TS (and future vacant land) collector dots.
+// c = collector entry from server: { town, lat, lon, count, sales[] }
+// layer = Leaflet layer group to add to
+// color = hex color for dot + badge
+// label = badge letter (M, T, V...)
+// typeLabel = display name for popup header
+// ===================================================
+function _renderCollectorDot(c, layer, color, label, typeLabel){
+  const lat   = c.lat;
+  const lon   = c.lon;
+  const sales = c.sales || c.mhSales || c.tsSales || [];
+  const count = c.count || sales.length;
+  const town  = c.town || '';
+
+  if(!lat || !lon || !count) return;
+
+  // Dot
+  const marker = L.circleMarker([lat, lon], {
+    radius: 5, color: color, fillColor: color, fillOpacity: 0, weight: 2,
+  });
+
+  // Badge
+  const badge = L.marker([lat, lon], {
+    icon: L.divIcon({
+      className: '',
+      html: '<div style="background:' + color + ';color:#fff;border-radius:50%;' +
+            'width:16px;height:16px;font-size:9px;font-weight:bold;' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'border:1.5px solid #fff;pointer-events:none;">' +
+            label + (count > 1 ? count : '') + '</div>',
+      iconSize: [16,16], iconAnchor: [-2, 16],
+    }),
+    interactive: false, pane: 'markerPane'
+  });
+
+  // Popup — group by base address, sorted newest first, with PTT-172 buttons
+  function baseAddr(addr){
+    if(!addr) return 'Unknown';
+    return addr.replace(/,?\s*(UNIT|APT|WEEK|WEEKS|TYPE|WEE|LOT|#|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\b.*/i,'').trim();
+  }
+  const sorted = [...sales].sort((a,b) => (b.date||0) - (a.date||0));
+  const groups = {};
+  sorted.forEach(s => {
+    const base = baseAddr(s.address || '');
+    if(!groups[base]) groups[base] = [];
+    groups[base].push(s);
+  });
+
+  let html = '<div style="font-size:12px;font-weight:bold;margin-bottom:3px;">' +
+    typeLabel + ' — ' + town + '</div>';
+  html += '<div style="font-size:10px;color:#555;margin-bottom:5px;">' +
+    count + ' sale' + (count!==1?'s':'') + ' within current filters</div>';
+  html += '<div style="max-height:340px;overflow-y:auto;">';
+  Object.keys(groups).sort().forEach(base => {
+    const grp = groups[base];
+    html += '<div style="background:#f0f4f0;padding:2px 5px;margin:3px 0 1px;' +
+      'font-size:10px;font-weight:bold;border-left:3px solid ' + color + ';">' +
+      base + ' (' + grp.length + ')</div>';
+    grp.forEach(s => {
+      const price = s.price ? '$' + Number(s.price).toLocaleString() : 'N/A';
+      const date  = s.date  ? new Date(s.date).toISOString().split('T')[0] : 'N/A';
+      const seller= [s.sellerLastName,s.sellerFirstName].filter(Boolean).join(', ')||s.sellerEntityName||'';
+      const buyer = [s.buyerLastName, s.buyerFirstName ].filter(Boolean).join(', ')||s.buyerEntityName ||'';
+      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;' +
+              'border-bottom:1px solid #eee;padding:3px 0 3px 5px;font-size:11px;">' +
+        '<div><b>' + price + '</b> &nbsp; ' + date + '<br>' +
+        (seller ? '<span style="color:#555">Seller: '+seller+'</span><br>' : '') +
+        (buyer  ? '<span style="color:#555">Buyer: ' +buyer +'</span>'    : '') +
+        '</div>' +
+        (s.id ? '<a onclick="event.preventDefault();event.stopPropagation();' +
+          'const _w=window.open("/ptt172/preview?id=' + s.id + '\',\'_blank\',\'noopener,noreferrer\');' +
+          'if(_w){setTimeout(()=>{try{window.focus();}catch(e){}},100);}" ' +
+          'style="font-size:10px;padding:1px 5px;background:#1F4E79;color:#fff;' +
+          'border-radius:2px;text-decoration:none;white-space:nowrap;cursor:pointer;' +
+          'flex-shrink:0;margin-left:4px;align-self:center;">PTT-172</a>' : '') +
+        '</div>';
+    });
+  });
+  html += '</div>';
+
+  marker.bindPopup(html, { maxWidth:460, maxHeight:500, autoPan:false, keepInView:false });
+  marker.on('mouseover', function(){
+    if(!hoverEnabled) return;
+    hoverTimer = setTimeout(() => marker.openPopup(), 700);
+  });
+  marker.on('mouseout',  function(){ if(hoverTimer) clearTimeout(hoverTimer); });
+  marker.on('click',     function(){
+    if(hoverTimer) clearTimeout(hoverTimer);
+    marker.openPopup();
+  });
+
+  layer.addLayer(marker);
+  layer.addLayer(badge);
+}
+
 function renderMHCollectors(collectors){
   mhLayer.clearLayers();
   if(!collectors || !collectors.length) return;
-
-  collectors.forEach(c => {
-    const lat   = c.lat;
-    const lon   = c.lon;
-    const sales = c.mhSales || [];
-    const count = c.mhCount || sales.length;
-    const town  = c.town || '';
-
-    // Teal dot
-    const marker = L.circleMarker([lat, lon], {
-      radius:      5,
-      color:       '#00897B',
-      fillColor:   '#00897B',
-      fillOpacity: 0,
-      weight:      2,
-    });
-
-    // Teal M-badge offset upper-right
-    const badge = L.marker([lat, lon], {
-      icon: L.divIcon({
-        className: '',
-        html: '<div style="background:#00897B;color:#fff;border-radius:50%;' +
-              'width:16px;height:16px;font-size:9px;font-weight:bold;' +
-              'display:flex;align-items:center;justify-content:center;' +
-              'border:1.5px solid #fff;pointer-events:none;">M' +
-              (count > 1 ? count : '') + '</div>',
-        iconSize:   [16, 16],
-        iconAnchor: [-2, 16],
-      }),
-      interactive: false,
-      pane: 'markerPane'
-    });
-
-    // Build popup HTML listing all sales
-    let popupHtml = '<div style="font-size:12px;font-weight:bold;margin-bottom:4px;">' +
-      '&#127968; Mobile Home Sales (no land) — ' + town + '</div>';
-    popupHtml += '<div style="font-size:10px;color:#555;margin-bottom:6px;">' +
-      count + ' sale' + (count !== 1 ? 's' : '') +
-      ' in this town within current filters. Location is approximate.</div>';
-    popupHtml += '<div style="max-height:280px;overflow-y:auto;">';
-    sales.forEach(s => {
-      const price = s.price ? '$' + Number(s.price).toLocaleString() : 'N/A';
-      const date  = s.date ? s.date.split('T')[0] : 'N/A';
-      const addr  = s.address || 'Address unknown';
-      const seller = [s.sellerLastName, s.sellerFirstName].filter(Boolean).join(', ') ||
-                     s.sellerEntityName || '';
-      const buyer  = [s.buyerLastName,  s.buyerFirstName ].filter(Boolean).join(', ') ||
-                     s.buyerEntityName  || '';
-      popupHtml += '<div style="border-top:1px solid #eee;padding:4px 0;">' +
-        '<b>' + addr + '</b><br>' +
-        date + ' &mdash; ' + price + '<br>' +
-        (seller ? 'Seller: ' + seller + '<br>' : '') +
-        (buyer  ? 'Buyer: '  + buyer  + '<br>' : '') +
-        '</div>';
-    });
-    popupHtml += '</div>';
-
-    marker.bindPopup(popupHtml, {
-      maxWidth:   420,
-      maxHeight:  480,
-      autoPan:    false,
-      keepInView: false
-    });
-    marker.on('mouseover', function(){
-      if(!hoverEnabled) return;
-      hoverTimer = setTimeout(() => marker.openPopup(), 700);
-    });
-    marker.on('mouseout', function(){
-      if(hoverTimer) clearTimeout(hoverTimer);
-    });
-    marker.on('click', function(){
-      if(hoverTimer) clearTimeout(hoverTimer);
-      marker.openPopup();
-    });
-
-    mhLayer.addLayer(marker);
-    mhLayer.addLayer(badge);
-  });
+  collectors.forEach(c => _renderCollectorDot(c, mhLayer, '#00897B', 'M', 'Mobile Home (no land)'));
 }
 
 // ===================================================
@@ -2896,133 +2926,7 @@ function renderMHCollectors(collectors){
 function renderTSCollectors(collectors){
   tsLayer.clearLayers();
   if(!collectors || !collectors.length) return;
-
-  // Apply active filters to collectors before rendering
-  const params     = buildFilterParams();
-  const counties   = (params.get('counties') || '').split(',').filter(Boolean);
-  const towns      = (params.get('towns')    || '').split(',').filter(Boolean).map(t => t.toUpperCase());
-  const fInterest  = (params.get('interest') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-  const dateFrom   = params.get('date_from') || '';
-  const dateTo     = params.get('date_to')   || '';
-  const priceLow   = parseFloat(params.get('price_low'))  || 0;
-  const priceHigh  = parseFloat(params.get('price_high')) || Infinity;
-
-  // If interest filter is active and doesn't include timeshare ('05'), hide all
-  if(fInterest.length && !fInterest.includes('05')) return;
-
-  collectors.forEach(c => {
-    const lat   = c.lat;
-    const lon   = c.lon;
-    const town  = c.town || '';
-
-    // Filter individual sales within this collector
-    const sales = (c.tsSales || []).filter(s => {
-      if(counties.length && !counties.includes(String(s.trustedCountyCode||'').padStart(2,'0'))) return false;
-      if(towns.length    && !towns.includes((s.trustedTown||'').toUpperCase())) return false;
-      if(dateFrom || dateTo){
-        const d = s.date ? new Date(s.date) : null;
-        if(!d) return true;
-        if(dateFrom && d < new Date(dateFrom)) return false;
-        if(dateTo   && d > new Date(dateTo))   return false;
-      }
-      if(priceLow > 0 && (s.price || 0) < priceLow)   return false;
-      if(priceHigh < Infinity && (s.price || 0) > priceHigh) return false;
-      return true;
-    });
-
-    if(!sales.length) return;
-
-    const count = sales.length;
-
-    // Gold dot
-    const marker = L.circleMarker([lat, lon], {
-      radius:      5,
-      color:       '#B8860B',
-      fillColor:   '#B8860B',
-      fillOpacity: 0,
-      weight:      2,
-    });
-
-    // Gold T-badge offset lower-left
-    const badge = L.marker([lat, lon], {
-      icon: L.divIcon({
-        className: '',
-        html: '<div style="background:#B8860B;color:#fff;border-radius:50%;' +
-              'width:16px;height:16px;font-size:9px;font-weight:bold;' +
-              'display:flex;align-items:center;justify-content:center;' +
-              'border:1.5px solid #fff;pointer-events:none;">T' +
-              (count > 1 ? count : '') + '</div>',
-        iconSize:   [16, 16],
-        iconAnchor: [18, 0],
-      }),
-      interactive: false,
-      pane: 'markerPane'
-    });
-
-    // Group sales by base street address (strip unit/week suffix)
-    function tsBaseAddr(addr){
-      if(!addr) return 'Unknown';
-      // Strip unit/week/type descriptions after the base address
-      return addr.replace(/,?\s*(UNIT|APT|WEEK|WEEKS|TYPE|WEE|LOT|#|ONE|TWO|THREE|FOUR|FIVE)\b.*/i, '').trim();
-    }
-
-    // Sort newest first
-    const sorted = [...sales].sort((a,b) => (b.date||0) - (a.date||0));
-
-    // Group by base address
-    const groups = {};
-    sorted.forEach(s => {
-      const base = tsBaseAddr(s.address || '');
-      if(!groups[base]) groups[base] = [];
-      groups[base].push(s);
-    });
-
-    // Build popup HTML
-    let popupHtml = '<div style="font-size:12px;font-weight:bold;margin-bottom:4px;">' +
-      '&#9670; Timeshare Sales — ' + town + '</div>';
-    popupHtml += '<div style="font-size:10px;color:#555;margin-bottom:6px;">' +
-      count + ' sale' + (count !== 1 ? 's' : '') +
-      ' in this town within current date/price filters.</div>';
-    popupHtml += '<div style="max-height:320px;overflow-y:auto;">';
-
-    Object.keys(groups).sort().forEach(base => {
-      const grpSales = groups[base];
-      popupHtml += '<div style="background:#f5f0e0;padding:3px 6px;margin:4px 0 2px;' +
-        'font-size:11px;font-weight:bold;border-left:3px solid #B8860B;">' +
-        base + ' (' + grpSales.length + ')</div>';
-      grpSales.forEach(s => {
-        const price  = s.price ? '$' + Number(s.price).toLocaleString() : 'N/A';
-        const date   = s.date  ? new Date(s.date).toISOString().split('T')[0] : 'N/A';
-        const seller = [s.sellerLastName, s.sellerFirstName].filter(Boolean).join(', ') || s.sellerEntityName || '';
-        const buyer  = [s.buyerLastName,  s.buyerFirstName ].filter(Boolean).join(', ') || s.buyerEntityName  || '';
-        popupHtml += '<div style="border-bottom:1px solid #eee;padding:3px 0 3px 6px;font-size:11px;">' +
-          date + ' &mdash; ' + price + '<br>' +
-          (seller ? '<span style="color:#555;">Seller: ' + seller + '</span><br>' : '') +
-          (buyer  ? '<span style="color:#555;">Buyer: '  + buyer  + '</span><br>' : '') +
-          '</div>';
-      });
-    });
-    popupHtml += '</div>';
-
-    marker.bindPopup(popupHtml, {
-      maxWidth:   420,
-      maxHeight:  480,
-      autoPan:    false,
-      keepInView: false
-    });
-    marker.on('mouseover', function(){
-      if(!hoverEnabled) return;
-      hoverTimer = setTimeout(() => marker.openPopup(), 700);
-    });
-    marker.on('mouseout',  function(){ if(hoverTimer) clearTimeout(hoverTimer); });
-    marker.on('click',     function(){
-      if(hoverTimer) clearTimeout(hoverTimer);
-      marker.openPopup();
-    });
-
-    tsLayer.addLayer(marker);
-    tsLayer.addLayer(badge);
-  });
+  collectors.forEach(c => _renderCollectorDot(c, tsLayer, '#B8860B', 'T', 'Timeshare Sales'));
 }
 
 // ===================================================
@@ -3073,7 +2977,7 @@ function buildSaleRow(s, dimmed){
          onclick="event.preventDefault(); event.stopPropagation();
                   const _url=_ptt172DlMode?'/ptt172/PTT-172.pdf?id=${s.id}&download=1':'/ptt172/preview?id=${s.id}';
                   const _w=window.open(_url,'_blank','noopener,noreferrer');
-                  if(_w){ _w.blur(); window.focus(); }"
+                  if(_w){ setTimeout(function(){ try{ window.focus(); }catch(e){} }, 100); }"
          style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
                 border-radius:2px; text-decoration:none; white-space:nowrap; flex-shrink:0;cursor:pointer;">
         PTT-172
