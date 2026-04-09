@@ -85,11 +85,27 @@ COUNTY_BOUNDS = {
 def load_vt_codes():
     with open(VT_CODES_FILE) as f:
         codes = json.load(f)
-    school_to_town = {int(k): v for k, v in codes.get("school_to_town", {}).items()}
-    town_to_county = codes.get("town_to_county", {})
-    town_centroids = codes.get("town_centroids", {})
-    county_names   = codes.get("counties", {})
-    return school_to_town, town_to_county, town_centroids, county_names
+    school_to_town   = {int(k): v for k, v in codes.get("school_to_town", {}).items()}
+    town_to_county   = codes.get("town_to_county", {})
+    town_centroids   = codes.get("town_centroids", {})
+    county_names     = codes.get("counties", {})
+    span_prefix_map  = codes.get("span_prefix_to_town", {})
+    return school_to_town, town_to_county, town_centroids, county_names, span_prefix_map
+
+
+def span_prefix_town(span_raw, span_prefix_map):
+    """Extract the 6-digit SPAN prefix and look up the town.
+    Returns the town name or None if not found.
+    The SPAN prefix is the most reliable town indicator since it is
+    mathematically assigned per town and cannot be entered incorrectly.
+    """
+    if not span_raw:
+        return None
+    s = str(span_raw).strip().replace('-', '').replace(' ', '')
+    if len(s) < 6 or not s.isdigit():
+        return None
+    prefix = f"{s[:3]}-{s[3:6]}"
+    return span_prefix_map.get(prefix)
 
 
 def coords_in_county(lat, lon, county_code):
@@ -538,7 +554,8 @@ def nominatim_geocode(address, geocode_town, town_centroids):
 
 # ── Fetch approx records ───────────────────────────────────────────────────────
 
-def fetch_all_approx(school_to_town, town_to_county):
+def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None):
+    span_prefix_map = span_prefix_map or {}
     """Page through ArcGIS and return all approx records."""
     print("Fetching all property transfer records from ArcGIS...")
     all_approx = []
@@ -592,21 +609,24 @@ def fetch_all_approx(school_to_town, town_to_county):
             trusted_county = town_to_county.get(school_town) if school_town else None
             prop_loc_city  = (a.get("propLocCty") or "").strip().title()
             arcgis_townname = (a.get("TOWNNAME") or "").strip().title()
+            span_raw       = a.get("span") or a.get("TownSpan")
 
-            # If TOWNNAME or propLocCty disagrees with school_town, trust the
-            # explicit town fields over the school code lookup. School codes
-            # are sometimes entered incorrectly (e.g. Chelsea code on a
-            # Cavendish property). propLocCty/TOWNNAME are more reliable.
-            if arcgis_townname and school_town and arcgis_townname != school_town:
-                resolved = town_to_county.get(arcgis_townname)
-                if resolved:
-                    school_town    = arcgis_townname
-                    trusted_county = resolved
-            elif prop_loc_city and school_town and prop_loc_city != school_town:
-                resolved = town_to_county.get(prop_loc_city)
-                if resolved:
-                    school_town    = prop_loc_city
-                    trusted_county = resolved
+            # Town resolution priority (most to least reliable):
+            # 1. SPAN prefix — mathematically assigned, cannot be a typo
+            # 2. TOWNNAME — set by VCGI from GPS coordinates
+            # 3. propLocCty — entered by preparer, may use village names
+            # 4. schoolCode lookup — least reliable, often entered wrong
+            span_town = span_prefix_town(span_raw, span_prefix_map)
+            if span_town and town_to_county.get(span_town):
+                school_town    = span_town
+                trusted_county = town_to_county[span_town]
+            elif arcgis_townname and town_to_county.get(arcgis_townname):
+                school_town    = arcgis_townname
+                trusted_county = town_to_county[arcgis_townname]
+            elif prop_loc_city and town_to_county.get(prop_loc_city):
+                school_town    = prop_loc_city
+                trusted_county = town_to_county[prop_loc_city]
+            # else: keep schoolCode-derived school_town as last resort
 
             geocode_town   = prop_loc_city if prop_loc_city else (school_town or "")
             match_method   = a.get("MatchMthod") or ""
@@ -684,10 +704,10 @@ def main():
     print(f"Records with null coords (will retry): {null_count:,}")
 
     # Load VT codes
-    school_to_town, town_to_county, town_centroids, county_names = load_vt_codes()
+    school_to_town, town_to_county, town_centroids, county_names, span_prefix_map = load_vt_codes()
 
     # Fetch approx records
-    approx_records = fetch_all_approx(school_to_town, town_to_county)
+    approx_records = fetch_all_approx(school_to_town, town_to_county, span_prefix_map)
 
     # Process new records AND null-coord records (retry with E911)
     to_process = [r for r in approx_records if str(r["objectid"]) not in already_done]
