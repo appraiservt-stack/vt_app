@@ -2612,7 +2612,9 @@ function enrichApproxSale(approxRecord, dotRef){
 function renderData(records){
   markersLayer.clearLayers();
   mhLayer.clearLayers();  // clear mobile home collector dots on each render
-  tsLayer.clearLayers();  // clear timeshare collector dots on each render
+  // NOTE: tsLayer is NOT cleared here — TS collectors come from the approx
+  // cache (/data/approx/all), not from /data. Clearing here would wipe them
+  // every time black dots reload. They are only cleared in renderTSCollectors().
   markerRefs = {};
   addressDotLookup = {};  // reset address->coords lookup on each render
   spanDotLookup    = {};  // reset SPAN->marker lookup on each render
@@ -3067,10 +3069,13 @@ function buildSaleRow(s, dimmed){
       <div>
         <b>${price}</b> &nbsp; ${dateStr}
       </div>
-      <a id="ptt172-link-${s.id}" href="/ptt172/preview?id=${s.id}" target="_blank"
-         onclick="event.stopPropagation(); this.href=_ptt172DlMode?'/ptt172/PTT-172.pdf?id=${s.id}&download=1':'/ptt172/preview?id=${s.id}';"
+      <a id="ptt172-link-${s.id}" href="/ptt172/preview?id=${s.id}"
+         onclick="event.preventDefault(); event.stopPropagation();
+                  const _url=_ptt172DlMode?'/ptt172/PTT-172.pdf?id=${s.id}&download=1':'/ptt172/preview?id=${s.id}';
+                  const _w=window.open(_url,'_blank','noopener,noreferrer');
+                  if(_w){ _w.blur(); window.focus(); }"
          style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
-                border-radius:2px; text-decoration:none; white-space:nowrap; flex-shrink:0;">
+                border-radius:2px; text-decoration:none; white-space:nowrap; flex-shrink:0;cursor:pointer;">
         PTT-172
       </a>
     </div>
@@ -3272,7 +3277,7 @@ document.addEventListener('mousemove', function(e){ _mouseX = e.clientX; _mouseY
 
 function startProximityWatch(){
   if(_proximityTimer) clearInterval(_proximityTimer);
-  const THRESHOLD = 120;
+  const THRESHOLD = 40; // ~0.1 inch at 96dpi — closes when cursor moves slightly away
   const started = Date.now();
   _proximityTimer = setInterval(function(){
     // Grace period: don't close for first 600ms after opening
