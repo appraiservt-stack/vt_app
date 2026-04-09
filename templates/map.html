@@ -1603,16 +1603,12 @@ map.on('overlayremove', function(e){
 });
 
 let markersLayer = L.layerGroup().addTo(map);
-// Add tsLayer to map now so it sits above markersLayer in z-order
-tsLayer.addTo(map);
 // Approx markers (town-centroid fallbacks) live in a separate layer.
-// This layer is only refreshed when filters change — never on pan/zoom —
-// so centroid-placed dots stay visible regardless of viewport position.
 let approxLayer  = L.layerGroup().addTo(map);
 let mhLayer      = L.layerGroup().addTo(map); // mobile home collector dots
-// tsLayer added AFTER markersLayer so TS collector dots render on top
-// of black dots and are not overwritten when black dots load.
-let tsLayer      = L.layerGroup(); // added to map after markersLayer initialises
+// tsLayer declared and added AFTER markersLayer/approxLayer so it renders
+// on top — TS collector dots are not overwritten by black dots.
+let tsLayer      = L.layerGroup().addTo(map);
 // approxCache loaded once at startup via initApproxCache()
 // Address lookup: normalized "ADDRESS|TOWN" -> {lat, lon} for merging approx into black dots
 let addressDotLookup = {};
