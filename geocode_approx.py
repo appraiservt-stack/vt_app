@@ -549,7 +549,8 @@ def fetch_all_approx(school_to_town, town_to_county):
     while True:
         params = {
             "where":             "ValPdOrTrn > 0",
-            "outFields":         "OBJECTID,span,propLocStr,propLocCty,schoolCode,Latitude,Longitude,MatchMthod",
+            "outFields":         "OBJECTID,span,propLocStr,propLocCty,schoolCode,Latitude,Longitude,MatchMthod,"
+                                 "intPrpType,blCn1,blCn2,blCn3,TownGlCat,sUsePr,bUsePr,prTxEx,landSize,closeDate,ValPdOrTrn",
             "f":                 "json",
             "outSR":             "4326",
             "resultRecordCount": page_size,
@@ -595,14 +596,27 @@ def fetch_all_approx(school_to_town, town_to_county):
 
             if is_approx(lat, lon, match_method=match_method, trusted_county=trusted_county):
                 all_approx.append({
-                    "objectid":       a.get("OBJECTID"),
-                    "span":           a.get("span"),
-                    "address":        (a.get("propLocStr") or "").strip(),
-                    "city":           prop_loc_city,
-                    "geocode_town":   geocode_town,
-                    "trusted_town":   school_town,
-                    "trusted_county": trusted_county,
+                    "objectid":        a.get("OBJECTID"),
+                    "span":            a.get("span"),
+                    "address":         (a.get("propLocStr") or "").strip(),
+                    "city":            prop_loc_city,
+                    "geocode_town":    geocode_town,
+                    "trusted_town":    school_town,
+                    "trusted_county":  trusted_county,
                     "school_code_raw": sc,
+                    # Filterable fields — stored so client-side filter works
+                    # without needing a separate ArcGIS fetch per approx dot.
+                    "intPrpType":  a.get("intPrpType"),
+                    "blCn1":       a.get("blCn1"),
+                    "blCn2":       a.get("blCn2"),
+                    "blCn3":       a.get("blCn3"),
+                    "TownGlCat":   a.get("TownGlCat"),
+                    "sUsePr":      a.get("sUsePr"),
+                    "bUsePr":      a.get("bUsePr"),
+                    "prTxEx":      a.get("prTxEx"),
+                    "landSize":    a.get("landSize"),
+                    "closeDate":   a.get("closeDate"),   # epoch ms
+                    "ValPdOrTrn":  a.get("ValPdOrTrn"),
                 })
 
         print(f"  Fetched {total_fetched:,} records, {len(all_approx):,} approx so far...", end="\r")
@@ -636,10 +650,16 @@ def main():
     # addresses that previously failed SPAN and Nominatim.
     # Records with manual_* methods are kept as-is (hand-entered coords).
     MANUAL_METHODS = {'manual_nominatim', 'manual_sibling'}
+    # A record is "done" only if it has coords AND all 11 filterable fields.
+    # Records missing any filterable field are re-processed to add them.
+    # Manual records keep their coords but still get filterable fields updated.
+    FILTER_FIELDS = ('intPrpType','blCn1','blCn2','blCn3','TownGlCat',
+                     'sUsePr','bUsePr','prTxEx','landSize','closeDate','ValPdOrTrn')
     already_done = set(
         k for k, v in existing.items()
-        if v.get('lat') is not None  # has coords — skip
-        or (v.get('method') or '') in MANUAL_METHODS  # manual — keep
+        if v.get('lat') is not None                        # has coords
+        and all(f in v for f in FILTER_FIELDS)             # has all filter fields
+        and (v.get('method') or '') not in MANUAL_METHODS  # not manual (manual re-fetches fields)
     )
 
     null_count = sum(1 for v in existing.values() if v.get('lat') is None
@@ -720,17 +740,33 @@ def main():
                 skipped += 1
                 print("skipped (no street number)")
 
+        # For manual records already in the file, preserve the existing
+        # coords and method — only update the filterable fields.
+        prev = existing.get(oid, {})
+        is_manual = (prev.get('method') or '') in MANUAL_METHODS
         existing[oid] = {
-            "lat":               lat,
-            "lon":               lon,
+            "lat":               prev['lat'] if is_manual else lat,
+            "lon":               prev['lon'] if is_manual else lon,
             "address":           address,
             "city":              city_display,
             "span":              str(rec.get('span') or '').strip() or None,
             "trustedTown":       trusted_town.title() if trusted_town else None,
             "trustedCountyCode": county_code,
             "trustedCountyName": county_name,
-            "method":            method,
-            "geocoded_at":       datetime.now().strftime("%Y-%m-%d"),
+            "method":            prev['method'] if is_manual else method,
+            "geocoded_at":       prev.get('geocoded_at', datetime.now().strftime("%Y-%m-%d")),
+            # Filterable fields from ArcGIS — used by client-side filter
+            "intPrpType":  rec.get("intPrpType"),
+            "blCn1":       rec.get("blCn1"),
+            "blCn2":       rec.get("blCn2"),
+            "blCn3":       rec.get("blCn3"),
+            "TownGlCat":   rec.get("TownGlCat"),
+            "sUsePr":      rec.get("sUsePr"),
+            "bUsePr":      rec.get("bUsePr"),
+            "prTxEx":      rec.get("prTxEx"),
+            "landSize":    rec.get("landSize"),
+            "closeDate":   rec.get("closeDate"),
+            "ValPdOrTrn":  rec.get("ValPdOrTrn"),
         }
 
         # Save every 25 records

@@ -2214,6 +2214,19 @@ function loadApproxData(){
   const dateTo   = params.get('date_to')   || '';
   const priceLow  = parseFloat(params.get('price_low'))  || 0;
   const priceHigh = parseFloat(params.get('price_high')) || Infinity;
+  const noLand    = params.get('no_land') === '1';
+  // Checkbox filter sets — zero-padded to match ArcGIS stored values
+  function padCodes(paramKey){
+    const raw = params.get(paramKey) || '';
+    if(!raw) return [];
+    return raw.split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
+  }
+  const fInterest  = padCodes('interest');
+  const fBuilding  = padCodes('building');
+  const fSellerUse = padCodes('seller_use');
+  const fBuyerUse  = padCodes('buyer_use');
+  const fPttEx     = padCodes('ptt_exemption');
+  const fGrandList = padCodes('grand_list');
 
   // --- Step 1: compute which records pass all filters ----------------------
   const passing = approxCache.filter(p => {
@@ -2224,7 +2237,11 @@ function loadApproxData(){
       ? b.pad(0.15).contains([p.lat, p.lon])
       : b.contains([p.lat, p.lon]);
     if(!inView) return false;
+
+    // $0 exclusion
     if(p.price !== null && (p.price || 0) <= 0) return false;
+
+    // Location filters
     if(counties.length){
       if(!p.trustedCountyCode) return false;
       if(!counties.includes(String(p.trustedCountyCode).padStart(2,'0'))) return false;
@@ -2233,14 +2250,53 @@ function loadApproxData(){
       if(!p.trustedTown) return false;
       if(!towns.includes(p.trustedTown.toUpperCase())) return false;
     }
+
+    // Date filter — use real stored date (epoch ms) now that cache has it
     if(dateFrom || dateTo){
       const d = p.date ? new Date(p.date) : null;
-      if(!d) return true; // no date in cache — include regardless of date filter
+      if(!d) return true; // no date stored — include regardless
       if(dateFrom && d < new Date(dateFrom)) return false;
       if(dateTo   && d > new Date(dateTo))   return false;
     }
+
+    // Price filter
     if(priceLow > 0 && (p.price || 0) < priceLow)   return false;
     if(priceHigh < Infinity && (p.price || 0) > priceHigh) return false;
+
+    // Land size filters
+    if(noLand){
+      if((p.landSize || 0) !== 0) return false;
+    } else {
+      const ll = parseFloat(params.get('land_low'))  || 0;
+      const lh = parseFloat(params.get('land_high')) || Infinity;
+      if(ll > 0 && (p.landSize || 0) < ll) return false;
+      if(lh < Infinity && (p.landSize || 0) > lh) return false;
+    }
+
+    // Checkbox filters — only apply if field is stored (non-null)
+    // If field is null in cache, record passes (unknown = include)
+    if(fInterest.length && p.intPrpType != null){
+      if(!fInterest.includes(String(p.intPrpType).padStart(2,'0'))) return false;
+    }
+    if(fBuilding.length && (p.buildingConstruction1 != null || p.buildingConstruction2 != null || p.buildingConstruction3 != null)){
+      const bldgCodes = [
+        p.buildingConstruction1, p.buildingConstruction2, p.buildingConstruction3
+      ].filter(Boolean).map(c => String(c).padStart(2,'0'));
+      if(bldgCodes.length && !fBuilding.some(c => bldgCodes.includes(c))) return false;
+    }
+    if(fSellerUse.length && p.sellerUseOfProperty != null){
+      if(!fSellerUse.includes(String(p.sellerUseOfProperty).padStart(2,'0'))) return false;
+    }
+    if(fBuyerUse.length && p.buyerUseOfProperty != null){
+      if(!fBuyerUse.includes(String(p.buyerUseOfProperty).padStart(2,'0'))) return false;
+    }
+    if(fPttEx.length && p.propertyTaxExemption != null){
+      if(!fPttEx.includes(String(p.propertyTaxExemption).padStart(2,'0'))) return false;
+    }
+    if(fGrandList.length && p.TownGrandListCategory != null){
+      if(!fGrandList.includes(String(p.TownGrandListCategory).padStart(2,'0'))) return false;
+    }
+
     return true;
   });
 
@@ -2366,6 +2422,48 @@ function loadApproxData(){
     const entry = { marker, sales: [...sales], prop: p, fromApproxLayer: true };
     sales.forEach(s => { markerRefs[s.id] = entry; });
     _approxVisible[key] = entry;
+
+    // Condo badge for approx layer dots
+    const approxIsCondo = sales.some(s =>
+      String(s.buildingConstruction1 || '').replace(/^0+/,'') === '5'
+    );
+    const approxIsCondoGroup = approxIsCondo && sales.length > 1;
+    if(approxIsCondoGroup){
+      const condoBadge = L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="background:#7B00D4;color:#fff;border-radius:50%;' +
+                'width:14px;height:14px;font-size:9px;font-weight:bold;' +
+                'display:flex;align-items:center;justify-content:center;' +
+                'border:1px solid #fff;pointer-events:none;">' +
+                sales.length + '</div>',
+          iconSize: [14,14], iconAnchor: [7,7],
+        }),
+        interactive: false, pane: 'markerPane'
+      });
+      approxLayer.addLayer(condoBadge);
+    }
+
+    // Mobile home badge for approx layer dots
+    const approxIsMH = sales.some(s => {
+      const gl = String(s.TownGrandListCategory || '').replace(/^0+/,'');
+      return gl === '3' && (s.landSize === 0 || s.landSize == null);
+    });
+    if(approxIsMH){
+      const mhBadge = L.marker([lat, lon], {
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="background:#00897B;color:#fff;border-radius:50%;' +
+                'width:14px;height:14px;font-size:9px;font-weight:bold;' +
+                'display:flex;align-items:center;justify-content:center;' +
+                'border:1px solid #fff;pointer-events:none;margin-left:8px;margin-top:-8px;">M' +
+                (sales.length > 1 ? sales.length : '') + '</div>',
+          iconSize: [14,14], iconAnchor: [-2,14],
+        }),
+        interactive: false, pane: 'markerPane'
+      });
+      approxLayer.addLayer(mhBadge);
+    }
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
       maxWidth:   600,
