@@ -2462,8 +2462,10 @@ def history():
     if not span_raw:
         return jsonify({"data": []})
 
-    # Primary fetch: all records matching this SPAN, exclude $0 sales
-    where = f"ValPdOrTrn > 0 AND CAST(span AS VARCHAR(20)) LIKE '%{span_raw}%'"
+    # Fetch all records matching this SPAN — $0 transfers are intentionally
+    # included so they appear in popup history (name changes, family transfers etc.)
+    # $0 exclusion only applies to map dots, not to history.
+    where = f"CAST(span AS VARCHAR(20)) LIKE '%{span_raw}%'"
     features = fetch_all_features(where, fields=_FULL_FIELDS)
 
     # Parse filters without date range so all sales are returned
