@@ -2223,6 +2223,19 @@ function initApproxCache(){
 
 function loadApproxData(){
   if(!approxCacheReady) return;
+  // During a name search, only show records returned by the ArcGIS name
+  // query. Approx cache records don't store seller/buyer names so they
+  // can't be filtered by name — suppress them entirely.
+  if(nameSearchCache !== null){
+    // Clear any existing approx dots and return
+    Object.keys(_approxVisible).forEach(k => {
+      const e = _approxVisible[k];
+      approxLayer.removeLayer(e.marker);
+      if(e.badge) approxLayer.removeLayer(e.badge);
+    });
+    _approxVisible = {};
+    return;
+  }
 
   // Don't render approx dots at statewide zoom — too many records flood the map.
   // At zoom < 9 the dots aren't useful anyway (too zoomed out to identify).
