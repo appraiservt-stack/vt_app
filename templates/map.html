@@ -3334,37 +3334,48 @@ function selectAllCheckboxes(){
 }
 
 function clearAllCheckboxes(){
-  // Uncheck all filter checkbox groups
+  // ---- Step 1: clear everything ----
   ['buildingList','interestList','sellerUseList','buyerUseList','grandListList','pttList'].forEach(id => {
     uncheckAllIn(id);
   });
-  // Clear county and town selections
   clearAllCounties();
   clearAllTowns();
-  // Clear date range
-  document.getElementById('dateFrom').value = '';
-  document.getElementById('dateTo').value   = '';
-  // Clear price range
+  document.getElementById('dateFrom').value  = '';
+  document.getElementById('dateTo').value    = '';
   document.getElementById('priceLow').value  = '';
   document.getElementById('priceHigh').value = '';
-  // Clear land size range
-  document.getElementById('landLow').value  = '';
-  document.getElementById('landHigh').value = '';
-  // Clear all name and SPAN fields
+  document.getElementById('landLow').value   = '';
+  document.getElementById('landHigh').value  = '';
+  const noLandEl = document.getElementById('noLandCheck');
+  if(noLandEl) noLandEl.checked = false;
   ['sellerEntity','sellerLast','sellerFirst',
    'buyerEntity','buyerLast','buyerFirst',
    'streetAddr','spanInput'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  // Reset Other Flags radios to 'Any' (empty value)
   ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed'].forEach(name => {
     const radio = document.querySelector(`input[name="${name}"][value=""]`);
     if(radio) radio.checked = true;
   });
-  // Invalidate any name search cache since fields are now cleared
   nameSearchCache = null;
-  // Re-filter approx cache with no active filters
-  loadApproxData();
+
+  // ---- Step 2: restore startup defaults ----
+  setCheckedCode('buildingList', '2');  // Single Family Dwelling
+  setCheckedCode('interestList', '1');  // Fee Simple
+  const today = new Date();
+  const sixMonthsAgo = new Date(today);
+  sixMonthsAgo.setMonth(today.getMonth() - 6);
+  document.getElementById('dateFrom').value = sixMonthsAgo.toISOString().split('T')[0];
+
+  // ---- Step 3: zoom back to statewide VT view and reload ----
+  map.off('moveend', onMoveEnd);
+  map.off('zoomend', onZoomEnd);
+  map.setView([44.0, -72.7], 8);
+  setTimeout(function(){
+    map.on('moveend', onMoveEnd);
+    map.on('zoomend', onZoomEnd);
+    applyFilters();
+  }, 400);
 }
 
 // ===================================================
