@@ -452,10 +452,12 @@ def build_where_clause(filters):
     # - Unlanded mobile homes (TownGlCat='03' AND landSize=0) go to MH collector dot
     clauses = [
         "ValPdOrTrn > 0",
-        # Exclude timeshares and unlanded MH from black dots.
-        # Include both padded ('05') and unpadded ('5') forms since
-        # ArcGIS stores these codes inconsistently.
+        # Exclude timeshares from black dots — any record with timeshare
+        # interest type OR timeshare resort Grand List category goes to
+        # the TS collector dot instead. Both padded and unpadded forms
+        # included since ArcGIS stores codes inconsistently.
         "intPrpType NOT IN ('05','5')",
+        "TownGlCat NOT IN ('13')",
         "NOT (TownGlCat IN ('03','3') AND landSize = 0)",
     ]
 
@@ -1519,7 +1521,8 @@ def data_timeshares():
     """Return timeshare sales grouped by town for the TS collector dots.
     All intPrpType='05' records, no $0 sales, respects date/price/location filters.
     """
-    where = "ValPdOrTrn > 0 AND intPrpType IN ('05','5')"
+    # Fetch all timeshare records: either F2=Timeshare OR Grand List=Timeshare Resort
+    where = "ValPdOrTrn > 0 AND (intPrpType IN ('05','5') OR TownGlCat IN ('13'))"
     collectors = _build_collector_response(where, "ts", request.args)
     return jsonify({"tsCollectors": collectors})
 
@@ -2456,8 +2459,8 @@ def history():
     if not span_raw:
         return jsonify({"data": []})
 
-    # Primary fetch: all records matching this SPAN
-    where = f"CAST(span AS VARCHAR(20)) LIKE '%{span_raw}%'"
+    # Primary fetch: all records matching this SPAN, exclude $0 sales
+    where = f"ValPdOrTrn > 0 AND CAST(span AS VARCHAR(20)) LIKE '%{span_raw}%'"
     features = fetch_all_features(where, fields=_FULL_FIELDS)
 
     # Parse filters without date range so all sales are returned
@@ -2476,8 +2479,9 @@ def history():
             continue
         # Timeshare isolation: timeshare records only appear in timeshare
         # popups; non-timeshare records only appear in non-timeshare popups.
-        int_type = str(rec.get("interestPropertyType") or "").lstrip("0") or "0"
-        rec_is_ts = (int_type == "5")  # lstrip('0') normalises both '5' and '05' -> '5'
+        int_type  = str(rec.get("interestPropertyType") or "").lstrip("0") or "0"
+        gl_cat    = str(rec.get("TownGrandListCategory") or "").lstrip("0") or "0"
+        rec_is_ts = (int_type == "5" or gl_cat == "13")
         if is_timeshare and not rec_is_ts:
             continue   # non-timeshare sale in a timeshare popup — skip
         if not is_timeshare and rec_is_ts:
