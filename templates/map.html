@@ -3127,6 +3127,19 @@ function openPopupWithHistory(marker, p, sales){
       const html = buildPopupHTML(p, sales, allHistory);
       popup._content = html;
       popup._contentNode.innerHTML = html;
+      // Re-wire PTT-172 buttons after innerHTML update bypasses popupopen event
+      popup._contentNode.querySelectorAll('button[data-ptt-id]').forEach(function(btn){
+        btn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          const id     = btn.getAttribute('data-ptt-id');
+          const dlMode = btn.getAttribute('data-ptt-dl') === '1';
+          const url    = dlMode
+            ? '/ptt172/PTT-172.pdf?id=' + id + '&download=1'
+            : '/ptt172/preview?id=' + id;
+          const w = window.open(url, '_blank', 'noopener,noreferrer');
+          if(w){ setTimeout(function(){ try{ window.focus(); }catch(ex){} }, 100); }
+        });
+      });
     }
   });
 }
