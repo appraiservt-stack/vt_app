@@ -2150,8 +2150,8 @@ function loadData(){
     const fBuilding = (params.get('building') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
     const noLandCk  = document.getElementById('noLandCheck')?.checked || false;
     const activeGL  = (params.get('grand_list') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-    // Only fetch TS when timeshare interest type is selected (or no interest filter)
-    const showTS = fInterest.length === 0 || fInterest.includes('05') || fInterest.includes('5');
+    // Only fetch TS when Timeshare interest type is explicitly selected
+    const showTS = fInterest.includes('05') || fInterest.includes('5');
     // Only fetch MH when explicitly requested via No Land checkbox or Grand List 03
     const showMH = noLandCk || activeGL.includes('03') || activeGL.includes('3');
 
@@ -2165,6 +2165,7 @@ function loadData(){
     .then(([data, tsData, mhData]) => {
       _dataXhr = null;
       renderData(data.data || []);
+      // renderTS/MH clear their layers first, so passing [] clears them
       renderTSCollectors(tsData.tsCollectors || []);
       renderMHCollectors(mhData.mhCollectors || []);
     })
@@ -2396,7 +2397,10 @@ function loadApproxData(){
   const grouped = {};
   unmerged.forEach(p => {
     const intType = String(p.intPrpType || '').replace(/^0+/,'') || '0';
+    const glCat   = String(p.TownGrandListCategory || '').replace(/^0+/,'') || '0';
+    const ls      = p.landSize;
     if(intType === '5') return; // ALL timeshares -> tsLayer only
+    if(glCat === '3' && (ls === 0 || ls === null || ls === undefined)) return; // MH -> mhLayer only
     const key = _approxDotKey(p);
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(p);
