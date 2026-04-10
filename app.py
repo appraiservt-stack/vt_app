@@ -454,8 +454,10 @@ def build_where_clause(filters):
         "ValPdOrTrn > 0",
         # intPrpType=5 or 05 -> TS collector. Period. Nothing else.
         "intPrpType NOT IN ('05','5')",
-        # Mobile home (blCn1/2/3=4 or 04) with no land -> MH collector
-        "NOT ((blCn1 IN ('4','04') OR blCn2 IN ('4','04') OR blCn3 IN ('4','04')) AND (landSize = 0 OR landSize IS NULL))",
+        # Mobile home (blCn1/2/3=4 or 04) with no land -> MH collector.
+        # blCn2/blCn3 are often NULL — must guard with IS NOT NULL before IN
+        # or ArcGIS SQL treats NULL IN (...) unpredictably, excluding condos.
+        "NOT ((blCn1 IN ('4','04') OR (blCn2 IS NOT NULL AND blCn2 IN ('4','04')) OR (blCn3 IS NOT NULL AND blCn3 IN ('4','04'))) AND (landSize = 0 OR landSize IS NULL))",
     ]
 
     # County filter
@@ -1532,7 +1534,7 @@ def data_mh():
     """
     where = (
         "ValPdOrTrn > 0 "
-        "AND (blCn1 IN ('4','04') OR blCn2 IN ('4','04') OR blCn3 IN ('4','04')) "
+        "AND (blCn1 IN ('4','04') OR (blCn2 IS NOT NULL AND blCn2 IN ('4','04')) OR (blCn3 IS NOT NULL AND blCn3 IN ('4','04'))) "
         "AND (landSize = 0 OR landSize IS NULL)"
     )
     collectors = _build_collector_response(where, "mh", request.args)
