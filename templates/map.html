@@ -2150,9 +2150,10 @@ function loadData(){
     const fBuilding = (params.get('building') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
     const noLandCk  = document.getElementById('noLandCheck')?.checked || false;
     const activeGL  = (params.get('grand_list') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-    const showTS    = fInterest.length === 0 || fInterest.includes('05');
-    const showMH    = noLandCk || activeGL.includes('03') ||
-                      fBuilding.length === 0 || fBuilding.includes('04');
+    // Only fetch TS when timeshare interest type is selected (or no interest filter)
+    const showTS = fInterest.length === 0 || fInterest.includes('05') || fInterest.includes('5');
+    // Only fetch MH when explicitly requested via No Land checkbox or Grand List 03
+    const showMH = noLandCk || activeGL.includes('03') || activeGL.includes('3');
 
     const fetches = [
       fetch("/data?" + p, { signal: ctrl.signal }).then(r => r.json()),
@@ -2887,18 +2888,31 @@ function _renderCollectorDot(c, layer, color, label, typeLabel){
         (seller ? '<span style="color:#555">Seller: '+seller+'</span><br>' : '') +
         (buyer  ? '<span style="color:#555">Buyer: ' +buyer +'</span>'    : '') +
         '</div>' +
-        (s.id ? '<a onclick="event.preventDefault();event.stopPropagation();' +
-          'const _w=window.open("/ptt172/preview?id=' + s.id + '\',\'_blank\',\'noopener,noreferrer\');' +
-          'if(_w){setTimeout(()=>{try{window.focus();}catch(e){}},100);}" ' +
+        (s.id ? '<button data-ptt-id="' + s.id + '" ' +
           'style="font-size:10px;padding:1px 5px;background:#1F4E79;color:#fff;' +
-          'border-radius:2px;text-decoration:none;white-space:nowrap;cursor:pointer;' +
-          'flex-shrink:0;margin-left:4px;align-self:center;">PTT-172</a>' : '') +
+          'border:none;border-radius:2px;white-space:nowrap;cursor:pointer;' +
+          'flex-shrink:0;margin-left:4px;align-self:center;">PTT-172</button>' : '') +
         '</div>';
     });
   });
   html += '</div>';
 
   marker.bindPopup(html, { maxWidth:460, maxHeight:500, autoPan:false, keepInView:false });
+
+  // Attach PTT-172 button listeners after popup DOM is rendered
+  marker.on('popupopen', function(){
+    const el = marker.getPopup().getElement();
+    if(!el) return;
+    el.querySelectorAll('button[data-ptt-id]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        const id = btn.getAttribute('data-ptt-id');
+        const w = window.open('/ptt172/preview?id=' + id, '_blank', 'noopener,noreferrer');
+        if(w){ setTimeout(function(){ try{ window.focus(); }catch(ex){} }, 100); }
+      });
+    });
+  });
+
   marker.on('mouseover', function(){
     if(!hoverEnabled) return;
     hoverTimer = setTimeout(() => marker.openPopup(), 700);
@@ -2973,15 +2987,11 @@ function buildSaleRow(s, dimmed){
       <div>
         <b>${price}</b> &nbsp; ${dateStr}
       </div>
-      <a id="ptt172-link-${s.id}" href="/ptt172/preview?id=${s.id}"
-         onclick="event.preventDefault(); event.stopPropagation();
-                  const _url=_ptt172DlMode?'/ptt172/PTT-172.pdf?id=${s.id}&download=1':'/ptt172/preview?id=${s.id}';
-                  const _w=window.open(_url,'_blank','noopener,noreferrer');
-                  if(_w){ setTimeout(function(){ try{ window.focus(); }catch(e){} }, 100); }"
+      <button data-ptt-id="${s.id}" data-ptt-dl="${_ptt172DlMode?1:0}"
          style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
-                border-radius:2px; text-decoration:none; white-space:nowrap; flex-shrink:0;cursor:pointer;">
+                border:none; border-radius:2px; white-space:nowrap; flex-shrink:0; cursor:pointer;">
         PTT-172
-      </a>
+      </button>
     </div>
     <span style="font-size:11px;word-break:break-word;">${addr}</span><br>
     <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
@@ -3210,6 +3220,19 @@ map.on('popupopen', function(e){
     if(!el) return;
     L.DomEvent.disableScrollPropagation(el);
     startProximityWatch();
+    // Wire PTT-172 buttons (uses data-ptt-id attribute, no inline onclick)
+    el.querySelectorAll('button[data-ptt-id]').forEach(function(btn){
+      btn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        const id  = btn.getAttribute('data-ptt-id');
+        const dlMode = btn.getAttribute('data-ptt-dl') === '1';
+        const url = dlMode
+          ? '/ptt172/PTT-172.pdf?id=' + id + '&download=1'
+          : '/ptt172/preview?id=' + id;
+        const w = window.open(url, '_blank', 'noopener,noreferrer');
+        if(w){ setTimeout(function(){ try{ window.focus(); }catch(ex){} }, 100); }
+      });
+    });
   }, 0);
 });
 map.on('popupclose', function(){

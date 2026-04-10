@@ -452,8 +452,11 @@ def build_where_clause(filters):
     # - Unlanded mobile homes (TownGlCat='03' AND landSize=0) go to MH collector dot
     clauses = [
         "ValPdOrTrn > 0",
-        "intPrpType <> '05'",
-        "NOT (TownGlCat = '03' AND landSize = 0)",
+        # Exclude timeshares and unlanded MH from black dots.
+        # Include both padded ('05') and unpadded ('5') forms since
+        # ArcGIS stores these codes inconsistently.
+        "intPrpType NOT IN ('05','5')",
+        "NOT (TownGlCat IN ('03','3') AND landSize = 0)",
     ]
 
     # County filter
@@ -519,11 +522,21 @@ def build_where_clause(filters):
     # etc. We must zero-pad AND single-quote each value in the SQL.
     # ----------------------------------------------------------------
     def str_in_clause(field, raw_codes_str):
-        """Build a quoted, zero-padded IN clause for a string field."""
-        codes = [str(c).strip().zfill(2) for c in raw_codes_str.split('|') if c.strip()]
+        """Build a quoted IN clause for a string field.
+        Includes both zero-padded ('05') and unpadded ('5') forms since
+        ArcGIS stores codes inconsistently across records.
+        """
+        codes = [str(c).strip() for c in raw_codes_str.split('|') if c.strip()]
         if not codes:
             return None
-        quoted = ','.join(f"'{c}'" for c in codes)
+        # For each code include both the zero-padded and unpadded form
+        all_forms = set()
+        for c in codes:
+            padded   = c.zfill(2)
+            unpadded = c.lstrip('0') or '0'
+            all_forms.add(padded)
+            all_forms.add(unpadded)
+        quoted = ','.join(f"'{v}'" for v in sorted(all_forms))
         return f"{field} IN ({quoted})"
 
     # Interest type — actual field name: intPrpType
@@ -532,9 +545,14 @@ def build_where_clause(filters):
         if clause: clauses.append(clause)
 
     # Building construction — check blCn1, blCn2, blCn3 (preparer can use any slot)
+    # Include both padded and unpadded forms for each code.
     if filters["building"]:
-        codes = [str(c).strip().zfill(2) for c in filters["building"].split('|') if c.strip()]
-        quoted = ','.join(f"'{c}'" for c in codes)
+        raw_codes = [str(c).strip() for c in filters["building"].split('|') if c.strip()]
+        all_forms = set()
+        for c in raw_codes:
+            all_forms.add(c.zfill(2))
+            all_forms.add(c.lstrip('0') or '0')
+        quoted = ','.join(f"'{v}'" for v in sorted(all_forms))
         clauses.append(
             f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
         )
@@ -1501,7 +1519,7 @@ def data_timeshares():
     """Return timeshare sales grouped by town for the TS collector dots.
     All intPrpType='05' records, no $0 sales, respects date/price/location filters.
     """
-    where = "ValPdOrTrn > 0 AND intPrpType = '05'"
+    where = "ValPdOrTrn > 0 AND intPrpType IN ('05','5')"
     collectors = _build_collector_response(where, "ts", request.args)
     return jsonify({"tsCollectors": collectors})
 
@@ -1512,7 +1530,7 @@ def data_mh():
     """Return unlanded mobile home sales grouped by town for the MH collector dots.
     All TownGlCat='03' AND landSize=0 records, no $0 sales, respects filters.
     """
-    where = "ValPdOrTrn > 0 AND TownGlCat = '03' AND landSize = 0"
+    where = "ValPdOrTrn > 0 AND TownGlCat IN ('03','3') AND landSize = 0"
     collectors = _build_collector_response(where, "mh", request.args)
     return jsonify({"mhCollectors": collectors})
 
@@ -2459,7 +2477,7 @@ def history():
         # Timeshare isolation: timeshare records only appear in timeshare
         # popups; non-timeshare records only appear in non-timeshare popups.
         int_type = str(rec.get("interestPropertyType") or "").lstrip("0") or "0"
-        rec_is_ts = (int_type == "5")
+        rec_is_ts = (int_type == "5")  # lstrip('0') normalises both '5' and '05' -> '5'
         if is_timeshare and not rec_is_ts:
             continue   # non-timeshare sale in a timeshare popup — skip
         if not is_timeshare and rec_is_ts:
