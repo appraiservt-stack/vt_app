@@ -452,12 +452,8 @@ def build_where_clause(filters):
     # - Unlanded mobile homes (TownGlCat='03' AND landSize=0) go to MH collector dot
     clauses = [
         "ValPdOrTrn > 0",
-        # Exclude timeshares from black dots — any record with timeshare
-        # interest type OR timeshare resort Grand List category goes to
-        # the TS collector dot instead. Both padded and unpadded forms
-        # included since ArcGIS stores codes inconsistently.
+        # intPrpType=5 or 05 -> TS collector. Period. Nothing else.
         "intPrpType NOT IN ('05','5')",
-        "TownGlCat NOT IN ('13')",
         "NOT (TownGlCat IN ('03','3') AND landSize = 0)",
     ]
 
@@ -1521,8 +1517,8 @@ def data_timeshares():
     """Return timeshare sales grouped by town for the TS collector dots.
     All intPrpType='05' records, no $0 sales, respects date/price/location filters.
     """
-    # Fetch all timeshare records: either F2=Timeshare OR Grand List=Timeshare Resort
-    where = "ValPdOrTrn > 0 AND (intPrpType IN ('05','5') OR TownGlCat IN ('13'))"
+    # intPrpType=5 or 05 only. No other criteria.
+    where = "ValPdOrTrn > 0 AND intPrpType IN ('05','5')"
     collectors = _build_collector_response(where, "ts", request.args)
     return jsonify({"tsCollectors": collectors})
 
@@ -2480,8 +2476,7 @@ def history():
         # Timeshare isolation: timeshare records only appear in timeshare
         # popups; non-timeshare records only appear in non-timeshare popups.
         int_type  = str(rec.get("interestPropertyType") or "").lstrip("0") or "0"
-        gl_cat    = str(rec.get("TownGrandListCategory") or "").lstrip("0") or "0"
-        rec_is_ts = (int_type == "5" or gl_cat == "13")
+        rec_is_ts = (int_type == "5")  # intPrpType=5/05 only
         if is_timeshare and not rec_is_ts:
             continue   # non-timeshare sale in a timeshare popup — skip
         if not is_timeshare and rec_is_ts:

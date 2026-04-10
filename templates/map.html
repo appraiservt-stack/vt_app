@@ -2390,13 +2390,13 @@ function loadApproxData(){
   });
 
   // --- Step 3: group unmerged records by dot key ---------------------------
-  // Exclude centroid timeshares — they render via the TS collector (tsLayer)
-  // not as individual approx dots. Rendering them here would cause hundreds
-  // of overlapping markers at the same town centroid.
+  // Exclude ALL timeshare approx records (intPrpType=5 or 05) from the
+  // approx layer. They are handled exclusively by the TS collector (tsLayer)
+  // fetched from /data/timeshares. This applies regardless of isCentroid.
   const grouped = {};
   unmerged.forEach(p => {
     const intType = String(p.intPrpType || '').replace(/^0+/,'') || '0';
-    if(p.isCentroid && intType === '5') return; // handled by tsLayer
+    if(intType === '5') return; // ALL timeshares -> tsLayer only
     const key = _approxDotKey(p);
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(p);
