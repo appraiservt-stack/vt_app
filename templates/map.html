@@ -2230,7 +2230,7 @@ function loadApproxData(){
     // Remove all current approx dots individually (no clearLayers)
     Object.keys(_approxVisible).forEach(k => {
       const entry = _approxVisible[k];
-      approxLayer.removeLayer(entry.marker);
+      approxLayer.removeLayer(entry.marker); if(entry.badge) approxLayer.removeLayer(entry.badge);
       entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
     });
     _approxVisible = {};
@@ -2361,7 +2361,7 @@ function loadApproxData(){
         const dotKey = _approxDotKey(p);
         if(_approxVisible[dotKey]){
           const entry = _approxVisible[dotKey];
-          if(!_openPopupSpan) approxLayer.removeLayer(entry.marker);
+          if(!_openPopupSpan) approxLayer.removeLayer(entry.marker); if(entry.badge) approxLayer.removeLayer(entry.badge);
           entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
           delete _approxVisible[dotKey];
         }
@@ -2381,7 +2381,7 @@ function loadApproxData(){
         const dotKey = _approxDotKey(p);
         if(_approxVisible[dotKey]){
           const entry = _approxVisible[dotKey];
-          if(!_openPopupSpan) approxLayer.removeLayer(entry.marker);
+          if(!_openPopupSpan) approxLayer.removeLayer(entry.marker); if(entry.badge) approxLayer.removeLayer(entry.badge);
           entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
           delete _approxVisible[dotKey];
         }
@@ -2416,7 +2416,7 @@ function loadApproxData(){
       const entry = _approxVisible[k];
       // Don't remove a dot whose popup is currently open
       if(_openPopupSpan && entry.sales.some(s => String(s.span) === _openPopupSpan)) return;
-      approxLayer.removeLayer(entry.marker);
+      approxLayer.removeLayer(entry.marker); if(entry.badge) approxLayer.removeLayer(entry.badge);
       entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
       delete _approxVisible[k];
     }
@@ -2467,14 +2467,8 @@ function loadApproxData(){
       dashArray:   (isCentroid || isPrecise) ? null : '4 3',
     });
 
-    const entry = { marker, sales: [...sales], prop: p, fromApproxLayer: true };
-    sales.forEach(s => { markerRefs[s.id] = entry; });
-    _approxVisible[key] = entry;
-
     // Approx badge visibility uses same active filter sets as markersLayer
     const _abldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
-    const _aint     = new Set(getCheckedCodes('interestList').map(c => c.padStart(2,'0')));
-    const _agl      = new Set(getCheckedCodes('grandListList').map(c => c.padStart(2,'0')));
     const _noLand   = document.getElementById('noLandCheck')?.checked || false;
     const _condoSel = _abldg.has('05');
     const _mhSel    = _noLand && (_abldg.has('04') || _abldg.has('4'));
@@ -2485,8 +2479,9 @@ function loadApproxData(){
       String(s.intPrpType || '').replace(/^0+/,'') !== '5'
     );
     const approxIsCondoGroup = approxIsCondo && sales.length > 1;
+    let approxBadge = null;
     if(approxIsCondoGroup){
-      const condoBadge = L.marker([lat, lon], {
+      approxBadge = L.marker([lat, lon], {
         icon: L.divIcon({
           className: '',
           html: '<div style="background:#7B00D4;color:#fff;border-radius:50%;' +
@@ -2498,7 +2493,7 @@ function loadApproxData(){
         }),
         interactive: false, pane: 'markerPane'
       });
-      approxLayer.addLayer(condoBadge);
+      approxLayer.addLayer(approxBadge);
     }
 
     // Mobile home badge for approx layer dots — only when MH filter active
@@ -2509,7 +2504,7 @@ function loadApproxData(){
       return hasMH && (ls === 0 || ls === null || ls === undefined);
     });
     if(approxIsMH){
-      const mhBadge = L.marker([lat, lon], {
+      approxBadge = L.marker([lat, lon], {
         icon: L.divIcon({
           className: '',
           html: '<div style="background:#00897B;color:#fff;border-radius:50%;' +
@@ -2521,8 +2516,13 @@ function loadApproxData(){
         }),
         interactive: false, pane: 'markerPane'
       });
-      approxLayer.addLayer(mhBadge);
+      approxLayer.addLayer(approxBadge);
     }
+
+    // Store badge in entry so it gets removed when the dot is removed
+    const entry = { marker, badge: approxBadge, sales: [...sales], prop: p, fromApproxLayer: true };
+    sales.forEach(s => { markerRefs[s.id] = entry; });
+    _approxVisible[key] = entry;
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
       maxWidth:   600,
@@ -2642,7 +2642,7 @@ function renderData(records){
   // against the new spanDotLookup/addressDotLookup built below.
   // Dots are physically removed here so the layer stays clean.
   Object.keys(_approxVisible).forEach(k => {
-    approxLayer.removeLayer(_approxVisible[k].marker);
+    approxLayer.removeLayer(_approxVisible[k].marker); if(_approxVisible[k].badge) approxLayer.removeLayer(_approxVisible[k].badge);
   });
   _approxVisible = {};
 
