@@ -454,7 +454,8 @@ def build_where_clause(filters):
         "ValPdOrTrn > 0",
         # intPrpType=5 or 05 -> TS collector. Period. Nothing else.
         "intPrpType NOT IN ('05','5')",
-        "NOT (TownGlCat IN ('03','3') AND (landSize = 0 OR landSize IS NULL))",
+        # Mobile home (blCn1/2/3=4 or 04) with no land -> MH collector
+        "NOT ((blCn1 IN ('4','04') OR blCn2 IN ('4','04') OR blCn3 IN ('4','04')) AND (landSize = 0 OR landSize IS NULL))",
     ]
 
     # County filter
@@ -1529,7 +1530,11 @@ def data_mh():
     """Return unlanded mobile home sales grouped by town for the MH collector dots.
     All TownGlCat='03' AND landSize=0 records, no $0 sales, respects filters.
     """
-    where = "ValPdOrTrn > 0 AND TownGlCat IN ('03','3') AND (landSize = 0 OR landSize IS NULL)"
+    where = (
+        "ValPdOrTrn > 0 "
+        "AND (blCn1 IN ('4','04') OR blCn2 IN ('4','04') OR blCn3 IN ('4','04')) "
+        "AND (landSize = 0 OR landSize IS NULL)"
+    )
     collectors = _build_collector_response(where, "mh", request.args)
     return jsonify({"mhCollectors": collectors})
 
