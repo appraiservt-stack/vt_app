@@ -2130,7 +2130,6 @@ function loadData(){
   // AND no county/town/name/SPAN filter is active, show nothing.
   // User must explicitly check at least one option to see dots.
   const params0 = buildFilterParams();
-  const hasLocation = params0.get('counties') || params0.get('towns');
   const hasName     = params0.get('seller_last') || params0.get('buyer_last') ||
                       params0.get('seller_entity') || params0.get('buyer_entity') ||
                       params0.get('span') || params0.get('street');
@@ -2138,7 +2137,9 @@ function loadData(){
                       params0.get('seller_use') || params0.get('buyer_use') ||
                       params0.get('grand_list') || params0.get('ptt_exemption') ||
                       params0.get('no_land');
-  if(!hasLocation && !hasName && !hasCheckbox){
+  // Location alone (county/town) is not sufficient — user must also
+  // specify WHAT they want via a checkbox or name/SPAN filter.
+  if(!hasName && !hasCheckbox){
     // Nothing selected — clear map and return
     markersLayer.clearLayers();
     mhLayer.clearLayers();
@@ -2249,7 +2250,7 @@ function loadApproxData(){
   if(!approxCacheReady) return;
   // Blank map: if nothing selected, suppress approx dots too
   const _p = buildFilterParams();
-  const _hasAny = _p.get('counties') || _p.get('towns') ||
+  const _hasAny =
     _p.get('seller_last') || _p.get('buyer_last') ||
     _p.get('seller_entity') || _p.get('buyer_entity') ||
     _p.get('span') || _p.get('street') ||
