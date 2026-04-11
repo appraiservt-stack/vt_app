@@ -37,6 +37,7 @@ import json
 import time
 import os
 import re
+import argparse
 from datetime import datetime
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -137,25 +138,25 @@ _VACANT_LAND_USE_CODES = {'8', '08', '9', '09'}  # Open Land, Timberland
 
 
 def is_approx(lat, lon, match_method=None, trusted_county=None,
-              suse_pr=None):
+              suse_pr=None, blcn1=None):
     """Return True if this record needs geocoding (approx cache treatment).
 
-    Also flags Composite-matched vacant land records (sUsePr=08/09) so
-    they get SPAN-first geocoding. ArcGIS places vacant land via Composite
-    at the road edge; the SPAN parcel centroid is more accurate.
+    F3 (blCn1) is the primary vacant land indicator. If null, zero,
+    or '01'/'1' (None declared), the property has no building and gets
+    SPAN-first placement regardless of MatchMthod. ESITE coordinates
+    can be wrong for unaddressed parcels so we override with parcel centroid.
     """
     mm = (match_method or '').strip().lower()
 
-    # Detect vacant land via Section H seller use of property
-    # Open Land (08) and Timberland (09) reliably indicate no building.
-    suse = str(suse_pr or '').strip().lstrip('0') or '0'
-    is_vacant = suse in ('8', '9')
+    # F3 = null/zero/'01'/'1' means no building declared by preparer.
+    # Both padded ('01') and unpadded ('1') forms handled.
+    b1 = str(blcn1 or '').strip().lstrip('0') or '0'
+    is_vacant = b1 in ('0', '1')  # null/zero/01/1 = no building
 
-    # Composite-matched vacant land -> approx cache so SPAN lookup can
-    # override the road-edge coordinate with the parcel centroid.
-    if mm == 'property address (composite)' and is_vacant:
-        if coords_in_vt(lat, lon) and lat != 0 and lon != 0:
-            return True  # Has coords but road-edge only — needs SPAN override
+    # All vacant land -> approx cache for SPAN-first placement.
+    # Overrides even ESITE coords which can be wrong for bare parcels.
+    if is_vacant:
+        return True
 
     if mm in _GOOD_MATCH_METHODS:
         if coords_in_vt(lat, lon) and lat != 0 and lon != 0:
@@ -575,9 +576,10 @@ def nominatim_geocode(address, geocode_town, town_centroids):
 
 # ── Fetch approx records ───────────────────────────────────────────────────────
 
-def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None):
-    span_prefix_map = span_prefix_map or {}
+def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None, date_from=None):
     """Page through ArcGIS and return all approx records."""
+    span_prefix_map = span_prefix_map or {}
+    date_from_filter = date_from  # passed into WHERE clause below
     print("Fetching all property transfer records from ArcGIS...")
     all_approx = []
     offset     = 0
@@ -586,7 +588,9 @@ def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None):
 
     while True:
         params = {
-            "where":             "ValPdOrTrn > 0",
+            "where":             f"ValPdOrTrn > 0" + (
+                f" AND closeDate >= date '{date_from_filter}'" if date_from_filter else ""
+            ),
             "outFields":         "OBJECTID,span,propLocStr,propLocCty,TOWNNAME,schoolCode,Latitude,Longitude,MatchMthod,"
                                  "intPrpType,blCn1,blCn2,blCn3,TownGlCat,sUsePr,bUsePr,prTxEx,landSize,closeDate,ValPdOrTrn",
             "f":                 "json",
@@ -653,7 +657,7 @@ def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None):
             match_method   = a.get("MatchMthod") or ""
 
             if is_approx(lat, lon, match_method=match_method, trusted_county=trusted_county,
-                         suse_pr=a.get('sUsePr')):
+                         suse_pr=a.get('sUsePr'), blcn1=a.get('blCn1')):
                 all_approx.append({
                     "objectid":        a.get("OBJECTID"),
                     "span":            a.get("span"),
@@ -691,6 +695,11 @@ def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
+    parser = argparse.ArgumentParser(description='Geocode approx VT property records')
+    parser.add_argument('--date-from', default=None,
+        help='Only process records with closeDate >= this date (YYYY-MM-DD). '
+             'Use for test runs, e.g. --date-from 2025-04-11 for last 12 months.')
+    args = parser.parse_args()
     print("=" * 60)
     print("VT Property Sales — Approx Record Geocoder")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -714,13 +723,18 @@ def main():
     # Manual records keep their coords but still get filterable fields updated.
     FILTER_FIELDS = ('intPrpType','blCn1','blCn2','blCn3','TownGlCat',
                      'sUsePr','bUsePr','prTxEx','landSize','closeDate','ValPdOrTrn')
-    already_done = set(
-        k for k, v in existing.items()
-        if v.get('lat') is not None                        # has coords
-        and all(f in v for f in FILTER_FIELDS)             # has all filter fields
-        and (v.get('method') or '') not in MANUAL_METHODS  # not manual
-        and (v.get('method') or '') != 'span_vacant'       # re-process if not yet SPAN-placed
-    )
+    def _is_done(k, v):
+        """Return True if this cached record should be skipped (already resolved)."""
+        if v.get('lat') is None: return False          # no coords — re-process
+        if not all(f in v for f in FILTER_FIELDS): return False  # missing fields
+        if (v.get('method') or '') in MANUAL_METHODS: return True # manual — keep
+        if (v.get('method') or '') == 'span_vacant': return True  # already SPAN-placed
+        # Vacant land (blCn1 null/01): re-process to get SPAN coords
+        b1 = str(v.get('blCn1') or '').strip().lstrip('0') or '0'
+        if b1 in ('0', '1'): return False
+        return True  # all other resolved records — skip
+
+    already_done = set(k for k, v in existing.items() if _is_done(k, v))
 
     null_count = sum(1 for v in existing.values() if v.get('lat') is None
                      and (v.get('method') or '') not in MANUAL_METHODS)
@@ -730,7 +744,11 @@ def main():
     school_to_town, town_to_county, town_centroids, county_names, span_prefix_map = load_vt_codes()
 
     # Fetch approx records
-    approx_records = fetch_all_approx(school_to_town, town_to_county, span_prefix_map)
+    date_from_filter = args.date_from
+    if date_from_filter:
+        print(f"Date filter: only processing records with closeDate >= {date_from_filter}")
+    approx_records = fetch_all_approx(school_to_town, town_to_county, span_prefix_map,
+                                       date_from=date_from_filter)
 
     # Process new records AND null-coord records (retry with E911)
     to_process = [r for r in approx_records if str(r["objectid"]) not in already_done]
@@ -760,10 +778,9 @@ def main():
 
         lat = lon = method = None
 
-        # Detect vacant land via Section H seller use of property
-        # Open Land (08) and Timberland (09) = no building, SPAN placement first
-        suse = str(rec.get('sUsePr') or '').strip().lstrip('0') or '0'
-        is_vacant_land = suse in ('8', '9')
+        # Detect vacant land: F3 (blCn1) null/zero/01/1 = no building declared
+        b1 = str(rec.get('blCn1') or '').strip().lstrip('0') or '0'
+        is_vacant_land = b1 in ('0', '1')
 
         # For vacant land: try SPAN parcel centroid FIRST.
         # Vacant land has no house number so E911 won't find it.
