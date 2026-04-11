@@ -737,14 +737,30 @@ def main():
 
         lat = lon = method = None
 
-        # Method 1: E911 address point lookup (most accurate for VT addresses)
-        if has_street_number(address):
+        # Detect vacant land: no building type in any of the three F3 slots
+        blcn1 = str(rec.get('blCn1') or '').strip().lstrip('0') or '0'
+        blcn2 = str(rec.get('blCn2') or '').strip().lstrip('0') or '0'
+        blcn3 = str(rec.get('blCn3') or '').strip().lstrip('0') or '0'
+        is_vacant_land = (blcn1 == '0' and blcn2 == '0' and blcn3 == '0')
+
+        # For vacant land: try SPAN parcel centroid FIRST.
+        # Vacant land has no house number so E911 won't find it.
+        # The SPAN parcel centroid places the dot inside the actual parcel
+        # boundary which is more accurate than any address-based geocoding.
+        if is_vacant_land and span_raw:
+            lat, lon, method = span_lookup(span_raw)
+            if lat:
+                span_success += 1
+                print(f"SPAN/vacant ({lat:.5f}, {lon:.5f})")
+
+        # Method 1: E911 address point lookup (most accurate for addressed properties)
+        if lat is None and has_street_number(address):
             lat, lon, method = e911_lookup(address, geocode_town, town_centroids)
             if lat:
                 e911_success += 1
                 print(f"E911 ({lat:.5f}, {lon:.5f})")
 
-        # Method 2: SPAN lookup (parcel centroid)
+        # Method 2: SPAN lookup (parcel centroid) for non-vacant land
         if lat is None and span_raw:
             lat, lon, method = span_lookup(span_raw)
             if lat:
