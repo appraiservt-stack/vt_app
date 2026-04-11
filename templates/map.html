@@ -1980,6 +1980,9 @@ function hasNameFilter(){
 // APPLY FILTERS
 // ===================================================
 function applyFilters(){
+  // Load approx cache on first Apply only (deferred from startup for speed)
+  if(!approxCacheReady && approxCache === null) initApproxCache();
+
   // Clear existing dots immediately in ALL paths so stale unfiltered dots
   // don't linger while the new filtered fetch is in flight.
   markersLayer.clearLayers();
@@ -2123,6 +2126,27 @@ function loadData(){
     return;
   }
 
+  // Blank map when nothing is selected: if all checkbox groups are empty
+  // AND no county/town/name/SPAN filter is active, show nothing.
+  // User must explicitly check at least one option to see dots.
+  const params0 = buildFilterParams();
+  const hasLocation = params0.get('counties') || params0.get('towns');
+  const hasName     = params0.get('seller_last') || params0.get('buyer_last') ||
+                      params0.get('seller_entity') || params0.get('buyer_entity') ||
+                      params0.get('span') || params0.get('street');
+  const hasCheckbox = params0.get('building') || params0.get('interest') ||
+                      params0.get('seller_use') || params0.get('buyer_use') ||
+                      params0.get('grand_list') || params0.get('ptt_exemption') ||
+                      params0.get('no_land');
+  if(!hasLocation && !hasName && !hasCheckbox){
+    // Nothing selected — clear map and return
+    markersLayer.clearLayers();
+    mhLayer.clearLayers();
+    tsLayer.clearLayers();
+    document.getElementById('statusBar').textContent = 'Select filters above and click Apply Filters.';
+    return;
+  }
+
   // Debounce: cancel pending timer and abort in-flight request
   if(_loadDataTimer) clearTimeout(_loadDataTimer);
   if(_dataXhr){ _dataXhr.abort(); _dataXhr = null; }
@@ -2223,6 +2247,24 @@ function initApproxCache(){
 
 function loadApproxData(){
   if(!approxCacheReady) return;
+  // Blank map: if nothing selected, suppress approx dots too
+  const _p = buildFilterParams();
+  const _hasAny = _p.get('counties') || _p.get('towns') ||
+    _p.get('seller_last') || _p.get('buyer_last') ||
+    _p.get('seller_entity') || _p.get('buyer_entity') ||
+    _p.get('span') || _p.get('street') ||
+    _p.get('building') || _p.get('interest') ||
+    _p.get('seller_use') || _p.get('buyer_use') ||
+    _p.get('grand_list') || _p.get('ptt_exemption') || _p.get('no_land');
+  if(!_hasAny){
+    Object.keys(_approxVisible).forEach(k => {
+      const e = _approxVisible[k];
+      approxLayer.removeLayer(e.marker);
+      if(e.badge) approxLayer.removeLayer(e.badge);
+    });
+    _approxVisible = {};
+    return;
+  }
   // During a name search, only show records returned by the ArcGIS name
   // query. Approx cache records don't store seller/buyer names so they
   // can't be filtered by name — suppress them entirely.
@@ -3408,8 +3450,8 @@ function initMapEvents(){
   map.on("zoomend", onZoomEnd);
   // Fire statewide 6-month load immediately on startup
   loadData();
-  // Fetch pre-geocoded approx records once at startup
-  initApproxCache();
+  // Approx cache is deferred to first Apply click to keep startup fast.
+  // initApproxCache() is called from applyFilters() on first use.
 }
 
 loadCodes();
