@@ -132,28 +132,30 @@ _APPROX_MATCH_METHODS = {
 }
 
 
+# sUsePr codes that indicate vacant/unimproved land (Section H of PTT-172)
+_VACANT_LAND_USE_CODES = {'8', '08', '9', '09'}  # Open Land, Timberland
+
+
 def is_approx(lat, lon, match_method=None, trusted_county=None,
-              blcn1=None, blcn2=None, blcn3=None):
+              suse_pr=None):
     """Return True if this record needs geocoding (approx cache treatment).
 
-    In addition to the standard bad-geometry cases, also flags
-    Composite-matched vacant land records so they get SPAN-first
-    geocoding. ArcGIS places 'TBD' vacant land via Composite at the
-    road edge rather than inside the parcel — the SPAN parcel centroid
-    is more accurate for these records.
+    Also flags Composite-matched vacant land records (sUsePr=08/09) so
+    they get SPAN-first geocoding. ArcGIS places vacant land via Composite
+    at the road edge; the SPAN parcel centroid is more accurate.
     """
     mm = (match_method or '').strip().lower()
 
-    # Detect vacant land: no building type in any F3 slot
-    def _strip(v):
-        return str(v or '').strip().lstrip('0') or '0'
-    is_vacant = (_strip(blcn1) == '0' and _strip(blcn2) == '0' and _strip(blcn3) == '0')
+    # Detect vacant land via Section H seller use of property
+    # Open Land (08) and Timberland (09) reliably indicate no building.
+    suse = str(suse_pr or '').strip().lstrip('0') or '0'
+    is_vacant = suse in ('8', '9')
 
     # Composite-matched vacant land -> approx cache so SPAN lookup can
     # override the road-edge coordinate with the parcel centroid.
     if mm == 'property address (composite)' and is_vacant:
         if coords_in_vt(lat, lon) and lat != 0 and lon != 0:
-            return True  # Has coords but they're road-edge — needs SPAN override
+            return True  # Has coords but road-edge only — needs SPAN override
 
     if mm in _GOOD_MATCH_METHODS:
         if coords_in_vt(lat, lon) and lat != 0 and lon != 0:
@@ -651,7 +653,7 @@ def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None):
             match_method   = a.get("MatchMthod") or ""
 
             if is_approx(lat, lon, match_method=match_method, trusted_county=trusted_county,
-                         blcn1=a.get('blCn1'), blcn2=a.get('blCn2'), blcn3=a.get('blCn3')):
+                         suse_pr=a.get('sUsePr')):
                 all_approx.append({
                     "objectid":        a.get("OBJECTID"),
                     "span":            a.get("span"),
@@ -758,11 +760,10 @@ def main():
 
         lat = lon = method = None
 
-        # Detect vacant land: no building type in any of the three F3 slots
-        blcn1 = str(rec.get('blCn1') or '').strip().lstrip('0') or '0'
-        blcn2 = str(rec.get('blCn2') or '').strip().lstrip('0') or '0'
-        blcn3 = str(rec.get('blCn3') or '').strip().lstrip('0') or '0'
-        is_vacant_land = (blcn1 == '0' and blcn2 == '0' and blcn3 == '0')
+        # Detect vacant land via Section H seller use of property
+        # Open Land (08) and Timberland (09) = no building, SPAN placement first
+        suse = str(rec.get('sUsePr') or '').strip().lstrip('0') or '0'
+        is_vacant_land = suse in ('8', '9')
 
         # For vacant land: try SPAN parcel centroid FIRST.
         # Vacant land has no house number so E911 won't find it.
