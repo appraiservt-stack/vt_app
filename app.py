@@ -1574,9 +1574,13 @@ def data_approx_all():
             # Imprecise records get isCentroid=True so the JS applies a
             # 0.15-degree viewport buffer, keeping them visible when the user
             # is viewing the town center rather than the exact road location.
+            # Imprecise: road-only geocodes that place dot away from property
+            # Precise: address-level or parcel-centroid placements
             imprecise_methods = {'manual_nominatim', 'road_nominatim'}
             method_val = (entry.get('method') or '').lower()
             is_centroid_flag = method_val in imprecise_methods
+            # span_vacant uses parcel centroid — precise enough to show as black dot
+            # (isCentroid=False so exact viewport bounds check applies)
         else:
             # Null-coord record — couldn't be geocoded.
             # Fall back to town centroid so it shows as an orange circle.

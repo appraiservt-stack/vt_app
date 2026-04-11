@@ -132,9 +132,28 @@ _APPROX_MATCH_METHODS = {
 }
 
 
-def is_approx(lat, lon, match_method=None, trusted_county=None):
-    """Return True if this record needs geocoding."""
+def is_approx(lat, lon, match_method=None, trusted_county=None,
+              blcn1=None, blcn2=None, blcn3=None):
+    """Return True if this record needs geocoding (approx cache treatment).
+
+    In addition to the standard bad-geometry cases, also flags
+    Composite-matched vacant land records so they get SPAN-first
+    geocoding. ArcGIS places 'TBD' vacant land via Composite at the
+    road edge rather than inside the parcel — the SPAN parcel centroid
+    is more accurate for these records.
+    """
     mm = (match_method or '').strip().lower()
+
+    # Detect vacant land: no building type in any F3 slot
+    def _strip(v):
+        return str(v or '').strip().lstrip('0') or '0'
+    is_vacant = (_strip(blcn1) == '0' and _strip(blcn2) == '0' and _strip(blcn3) == '0')
+
+    # Composite-matched vacant land -> approx cache so SPAN lookup can
+    # override the road-edge coordinate with the parcel centroid.
+    if mm == 'property address (composite)' and is_vacant:
+        if coords_in_vt(lat, lon) and lat != 0 and lon != 0:
+            return True  # Has coords but they're road-edge — needs SPAN override
 
     if mm in _GOOD_MATCH_METHODS:
         if coords_in_vt(lat, lon) and lat != 0 and lon != 0:
@@ -631,7 +650,8 @@ def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None):
             geocode_town   = prop_loc_city if prop_loc_city else (school_town or "")
             match_method   = a.get("MatchMthod") or ""
 
-            if is_approx(lat, lon, match_method=match_method, trusted_county=trusted_county):
+            if is_approx(lat, lon, match_method=match_method, trusted_county=trusted_county,
+                         blcn1=a.get('blCn1'), blcn2=a.get('blCn2'), blcn3=a.get('blCn3')):
                 all_approx.append({
                     "objectid":        a.get("OBJECTID"),
                     "span":            a.get("span"),
@@ -696,7 +716,8 @@ def main():
         k for k, v in existing.items()
         if v.get('lat') is not None                        # has coords
         and all(f in v for f in FILTER_FIELDS)             # has all filter fields
-        and (v.get('method') or '') not in MANUAL_METHODS  # not manual (manual re-fetches fields)
+        and (v.get('method') or '') not in MANUAL_METHODS  # not manual
+        and (v.get('method') or '') != 'span_vacant'       # re-process if not yet SPAN-placed
     )
 
     null_count = sum(1 for v in existing.values() if v.get('lat') is None
@@ -748,8 +769,9 @@ def main():
         # The SPAN parcel centroid places the dot inside the actual parcel
         # boundary which is more accurate than any address-based geocoding.
         if is_vacant_land and span_raw:
-            lat, lon, method = span_lookup(span_raw)
+            lat, lon, _m = span_lookup(span_raw)
             if lat:
+                method = 'span_vacant'  # distinct method for tracking
                 span_success += 1
                 print(f"SPAN/vacant ({lat:.5f}, {lon:.5f})")
 
