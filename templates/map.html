@@ -774,6 +774,7 @@ let selectedTownsByCounty = {};
 let townsByCounty         = {};
 let shouldFitBounds       = false;
 let selectedSales         = {};   // { id: fullRecordObj }
+let flaggedSales          = {};   // { id: fullRecordObj } — manually flagged from popup
 let markerRefs            = {};   // { id: { marker, sales, prop } }
 let spanDotLookup         = {};   // { span: { marker, sales, prop } } for approx merging
 
@@ -3192,11 +3193,27 @@ function buildPopupHTML(p, sales, historySales){
     ? `<div style="font-size:10px;color:#888;text-align:center;padding:2px 0;">&#9651; scroll to see all ${totalSales} sales &#9651;</div>`
     : '';
 
+  // Flag for Export button — uses first sale ID as ref to find the dot
+  const refId = sales[0] && sales[0].id;
+  const isFlagged = sales.some(s => flaggedSales[s.id]);
+  const flagBtn = refId
+    ? `<div style="text-align:center;margin-top:4px;">
+        <button onclick="toggleFlagDot('${refId}')"
+          style="padding:2px 10px;font-size:11px;font-weight:bold;cursor:pointer;
+                 border:1px solid ${isFlagged ? '#0066ff' : '#999'};border-radius:3px;
+                 background:${isFlagged ? '#0066ff' : '#fff'};
+                 color:${isFlagged ? '#fff' : '#333'};">
+          ${isFlagged ? '&#10003; Flagged' : '&#9873; Flag for Export'}
+        </button>
+      </div>`
+    : '';
+
   return `${header}
     ${scrollNote}
     <div style="max-height:400px; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;">
       ${rows}
-    </div>`;
+    </div>
+    ${flagBtn}`;
 }
 
 
@@ -3297,6 +3314,42 @@ function updateSelCount(){
 }
 
 // ===================================================
+// FLAG FOR EXPORT (popup button)
+// ===================================================
+function toggleFlagDot(refSaleId){
+  const ref = markerRefs[refSaleId];
+  if(!ref) return;
+
+  // Check if ANY sale in this dot is already flagged
+  const alreadyFlagged = ref.sales.some(s => flaggedSales[s.id]);
+
+  if(alreadyFlagged){
+    // Unflag all sales in this dot
+    const ll = ref.marker.getLatLng();
+    const inShape = firstShapeContaining(ll.lat, ll.lng);
+    ref.sales.forEach(s => {
+      delete flaggedSales[s.id];
+      // Only remove from selectedSales if not inside a drawn shape
+      if(!inShape) delete selectedSales[s.id];
+    });
+  } else {
+    // Flag all sales in this dot
+    ref.sales.forEach(s => {
+      flaggedSales[s.id] = s;
+      selectedSales[s.id] = s;
+    });
+  }
+
+  updateMarkerStyle(ref);
+  updateSelCount();
+
+  // Refresh the open popup so the button label updates
+  const newHTML = buildPopupHTML(ref.prop, ref.sales, null);
+  ref.marker.setPopupContent(newHTML);
+  ref.marker.openPopup();
+}
+
+// ===================================================
 // POPUP TIMING
 // ===================================================
 // Popup opens on marker mouseover (700ms delay).
@@ -3384,6 +3437,7 @@ function clearSelectedSales(){
     if(ref) updateMarkerStyle(ref);
   });
   selectedSales = {};
+  flaggedSales  = {};
   updateSelCount();
   // Close any open popup so stale checkboxes don't remain visible
   map.closePopup();
@@ -3400,6 +3454,9 @@ function selectAllCheckboxes(){
 }
 
 function clearAllCheckboxes(){
+  // ---- Step 0: clear flagged/selected dots ----
+  clearSelectedSales();
+
   // ---- Step 1: clear everything ----
   ['buildingList','interestList','sellerUseList','buyerUseList','grandListList','pttList'].forEach(id => {
     uncheckAllIn(id);
@@ -4004,7 +4061,7 @@ function updateStatsPopup(s){ showStatsPanel(s); }
 
 // ---- Reapply all shapes after renderData ----
 function reapplyDrawnShapes(){
-  if(drawnShapes.length === 0) return;
+  if(drawnShapes.length === 0 && Object.keys(flaggedSales).length === 0) return;
 
   selectedSales = {};
   const seen = new Set();
@@ -4016,6 +4073,11 @@ function reapplyDrawnShapes(){
     if(s){
       const sale = ref.sales.find(r => String(r.id) === String(id));
       if(sale) selectedSales[id] = sale;
+    }
+    // Re-add flagged sales (use current sale data from markerRefs)
+    if(flaggedSales[id]){
+      const sale = ref.sales.find(r => String(r.id) === String(id));
+      if(sale){ flaggedSales[id] = sale; selectedSales[id] = sale; }
     }
     if(!seen.has(ref.marker)){
       seen.add(ref.marker);
@@ -4051,6 +4113,8 @@ function deleteShape(id){
   reapplyDrawnShapes();
   if(drawnShapes.length === 0){
     selectedSales = {};
+    // Preserve flagged sales
+    Object.keys(flaggedSales).forEach(id2 => { selectedSales[id2] = flaggedSales[id2]; });
     const seen = new Set();
     Object.keys(markerRefs).forEach(id2 => {
       const ref = markerRefs[id2];
@@ -4148,16 +4212,33 @@ function downloadExport(selectedOnly){
       stats: computeShapeStats(s.id)
     }));
 
+  // Track flagged IDs not captured by any shape
+  const flaggedNotInShape = new Set(Object.keys(flaggedSales));
+
   Object.keys(markerRefs).forEach(id => {
     const ref  = markerRefs[id];
     const ll   = ref.marker.getLatLng();
     const s    = firstShapeContaining(ll.lat, ll.lng);
-    if(!s) return;
-    const idx  = drawnShapes.findIndex(ds => ds.id === s.id);
-    if(idx < 0) return;
-    const sale = ref.sales.find(r => String(r.id) === String(id));
-    if(sale) groups[idx].ids.push(id);
+    if(s){
+      const idx  = drawnShapes.findIndex(ds => ds.id === s.id);
+      if(idx >= 0){
+        const sale = ref.sales.find(r => String(r.id) === String(id));
+        if(sale) groups[idx].ids.push(id);
+      }
+      flaggedNotInShape.delete(id);
+    } else if(!flaggedSales[id]){
+      // Not in shape and not flagged — skip
+    }
   });
+
+  // Add a "Flagged" group for manually flagged sales outside any shape
+  if(flaggedNotInShape.size > 0){
+    groups.push({
+      label: 'Flagged',
+      ids:   [...flaggedNotInShape],
+      stats: null
+    });
+  }
 
   // Remove empty groups
   const populated = groups.filter(g => g.ids.length > 0);
