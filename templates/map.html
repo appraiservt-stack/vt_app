@@ -3036,8 +3036,9 @@ function _renderCollectorDot(c, layer, color, label, typeLabel){
       btn.addEventListener('click', function(e){
         e.stopPropagation();
         const id = btn.getAttribute('data-ptt-id');
-        const w = window.open('/ptt172/preview?id=' + id, '_blank', 'noopener,noreferrer');
-        if(w){ setTimeout(function(){ try{ window.focus(); }catch(ex){} }, 100); }
+        var w = window.open('/ptt172/preview?id=' + id, '_blank');
+        if(w){ w.blur(); }
+        window.focus();
       });
     });
   });
@@ -3265,8 +3266,9 @@ function openPopupWithHistory(marker, p, sales){
           const url    = dlMode
             ? '/ptt172/PTT-172.pdf?id=' + id + '&download=1'
             : '/ptt172/preview?id=' + id;
-          const w = window.open(url, '_blank', 'noopener,noreferrer');
-          if(w){ setTimeout(function(){ try{ window.focus(); }catch(ex){} }, 100); }
+          var w = window.open(url, '_blank');
+          if(w){ w.blur(); }
+          window.focus();
         });
       });
     }
@@ -3371,8 +3373,9 @@ map.on('popupopen', function(e){
         const url = dlMode
           ? '/ptt172/PTT-172.pdf?id=' + id + '&download=1'
           : '/ptt172/preview?id=' + id;
-        const w = window.open(url, '_blank', 'noopener,noreferrer');
-        if(w){ setTimeout(function(){ try{ window.focus(); }catch(ex){} }, 100); }
+        var w = window.open(url, '_blank');
+        if(w){ w.blur(); }
+        window.focus();
       });
     });
   }, 0);
