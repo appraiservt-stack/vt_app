@@ -2048,17 +2048,21 @@ function applyFilters(){
       }
     });
     if(found){
-      const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
-      map.off("moveend", onMoveEnd);
-      map.off("zoomend", onZoomEnd);
-      map.fitBounds(bounds, { padding: [30, 30], animate: true });
-      setTimeout(() => {
-        map.on("moveend", onMoveEnd);
-        map.on("zoomend", onZoomEnd);
-        loadData();
-        loadApproxData();
-      }, 600);
-      return;
+      const _townKey = "towns:" + allSelectedTowns.slice().sort().join(",");
+      if (_townKey !== _lastZoomedTo) {
+        _lastZoomedTo = _townKey;
+        const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+        map.off("moveend", onMoveEnd);
+        map.off("zoomend", onZoomEnd);
+        map.fitBounds(bounds, { padding: [30, 30], animate: true });
+        setTimeout(() => {
+          map.on("moveend", onMoveEnd);
+          map.on("zoomend", onZoomEnd);
+          loadData();
+          loadApproxData();
+        }, 600);
+        return;
+      }
     }
   }
 
@@ -2094,17 +2098,21 @@ function applyFilters(){
       }
     });
     if(found){
-      const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
-      map.off("moveend", onMoveEnd);
-      map.off("zoomend", onZoomEnd);
-      map.fitBounds(bounds, { padding: [30, 30], animate: true });
-      setTimeout(() => {
-        map.on("moveend", onMoveEnd);
-        map.on("zoomend", onZoomEnd);
-        loadData();
-        loadApproxData();
-      }, 600);
-      return;
+      const _countyKey = "county:" + checkedCounties.slice().sort().join(",");
+      if (_countyKey !== _lastZoomedTo) {
+        _lastZoomedTo = _countyKey;
+        const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+        map.off("moveend", onMoveEnd);
+        map.off("zoomend", onZoomEnd);
+        map.fitBounds(bounds, { padding: [30, 30], animate: true });
+        setTimeout(() => {
+          map.on("moveend", onMoveEnd);
+          map.on("zoomend", onZoomEnd);
+          loadData();
+          loadApproxData();
+        }, 600);
+        return;
+      }
     }
   }
 
@@ -2222,6 +2230,7 @@ let approxCacheIds = new Set(); // fast O(1) lookup: is this id in approxCache?
 // Kept in sync by loadApproxData() — dots are added/removed individually,
 // never via clearLayers(). This eliminates all flicker from race conditions.
 let _approxVisible = {}; // currently rendered approx dots
+let _lastZoomedTo = null;
 
 function initApproxCache(){
   fetch('/data/approx/all')
@@ -3401,6 +3410,7 @@ function clearAllCheckboxes(){
     if(radio) radio.checked = true;
   });
   nameSearchCache = null;
+  _lastZoomedTo = null;
 
   // ---- Step 2: restore startup defaults ----
   setCheckedCode('buildingList', '2');  // Single Family Dwelling
