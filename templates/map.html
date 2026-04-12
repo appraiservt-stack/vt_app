@@ -3017,31 +3017,16 @@ function _renderCollectorDot(c, layer, color, label, typeLabel){
         (seller ? '<span style="color:#555">Seller: '+seller+'</span><br>' : '') +
         (buyer  ? '<span style="color:#555">Buyer: ' +buyer +'</span>'    : '') +
         '</div>' +
-        (s.id ? '<button data-ptt-id="' + s.id + '" ' +
+        (s.id ? '<a href="/ptt172/preview?id=' + s.id + '" target="_blank" rel="noopener noreferrer" ' +
           'style="font-size:10px;padding:1px 5px;background:#1F4E79;color:#fff;' +
           'border:none;border-radius:2px;white-space:nowrap;cursor:pointer;' +
-          'flex-shrink:0;margin-left:4px;align-self:center;">PTT-172</button>' : '') +
+          'flex-shrink:0;margin-left:4px;align-self:center;text-decoration:none;display:inline-block;">PTT-172</a>' : '') +
         '</div>';
     });
   });
   html += '</div>';
 
   marker.bindPopup(html, { maxWidth:460, maxHeight:500, autoPan:false, keepInView:false });
-
-  // Attach PTT-172 button listeners after popup DOM is rendered
-  marker.on('popupopen', function(){
-    const el = marker.getPopup().getElement();
-    if(!el) return;
-    el.querySelectorAll('button[data-ptt-id]').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        e.stopPropagation();
-        const id = btn.getAttribute('data-ptt-id');
-        var w = window.open('/ptt172/preview?id=' + id, '_blank');
-        if(w){ w.blur(); }
-        window.focus();
-      });
-    });
-  });
 
   marker.on('mouseover', function(){
     if(!hoverEnabled) return;
@@ -3117,11 +3102,13 @@ function buildSaleRow(s, dimmed){
       <div>
         <b>${price}</b> &nbsp; ${dateStr}
       </div>
-      <button data-ptt-id="${s.id}" data-ptt-dl="${_ptt172DlMode?1:0}"
+      <a href="${_ptt172DlMode ? '/ptt172/PTT-172.pdf?id=' + s.id + '&download=1' : '/ptt172/preview?id=' + s.id}"
+         target="_blank" rel="noopener noreferrer"
          style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
-                border:none; border-radius:2px; white-space:nowrap; flex-shrink:0; cursor:pointer;">
+                border:none; border-radius:2px; white-space:nowrap; flex-shrink:0; cursor:pointer;
+                text-decoration:none; display:inline-block;">
         PTT-172
-      </button>
+      </a>
     </div>
     <span style="font-size:11px;word-break:break-word;">${addr}</span><br>
     <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
@@ -3257,20 +3244,6 @@ function openPopupWithHistory(marker, p, sales){
       const html = buildPopupHTML(p, sales, allHistory);
       popup._content = html;
       popup._contentNode.innerHTML = html;
-      // Re-wire PTT-172 buttons after innerHTML update bypasses popupopen event
-      popup._contentNode.querySelectorAll('button[data-ptt-id]').forEach(function(btn){
-        btn.addEventListener('click', function(ev){
-          ev.stopPropagation();
-          const id     = btn.getAttribute('data-ptt-id');
-          const dlMode = btn.getAttribute('data-ptt-dl') === '1';
-          const url    = dlMode
-            ? '/ptt172/PTT-172.pdf?id=' + id + '&download=1'
-            : '/ptt172/preview?id=' + id;
-          var w = window.open(url, '_blank');
-          if(w){ w.blur(); }
-          window.focus();
-        });
-      });
     }
   });
 }
@@ -3364,20 +3337,6 @@ map.on('popupopen', function(e){
     if(!el) return;
     L.DomEvent.disableScrollPropagation(el);
     startProximityWatch();
-    // Wire PTT-172 buttons (uses data-ptt-id attribute, no inline onclick)
-    el.querySelectorAll('button[data-ptt-id]').forEach(function(btn){
-      btn.addEventListener('click', function(ev){
-        ev.stopPropagation();
-        const id  = btn.getAttribute('data-ptt-id');
-        const dlMode = btn.getAttribute('data-ptt-dl') === '1';
-        const url = dlMode
-          ? '/ptt172/PTT-172.pdf?id=' + id + '&download=1'
-          : '/ptt172/preview?id=' + id;
-        var w = window.open(url, '_blank');
-        if(w){ w.blur(); }
-        window.focus();
-      });
-    });
   }, 0);
 });
 map.on('popupclose', function(){
