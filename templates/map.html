@@ -2055,6 +2055,11 @@ function applyFilters(){
     .then(r => r.json())
     .then(data => {
       nameSearchCache = data.data || [];
+      // Mark all name search results as non-approx so they render as solid dots.
+      // ArcGIS returned these with valid coordinates via resolve_coordinates;
+      // the approx layer is suppressed during name searches so these records
+      // must go through the normal renderData path as solid markers.
+      nameSearchCache.forEach(p => { p.approxLocation = false; });
       let bounds = null;
       nameSearchCache.forEach(p => {
         if(p.lat != null && p.lon != null){
@@ -2765,13 +2770,20 @@ function renderData(records){
   _approxVisible = {};
 
   let grouped = {};
+  const isNameSearch = (nameSearchCache !== null);
   records.forEach(p => {
-    // Approx records are handled by approxLayer — skip them here so they
-    // don’t get cleared/redrawn on every pan/zoom.
-    if(p.approxLocation) return;
-    // Skip records already in approx cache — cache serves them with correct coords.
-    // approxCacheIds is a Set for O(1) lookup instead of O(n) .some() scan.
-    if(approxCacheReady && approxCacheIds.has(p.id)) return;
+    // During a name search, show ALL returned records as solid dots.
+    // ArcGIS already returned them with valid coordinates via resolve_coordinates,
+    // and the approx layer is suppressed during name searches — so skipping
+    // approx/cached records here would make them vanish entirely.
+    if(!isNameSearch){
+      // Approx records are handled by approxLayer — skip them here so they
+      // don’t get cleared/redrawn on every pan/zoom.
+      if(p.approxLocation) return;
+      // Skip records already in approx cache — cache serves them with correct coords.
+      // approxCacheIds is a Set for O(1) lookup instead of O(n) .some() scan.
+      if(approxCacheReady && approxCacheIds.has(p.id)) return;
+    }
 
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
