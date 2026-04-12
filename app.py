@@ -54,6 +54,15 @@ def _init_assessor_links():
                 )
             """)
         conn.commit()
+        # Add url2 column if it doesn't exist yet
+        if _using_postgres():
+            cur.execute("ALTER TABLE assessor_links ADD COLUMN IF NOT EXISTS url2 TEXT;")
+        else:
+            try:
+                cur.execute("ALTER TABLE assessor_links ADD COLUMN url2 TEXT;")
+            except Exception:
+                pass  # column already exists
+        conn.commit()
     finally:
         conn.close()
 
@@ -3295,10 +3304,10 @@ def assessor_lookup():
     town = request.args.get("town", "").strip()
     if not town:
         return jsonify({"error": "town parameter required"}), 400
-    row = db_fetchone(_q("SELECT town_name, url FROM assessor_links WHERE LOWER(town_name) = LOWER(?)"), (town,))
+    row = db_fetchone(_q("SELECT town_name, url, url2 FROM assessor_links WHERE LOWER(town_name) = LOWER(?)"), (town,))
     if row:
-        return jsonify({"town": row["town_name"], "url": row["url"]})
-    return jsonify({"town": town, "url": None})
+        return jsonify({"town": row["town_name"], "url": row["url"], "url2": row.get("url2") or None})
+    return jsonify({"town": town, "url": None, "url2": None})
 
 @app.route("/admin/assessors")
 @_admin_required
@@ -3308,7 +3317,7 @@ def assessors_admin():
 @app.route("/admin/assessors/list")
 @_admin_required
 def assessors_list():
-    rows = db_fetchall(_q("SELECT town_name, url, updated_at FROM assessor_links ORDER BY town_name"))
+    rows = db_fetchall(_q("SELECT town_name, url, url2, updated_at FROM assessor_links ORDER BY town_name"))
     return jsonify(rows)
 
 @app.route("/admin/assessors/save", methods=["POST"])
@@ -3317,23 +3326,24 @@ def assessors_save():
     data = request.get_json(force=True)
     town = data.get("town_name", "").strip()
     url  = data.get("url", "").strip()
+    url2 = data.get("url2", "").strip()
     if not town or not url:
         return jsonify({"error": "town_name and url required"}), 400
     now = datetime.now(timezone.utc).isoformat()
     from auth import _using_postgres
     if _using_postgres():
         db_execute(_q("""
-            INSERT INTO assessor_links (town_name, url, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT (town_name) DO UPDATE SET url = EXCLUDED.url, updated_at = EXCLUDED.updated_at
-        """), (town, url, now))
+            INSERT INTO assessor_links (town_name, url, url2, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (town_name) DO UPDATE SET url = EXCLUDED.url, url2 = EXCLUDED.url2, updated_at = EXCLUDED.updated_at
+        """), (town, url, url2 or None, now))
     else:
         db_execute(_q("""
-            INSERT INTO assessor_links (town_name, url, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(town_name) DO UPDATE SET url = excluded.url, updated_at = excluded.updated_at
-        """), (town, url, now))
-    return jsonify({"ok": True, "town_name": town, "url": url})
+            INSERT INTO assessor_links (town_name, url, url2, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(town_name) DO UPDATE SET url = excluded.url, url2 = excluded.url2, updated_at = excluded.updated_at
+        """), (town, url, url2 or None, now))
+    return jsonify({"ok": True, "town_name": town, "url": url, "url2": url2 or None})
 
 
 if __name__ == "__main__":

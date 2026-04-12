@@ -1772,7 +1772,11 @@ function _doAssessorSearch() {
         if (!row) return;
         const right = row.querySelector('span:last-child');
         if (d.url) {
-          right.innerHTML = '<a href="' + d.url + '" target="_blank" style="color:#2d6a4f;font-weight:600;text-decoration:underline;">View</a>';
+          let links = '<a href="' + d.url + '" target="_blank" style="color:#2d6a4f;font-weight:600;text-decoration:underline;">Link 1</a>';
+          if (d.url2) {
+            links += '&nbsp;&nbsp;<a href="' + d.url2 + '" target="_blank" style="color:#2d6a4f;font-weight:600;text-decoration:underline;">Link 2</a>';
+          }
+          right.innerHTML = links;
         } else {
           right.textContent = 'Not Available';
           right.style.color = '#c0392b';

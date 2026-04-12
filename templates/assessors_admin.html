@@ -132,6 +132,10 @@
         <label>URL</label>
         <input type="text" id="urlInput" placeholder="https://...">
       </div>
+      <div class="form-group" style="flex:2; min-width:260px;">
+        <label>Link 2 URL</label>
+        <input type="text" id="url2Input" placeholder="https://... (optional)">
+      </div>
       <div class="form-group">
         <button class="btn-sm btn-green" style="padding:8px 18px; font-size:13px;" onclick="saveRow()">Save</button>
         <button class="btn-sm btn-blue" style="padding:8px 12px; font-size:13px; margin-top:4px; display:none;" id="cancelBtn" onclick="cancelEdit()">Cancel</button>
@@ -143,7 +147,8 @@
     <thead>
       <tr>
         <th>Town</th>
-        <th>URL</th>
+        <th>Link 1</th>
+        <th>Link 2</th>
         <th>Updated</th>
         <th>Actions</th>
       </tr>
@@ -168,11 +173,15 @@ function loadRows() {
       tbody.innerHTML = '';
       rows.forEach(r => {
         const tr = document.createElement('tr');
+        const url2Cell = r.url2
+          ? '<a href="' + esc(r.url2) + '" target="_blank">' + esc(r.url2) + '</a>'
+          : '';
         tr.innerHTML =
           '<td>' + esc(r.town_name) + '</td>' +
           '<td><a href="' + esc(r.url) + '" target="_blank">' + esc(r.url) + '</a></td>' +
+          '<td>' + url2Cell + '</td>' +
           '<td>' + (r.updated_at || '').slice(0, 10) + '</td>' +
-          '<td><button class="btn-sm btn-blue" onclick="editRow(\'' + esc(r.town_name).replace(/'/g, "\\'") + '\',\'' + esc(r.url).replace(/'/g, "\\'") + '\')">Edit</button></td>';
+          '<td><button class="btn-sm btn-blue" onclick="editRow(\'' + esc(r.town_name).replace(/'/g, "\\'") + '\',\'' + esc(r.url).replace(/'/g, "\\'") + '\',\'' + esc(r.url2 || '').replace(/'/g, "\\'") + '\')">Edit</button></td>';
         tbody.appendChild(tr);
       });
     });
@@ -184,9 +193,10 @@ function esc(s) {
   return d.innerHTML;
 }
 
-function editRow(town, url) {
+function editRow(town, url, url2) {
   document.getElementById('townInput').value = town;
   document.getElementById('urlInput').value = url;
+  document.getElementById('url2Input').value = url2 || '';
   document.getElementById('formTitle').textContent = 'Edit Assessor Link';
   document.getElementById('cancelBtn').style.display = '';
 }
@@ -194,6 +204,7 @@ function editRow(town, url) {
 function cancelEdit() {
   document.getElementById('townInput').value = '';
   document.getElementById('urlInput').value = '';
+  document.getElementById('url2Input').value = '';
   document.getElementById('formTitle').textContent = 'Add Assessor Link';
   document.getElementById('cancelBtn').style.display = 'none';
 }
@@ -201,11 +212,12 @@ function cancelEdit() {
 function saveRow() {
   const town = document.getElementById('townInput').value.trim();
   const url  = document.getElementById('urlInput').value.trim();
+  const url2 = document.getElementById('url2Input').value.trim();
   if (!town || !url) { showAlert('Town and URL are required.', 'error'); return; }
   fetch('/admin/assessors/save', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ town_name: town, url: url })
+    body: JSON.stringify({ town_name: town, url: url, url2: url2 })
   })
   .then(r => r.json())
   .then(d => {
