@@ -3431,13 +3431,16 @@ function _simpleDownloadExport(selectedOnly){
 // CLEAR SELECTED PROPERTIES
 // ===================================================
 function clearSelectedSales(){
-  // Deselect all sales and reset all markers to their unselected style
-  Object.keys(selectedSales).forEach(id => {
-    const ref = markerRefs[id];
-    if(ref) updateMarkerStyle(ref);
-  });
+  // Capture keys before clearing so we know which markers to restyle
+  const ids = Object.keys(selectedSales);
   selectedSales = {};
   flaggedSales  = {};
+  // Now restyle markers — updateMarkerStyle will see them as unselected
+  const seen = new Set();
+  ids.forEach(id => {
+    const ref = markerRefs[id];
+    if(ref && !seen.has(ref.marker)){ seen.add(ref.marker); updateMarkerStyle(ref); }
+  });
   updateSelCount();
   // Close any open popup so stale checkboxes don't remain visible
   map.closePopup();
