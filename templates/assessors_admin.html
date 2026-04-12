@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin — Assessor Links</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; }
+  .topbar { background: #1a3a5c; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar a { color: #fff; text-decoration: none; font-size: 14px; }
+  .topbar .nav-links { display: flex; gap: 18px; }
+  .container { max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+  h2 { font-size: 20px; color: #1a3a5c; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  th { background: #1a3a5c; color: #fff; padding: 12px 14px; text-align: left; font-size: 13px; }
+  td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #eee; color: #333; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f9fc; }
+  td a { color: #1a3a5c; text-decoration: underline; word-break: break-all; }
+  .btn-sm { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; color: #fff; }
+  .btn-blue  { background: #1a3a5c; }
+  .btn-blue:hover { background: #16304d; }
+  .btn-green { background: #2d6a4f; }
+  .btn-green:hover { background: #235540; }
+  .form-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 20px 24px; margin-bottom: 24px; }
+  .form-card h3 { font-size: 15px; color: #1a3a5c; margin-bottom: 14px; }
+  .form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .form-group { display: flex; flex-direction: column; }
+  .form-group label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+  .form-group input { padding: 8px 10px; border: 1.5px solid #ccc; border-radius: 6px; font-size: 13px; }
+  .form-group input:focus { outline: none; border-color: #1a3a5c; }
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .alert-success { background: #e8f8f0; color: #1e7e4a; border: 1px solid #b7dfc9; }
+  .alert-error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <strong>VT Property Sales — Assessor Links</strong>
+  <div class="nav-links">
+    <a href="/admin">Users</a>
+    <a href="/logout">Sign Out</a>
+  </div>
+</div>
+<div class="container">
+  <h2>Manage Assessor Links</h2>
+
+  <div id="alert" class="alert"></div>
+
+  <div class="form-card">
+    <h3 id="formTitle">Add Assessor Link</h3>
+    <div class="form-row">
+      <div class="form-group" style="flex:1; min-width:180px;">
+        <label>Town Name</label>
+        <input type="text" id="townInput" placeholder="e.g. Burlington">
+      </div>
+      <div class="form-group" style="flex:2; min-width:260px;">
+        <label>URL</label>
+        <input type="text" id="urlInput" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <button class="btn-sm btn-green" style="padding:8px 18px; font-size:13px;" onclick="saveRow()">Save</button>
+        <button class="btn-sm btn-blue" style="padding:8px 12px; font-size:13px; margin-top:4px; display:none;" id="cancelBtn" onclick="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Town</th>
+        <th>URL</th>
+        <th>Updated</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<script>
+function showAlert(msg, type) {
+  const el = document.getElementById('alert');
+  el.textContent = msg;
+  el.className = 'alert alert-' + type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+function loadRows() {
+  fetch('/admin/assessors/list')
+    .then(r => r.json())
+    .then(rows => {
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td>' + esc(r.town_name) + '</td>' +
+          '<td><a href="' + esc(r.url) + '" target="_blank">' + esc(r.url) + '</a></td>' +
+          '<td>' + (r.updated_at || '').slice(0, 10) + '</td>' +
+          '<td><button class="btn-sm btn-blue" onclick="editRow(\'' + esc(r.town_name).replace(/'/g, "\\'") + '\',\'' + esc(r.url).replace(/'/g, "\\'") + '\')">Edit</button></td>';
+        tbody.appendChild(tr);
+      });
+    });
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function editRow(town, url) {
+  document.getElementById('townInput').value = town;
+  document.getElementById('urlInput').value = url;
+  document.getElementById('formTitle').textContent = 'Edit Assessor Link';
+  document.getElementById('cancelBtn').style.display = '';
+}
+
+function cancelEdit() {
+  document.getElementById('townInput').value = '';
+  document.getElementById('urlInput').value = '';
+  document.getElementById('formTitle').textContent = 'Add Assessor Link';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+function saveRow() {
+  const town = document.getElementById('townInput').value.trim();
+  const url  = document.getElementById('urlInput').value.trim();
+  if (!town || !url) { showAlert('Town and URL are required.', 'error'); return; }
+  fetch('/admin/assessors/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ town_name: town, url: url })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) { showAlert(d.error, 'error'); return; }
+    showAlert('Saved ' + town, 'success');
+    cancelEdit();
+    loadRows();
+  })
+  .catch(() => showAlert('Network error', 'error'));
+}
+
+loadRows();
+</script>
+</body>
+</html>

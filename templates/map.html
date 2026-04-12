@@ -532,6 +532,18 @@
       </div>
     </div>
 
+    <!-- ===== ASSESSOR RECORDS ===== -->
+    <div class="dropdown-box" onclick="toggleDropdown('assessorDropdown')">
+      &#9660; Assessor Records
+    </div>
+    <div id="assessorDropdown" class="dropdown-content">
+      <div class="filter-row">
+        <label style="min-width:auto; font-size:12px;">Town:</label>
+        <input type="text" id="assessorSearch" placeholder="type town name..." style="flex:1;" oninput="searchAssessor()">
+      </div>
+      <div id="assessorResults" style="max-height:160px; overflow-y:auto; font-size:12px;"></div>
+    </div>
+
     <!-- ===== APPLY BUTTON ===== -->
     <button id="applyBtn" onclick="applyFilters()">Apply Filters</button>
 
@@ -1731,6 +1743,42 @@ document.addEventListener('click', function(e){
 function toggleDropdown(id){
   const el = document.getElementById(id);
   el.style.display = (el.style.display === "block") ? "none" : "block";
+}
+
+// ===================================================
+// ASSESSOR RECORDS SEARCH
+// ===================================================
+let _assessorTimer = null;
+function searchAssessor() {
+  clearTimeout(_assessorTimer);
+  _assessorTimer = setTimeout(_doAssessorSearch, 250);
+}
+function _doAssessorSearch() {
+  const q = (document.getElementById('assessorSearch').value || '').trim().toUpperCase();
+  const box = document.getElementById('assessorResults');
+  if (!q) { box.innerHTML = ''; return; }
+  const towns = Object.keys(TOWN_CENTROIDS).filter(t => t.indexOf(q) !== -1).slice(0, 20);
+  if (!towns.length) { box.innerHTML = '<div style="padding:4px;color:#888;">No matching towns</div>'; return; }
+  box.innerHTML = towns.map(t =>
+    '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #eee;" id="asr_' + t.replace(/\s/g,'_') + '">' +
+    '<span>' + t.charAt(0) + t.slice(1).toLowerCase() + '</span>' +
+    '<span style="color:#888;">...</span></div>'
+  ).join('');
+  towns.forEach(t => {
+    fetch('/assessor?town=' + encodeURIComponent(t))
+      .then(r => r.json())
+      .then(d => {
+        const row = document.getElementById('asr_' + t.replace(/\s/g,'_'));
+        if (!row) return;
+        const right = row.querySelector('span:last-child');
+        if (d.url) {
+          right.innerHTML = '<a href="' + d.url + '" target="_blank" style="color:#2d6a4f;font-weight:600;text-decoration:underline;">View</a>';
+        } else {
+          right.textContent = 'Not Available';
+          right.style.color = '#c0392b';
+        }
+      });
+  });
 }
 
 // ===================================================

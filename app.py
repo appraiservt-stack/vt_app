@@ -27,9 +27,37 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = True
 
 # ── Auth blueprint ────────────────────────────────────────────────────────────
-from auth import auth_bp, init_db, db_fetchone, user_has_access, days_left_in_trial, _q
+from auth import auth_bp, init_db, db_fetchone, db_fetchall, db_execute, get_db, user_has_access, days_left_in_trial, _q
 app.register_blueprint(auth_bp)
 init_db()   # create users table if it doesn't exist
+
+# ── Assessor links table ──────────────────────────────────────────────────────
+def _init_assessor_links():
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        from auth import _using_postgres
+        if _using_postgres():
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS assessor_links (
+                    town_name TEXT PRIMARY KEY,
+                    url       TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+        else:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS assessor_links (
+                    town_name TEXT PRIMARY KEY,
+                    url       TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+        conn.commit()
+    finally:
+        conn.close()
+
+_init_assessor_links()
 
 # ── Login required decorator ──────────────────────────────────────────────────
 ADMIN_EMAIL_LOCAL   = os.environ.get("ADMIN_EMAIL", "appraiservt@gmail.com").lower()
@@ -3249,6 +3277,63 @@ def proxy_wms():
     except Exception as e:
         app.logger.error(f'WMS proxy error: {e}')
         return '', 502
+
+
+# ── Assessor links routes ─────────────────────────────────────────────────────
+ADMIN_EMAIL_ASSESSOR = os.environ.get("ADMIN_EMAIL", "appraiservt@gmail.com").lower()
+
+def _admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if session.get("user_email", "").lower() != ADMIN_EMAIL_ASSESSOR:
+            return redirect(url_for("auth.login"))
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route("/assessor")
+def assessor_lookup():
+    town = request.args.get("town", "").strip()
+    if not town:
+        return jsonify({"error": "town parameter required"}), 400
+    row = db_fetchone(_q("SELECT town_name, url FROM assessor_links WHERE LOWER(town_name) = LOWER(?)"), (town,))
+    if row:
+        return jsonify({"town": row["town_name"], "url": row["url"]})
+    return jsonify({"town": town, "url": None})
+
+@app.route("/admin/assessors")
+@_admin_required
+def assessors_admin():
+    return render_template("assessors_admin.html")
+
+@app.route("/admin/assessors/list")
+@_admin_required
+def assessors_list():
+    rows = db_fetchall(_q("SELECT town_name, url, updated_at FROM assessor_links ORDER BY town_name"))
+    return jsonify(rows)
+
+@app.route("/admin/assessors/save", methods=["POST"])
+@_admin_required
+def assessors_save():
+    data = request.get_json(force=True)
+    town = data.get("town_name", "").strip()
+    url  = data.get("url", "").strip()
+    if not town or not url:
+        return jsonify({"error": "town_name and url required"}), 400
+    now = datetime.now(timezone.utc).isoformat()
+    from auth import _using_postgres
+    if _using_postgres():
+        db_execute(_q("""
+            INSERT INTO assessor_links (town_name, url, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT (town_name) DO UPDATE SET url = EXCLUDED.url, updated_at = EXCLUDED.updated_at
+        """), (town, url, now))
+    else:
+        db_execute(_q("""
+            INSERT INTO assessor_links (town_name, url, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(town_name) DO UPDATE SET url = excluded.url, updated_at = excluded.updated_at
+        """), (town, url, now))
+    return jsonify({"ok": True, "town_name": town, "url": url})
 
 
 if __name__ == "__main__":
