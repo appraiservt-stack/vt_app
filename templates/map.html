@@ -245,38 +245,12 @@
     {% endif %}
     <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
       <h3 style="margin:0;">VT Property Transfer Tool</h3>
-      <button id="searchTipsBtn" onclick="toggleSearchTips(event)"
+      <a href="/static/docs/Search-Instructions.pdf" target="_blank"
         style="padding:3px 8px; font-size:11px; font-weight:bold; background:#add8e6; color:#1a3a5c;
-               border:1px solid #7ab8d4; border-radius:3px; cursor:pointer; white-space:nowrap;">
+               border:1px solid #7ab8d4; border-radius:3px; cursor:pointer; white-space:nowrap;
+               text-decoration:none; display:inline-block;">
         Search Tips
-      </button>
-    </div>
-    <!-- Search Tips popup -->
-    <div id="searchTipsPopup" style="display:none; position:absolute; left:330px; top:8px;
-         width:340px; background:white; border:1px solid #aaa; border-radius:5px;
-         box-shadow:2px 4px 12px rgba(0,0,0,0.25); padding:10px 12px; z-index:9999;
-         font-size:11px; line-height:1.6; max-height:85vh; overflow-y:auto;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <b style="font-size:12px;">Search Tips</b>
-        <span onclick="document.getElementById('searchTipsPopup').style.display='none'"
-          style="cursor:pointer; font-size:14px; color:#666;">&times;</span>
-      </div>
-      <ol style="margin:0; padding-left:16px;">
-        <li>The sales database starts on January 1, 2019 through present date. On startup transfers are loaded into the map window.</li>
-        <li>The map displays up to 2,000 records. As the map is zoomed in more records populate in the window area.</li>
-        <li>If the user hovers over a property a popup window will show the sale history.</li>
-        <li>The user can select whichever search criteria they desire by selecting or unselecting checkboxes.</li>
-        <li>The default setting includes $0 sales, such as family transfers, corrective deeds, etc. Setting $1 in the Sale Price eliminates them.</li>
-        <li>The user can download all filtered sales or sales selected from the map selections using the two download buttons.</li>
-        <li>Clicking on a search heading opens the search box. Clicking it again closes the search box.</li>
-        <li>Filtering by County(s) and/or Town(s) is recommended to be enabled before other refinement filters are set.</li>
-        <li>Immediately above the Location heading the display shows X sales at X properties. The second number is how many sales are in the current window. If the first number is more than the second number this indicates some of the properties have more than one transaction during the date range. This will identify sale/resale properties.</li>
-        <li>The default startup for the map loads all sales and checks all possible property selection options.</li>
-        <li>As selection options are enabled or disabled the Apply Filters button can be clicked at any time to update the search criteria.</li>
-        <li style="background:#fffde7; border-left:3px solid #f9a825; margin-top:6px; padding:4px 6px; list-style-position:inside;">
-          <b>NEIGHBORHOOD COMPARISON:</b> The polygon, circle, or box can be used to highlight different neighborhoods on the same map at the same time. The map will calculate the High, Low, Average, Median, and count of sales in each selection. $0 are not included in the calculations. Filtering applies to the entire map, not individual polygons, boxes, or circles. If you select Single Family Homes, for example, all highlighted areas will contain only Single Family Homes.
-        </li>
-      </ol>
+      </a>
     </div>
 
     <!-- STATUS -->
@@ -1725,22 +1699,6 @@ function getCheckedCodes(containerId){
   return codes;
 }
 
-// ===================================================
-// SEARCH TIPS TOGGLE
-// ===================================================
-function toggleSearchTips(event){
-  const popup = document.getElementById('searchTipsPopup');
-  popup.style.display = (popup.style.display === 'none' || !popup.style.display) ? 'block' : 'none';
-  event.stopPropagation();
-}
-// Close tips popup when clicking elsewhere
-document.addEventListener('click', function(e){
-  const popup = document.getElementById('searchTipsPopup');
-  const btn   = document.getElementById('searchTipsBtn');
-  if(popup && btn && !popup.contains(e.target) && e.target !== btn){
-    popup.style.display = 'none';
-  }
-});
 
 // ===================================================
 // DROPDOWN TOGGLE
