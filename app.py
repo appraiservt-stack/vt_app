@@ -3192,10 +3192,20 @@ def ptt172(filename=None):  # noqa: C901
                     })
 
 
-@app.route("/contact", methods=["POST"])
-@login_required
+# ── Policy pages ──────────────────────────────────────────────────────────────
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
-    """Handle contact form submission — sends email via Resend HTTP API."""
+    """GET: render contact page. POST: handle contact form submission via Resend."""
+    if request.method == "GET":
+        return render_template("contact.html")
     RESEND_API_KEY  = os.environ.get("RESEND_API_KEY", "")
     NOTIFY_EMAIL    = os.environ.get("CONTACT_NOTIFY_EMAIL", "vtrealestatesales@gmail.com")
     FROM_EMAIL      = os.environ.get("CONTACT_FROM_EMAIL", "info@vtpropertysales.com")

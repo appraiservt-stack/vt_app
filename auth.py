@@ -480,7 +480,65 @@ def account():
         session.clear()
         return redirect(url_for("auth.login"))
     trial_days = days_left_in_trial(user) if user["subscription_status"] in ("trial", "trialing") else 0
-    return render_template("account.html", user=user, trial_days=trial_days)
+
+    # Fetch auto-renewal state from Stripe for active/trialing subscribers
+    cancel_at_period_end = False
+    current_period_end = None
+    if user.get("stripe_subscription_id") and user["subscription_status"] in ("active", "trialing"):
+        try:
+            sub = stripe.Subscription.retrieve(user["stripe_subscription_id"])
+            cancel_at_period_end = sub.cancel_at_period_end
+            current_period_end = datetime.fromtimestamp(
+                sub.current_period_end, tz=timezone.utc
+            ).strftime("%B %d, %Y")
+        except Exception:
+            pass
+
+    return render_template("account.html", user=user, trial_days=trial_days,
+                           cancel_at_period_end=cancel_at_period_end,
+                           current_period_end=current_period_end)
+
+# ── Billing portal ────────────────────────────────────────────────────────────
+@auth_bp.route("/billing-portal")
+def billing_portal():
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
+    if not user or not user.get("stripe_customer_id"):
+        flash("No billing information found for your account.", "error")
+        return redirect(url_for("auth.account"))
+    try:
+        portal_session = stripe.billing_portal.Session.create(
+            customer=user["stripe_customer_id"],
+            return_url=url_for("auth.account", _external=True),
+        )
+        return redirect(portal_session.url, code=303)
+    except Exception as e:
+        flash(f"Could not open billing portal: {str(e)}", "error")
+        return redirect(url_for("auth.account"))
+
+# ── Auto-renewal toggle ──────────────────────────────────────────────────────
+@auth_bp.route("/toggle-autorenewal", methods=["POST"])
+def toggle_autorenewal():
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
+    if not user or not user.get("stripe_subscription_id"):
+        flash("No active subscription found.", "error")
+        return redirect(url_for("auth.account"))
+    try:
+        sub = stripe.Subscription.retrieve(user["stripe_subscription_id"])
+        new_cancel = not sub.cancel_at_period_end
+        stripe.Subscription.modify(
+            user["stripe_subscription_id"], cancel_at_period_end=new_cancel
+        )
+        if new_cancel:
+            flash("Auto-renewal turned off. Your subscription will not renew at the end of the billing period.", "info")
+        else:
+            flash("Auto-renewal resumed. Your subscription will renew automatically.", "success")
+    except Exception as e:
+        flash(f"Error updating auto-renewal: {str(e)}", "error")
+    return redirect(url_for("auth.account"))
 
 @auth_bp.route("/create-checkout-session-upgrade")
 def create_checkout_session_upgrade():
