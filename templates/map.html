@@ -3037,8 +3037,8 @@ function _renderCollectorDot(c, layer, color, label, typeLabel){
         (s.id ? '<a href="/ptt172/preview?id=' + s.id + '" target="_blank" rel="noopener noreferrer" ' +
           'style="font-size:10px;padding:1px 5px;background:#1F4E79;color:#fff;' +
           'border:none;border-radius:2px;white-space:nowrap;cursor:pointer;' +
-          'flex-shrink:0;margin-left:4px;align-self:center;text-decoration:none;display:inline-block;">PTT-172</a>' +
-          '<span style="font-size:10px; color:#999; margin-left:3px;">Right-click</span>' : '') +
+          'flex-shrink:0;margin-left:4px;align-self:center;text-decoration:none;display:inline-block;">PTT-172</a><br>' +
+          '<span style="font-size:10px; color:#999; display:block; text-align:center; margin-top:1px;">Right-click</span>' : '') +
         '</div>';
     });
   });
@@ -3126,8 +3126,8 @@ function buildSaleRow(s, dimmed){
                 border:none; border-radius:2px; white-space:nowrap; flex-shrink:0; cursor:pointer;
                 text-decoration:none; display:inline-block;">
         PTT-172
-      </a>
-      <span style="font-size:10px; color:#999; margin-left:3px;">Right-click</span>
+      </a><br>
+      <span style="font-size:10px; color:#999; display:block; text-align:center; margin-top:1px;">Right-click</span>
     </div>
     <span style="font-size:11px;word-break:break-word;">${addr}</span><br>
     <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
