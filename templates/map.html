@@ -3155,7 +3155,7 @@ function buildPopupHTML(p, sales, historySales){
   const lon = p.lon || (sales[0] && sales[0].lon);
   if(lat && lon){
     // User can then click the yellow Street View pegman to see ground-level view.
-    const mapsUrl = `https://www.google.com/maps/@${lat},${lon},18z`;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
     header += `<a href="${mapsUrl}" target="_blank" rel="noopener"
       style="display:inline-block; margin-bottom:4px; padding:2px 8px;
              background:#4285F4; color:white; font-size:10px; font-weight:bold;
