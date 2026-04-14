@@ -1568,28 +1568,64 @@ function updateConservedZoomMsg(){
     el.style.display = (conservedOn && map.getZoom() < 12) ? '' : 'none';
 }
 
-// ---- VSWI WETLANDS (Esri Dynamic Map Layer) ----
+// ---- VSWI WETLANDS (image export via makeDynamicOverlay) ----
+
+function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
+  let overlay = null;
+  let pending = null;
+  let isOn = false;
+  const group = L.layerGroup();
+
+  function load(){
+    if(!isOn) return;
+    if(map.getZoom() < (minZoom||8)){ if(overlay){ group.removeLayer(overlay); overlay=null; } return; }
+    // Remove stale overlay immediately so stretched image doesn't show during load
+    if(overlay){ group.removeLayer(overlay); overlay=null; }
+    const b = map.getBounds();
+    const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+    const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+    const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
+    const size = map.getSize();
+    const exportUrl = serviceUrl + '/export?bbox=' + bbox +
+      '&bboxSR=102100&layers=show:' + layerIds +
+      '&size=' + size.x + ',' + size.y +
+      '&imageSR=102100&dpi=96&format=png32&transparent=true&f=image';
+    // Use direct URL for FEMA (CORS allowed), Cloudflare Worker for other servers
+    const url = serviceUrl.includes('fema.gov')
+      ? exportUrl
+      : CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
+    pending = null;
+    const img = new Image();
+    pending = img;
+    const snapBounds = b; // capture bounds at request time
+    img.onload = function(){
+      if(img !== pending) return;
+      overlay = L.imageOverlay(url, snapBounds, { opacity: opacity, pane: pane, interactive: false });
+      group.addLayer(overlay);
+    };
+    img.src = url;
+  }
+
+  map.on('moveend zoomend', load);
+
+  return {
+    layer: group,
+    enable:  function(){ isOn = true;  load(); },
+    disable: function(){ isOn = false; if(overlay){ group.removeLayer(overlay); overlay=null; } }
+  };
+}
+
+if(!map.getPane('wetlandsPane')){
+  const wp = map.createPane('wetlandsPane');
+  wp.style.zIndex = 345;
+}
+
 let wetlandsOn = false;
-var wetlandsLayer = L.esri.dynamicMapLayer({
-    url: 'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_WATER_SP_NOCACHE_v2/MapServer',
-    layers: [193, 194],
-    opacity: 0.5,
-    minZoom: 11
-});
-wetlandsLayer.on('click', function(e) {
-    wetlandsLayer.identify()
-        .on(map)
-        .at(e.latlng)
-        .layers('visible:193,194')
-        .run(function(err, featureCollection) {
-            if (err || !featureCollection.features.length) return;
-            var props = featureCollection.features[0].properties;
-            L.popup()
-                .setLatLng(e.latlng)
-                .setContent('<b>Wetland Class:</b> ' + (props.CLASS_resolved || props.TYPE_1 || 'Wetland'))
-                .openOn(map);
-        });
-});
+const wetlandsOverlay = makeDynamicOverlay(
+  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_WATER_SP_NOCACHE_v2/MapServer',
+  '193,194', 'wetlandsPane', 0.5, 11
+);
+var wetlandsLayer = wetlandsOverlay.layer;
 
 function updateWetlandsZoomMsg(){
     var el = document.getElementById('wetlands-zoom-msg');
@@ -1629,7 +1665,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
   if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = true; conservedLayer.bindPopup(function(layer){ return layer.feature.properties.NAME || 'Conserved Land'; }); updateConservedZoomMsg(); }
-  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = true; document.getElementById('wetlands-legend').style.display=''; updateWetlandsZoomMsg(); }
+  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = true; wetlandsOverlay.enable(); document.getElementById('wetlands-legend').style.display=''; updateWetlandsZoomMsg(); }
 });
 map.on('overlayremove', function(e){
   if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = false; }
@@ -1638,7 +1674,7 @@ map.on('overlayremove', function(e){
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
   if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = false; conservedLayer.unbindPopup(); updateConservedZoomMsg(); }
-  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = false; document.getElementById('wetlands-legend').style.display='none'; document.getElementById('wetlands-zoom-msg').style.display='none'; }
+  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = false; wetlandsOverlay.disable(); document.getElementById('wetlands-legend').style.display='none'; document.getElementById('wetlands-zoom-msg').style.display='none'; }
 });
 
 let markersLayer = L.layerGroup().addTo(map);
