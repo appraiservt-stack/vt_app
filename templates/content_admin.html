@@ -94,13 +94,16 @@ function switchTab(key) {
 function loadContent(key) {
   document.getElementById('contentEditor').value = 'Loading...';
   fetch('/admin/content/get?key=' + encodeURIComponent(key))
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(d => {
       document.getElementById('contentEditor').value = d.content || '';
     })
-    .catch(() => {
+    .catch(e => {
       document.getElementById('contentEditor').value = '';
-      showAlert('Failed to load content.', 'error');
+      showAlert('Failed to load content: ' + e.message, 'error');
     });
 }
 
@@ -113,7 +116,10 @@ function saveContent() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key: key, content: content })
   })
-  .then(r => r.json())
+  .then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
   .then(d => {
     if (d.ok) {
       showAlert('Saved successfully.', 'success');
@@ -123,8 +129,8 @@ function saveContent() {
       document.getElementById('saveStatus').textContent = '';
     }
   })
-  .catch(() => {
-    showAlert('Network error — could not save.', 'error');
+  .catch(e => {
+    showAlert('Save failed: ' + e.message, 'error');
     document.getElementById('saveStatus').textContent = '';
   });
 }

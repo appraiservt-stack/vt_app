@@ -132,12 +132,31 @@
   <div class="card">
     <h2>Subscription</h2>
     {% if user.subscription_status == 'active' %}
-      <p style="font-size:14px;color:#333;margin-bottom:16px;">
-        You are subscribed to the <strong>{{ user_plan.label if user_plan else 'Monthly' }}</strong> plan at <strong>{{ user_plan.display_price if user_plan else '$24.95' }}/month</strong>.
-      </p>
+      <form method="POST" action="/change-plan" id="changePlanForm">
+        {% for plan in plans %}
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eee;cursor:pointer;font-size:14px;">
+          <input type="radio" name="plan_key" value="{{ plan.key }}" {% if plan.key == plan_key %}checked{% endif %}
+                 style="width:18px;height:18px;accent-color:#1a3a5c;">
+          <span style="font-weight:600;color:#222;">{{ plan.label }}</span>
+          <span style="margin-left:4px;color:#222;">{{ plan.display_price }}/month</span>
+          {% if plan.key == plan_key and not cancel_at_period_end and current_period_end %}
+            <span style="color:#2d6a4f;font-size:13px;margin-left:auto;">Your subscription auto-renews on {{ current_period_end }}</span>
+          {% elif plan.key == plan_key and cancel_at_period_end and current_period_end %}
+            <span style="color:#856404;font-size:13px;margin-left:auto;">Access ends on {{ current_period_end }}</span>
+          {% else %}
+            <span style="color:#999;font-size:13px;margin-left:auto;">
+              {% if plan.interval_count == 1 %}Renews monthly{% else %}Billed every {{ plan.interval_count }} months{% endif %}
+            </span>
+          {% endif %}
+        </label>
+        {% endfor %}
+        <div class="actions" style="margin-top:16px;">
+          <button type="submit" class="btn btn-primary">Change Plan</button>
+        </div>
+      </form>
 
       {% if cancel_at_period_end %}
-      <div style="background:#fff8e1;border:1.5px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+      <div style="background:#fff8e1;border:1.5px solid #ffc107;border-radius:8px;padding:12px 16px;margin-top:16px;margin-bottom:16px;">
         <div style="font-size:13px;color:#856404;">
           Your subscription will not renew. Access ends on <strong>{{ current_period_end }}</strong>.
         </div>
@@ -148,12 +167,7 @@
         </form>
       </div>
       {% else %}
-      <div style="background:#e8f8f0;border:1.5px solid #b7dfc9;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
-        <div style="font-size:13px;color:#2d6a4f;">
-          Your subscription renews automatically on <strong>{{ current_period_end }}</strong>.
-        </div>
-      </div>
-      <div class="actions">
+      <div class="actions" style="margin-top:12px;">
         <form method="POST" action="/toggle-autorenewal"
               onsubmit="return confirm('Turn off auto-renewal? Your subscription will expire at the end of the current billing period.')">
           <button type="submit" class="btn btn-outline">Turn Off Auto-Renewal</button>

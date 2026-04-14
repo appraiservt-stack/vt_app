@@ -3416,21 +3416,24 @@ def content_save():
     content = data.get("content", "")
     if key not in ("terms", "privacy"):
         return jsonify({"error": "invalid key"}), 400
-    from auth import _using_postgres
-    now = datetime.now(timezone.utc).isoformat()
-    if _using_postgres():
-        db_execute(
-            "INSERT INTO site_content (key, content, updated_at) VALUES (%s, %s, %s) "
-            "ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content, updated_at = EXCLUDED.updated_at",
-            (key, content, now)
-        )
-    else:
-        db_execute(
-            "INSERT INTO site_content (key, content, updated_at) VALUES (?, ?, ?) "
-            "ON CONFLICT (key) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at",
-            (key, content, now)
-        )
-    return jsonify({"ok": True})
+    try:
+        from auth import _using_postgres
+        now = datetime.now(timezone.utc).isoformat()
+        if _using_postgres():
+            db_execute(
+                "INSERT INTO site_content (key, content, updated_at) VALUES (%s, %s, %s) "
+                "ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content, updated_at = EXCLUDED.updated_at",
+                (key, content, now)
+            )
+        else:
+            db_execute(
+                "INSERT INTO site_content (key, content, updated_at) VALUES (?, ?, ?) "
+                "ON CONFLICT (key) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at",
+                (key, content, now)
+            )
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ── Assessor links routes ─────────────────────────────────────────────────────
 

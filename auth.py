@@ -602,13 +602,16 @@ def account():
         except Exception:
             pass
 
-    # Look up current plan details
-    user_plan = get_plan(user.get("plan_key") or "plan_monthly")
+    # Look up current plan details and all plans for plan switcher
+    plan_key = user.get("plan_key") or "plan_monthly"
+    user_plan = get_plan(plan_key)
+    plans = get_active_plans()
 
     return render_template("account.html", user=user, trial_days=trial_days,
                            cancel_at_period_end=cancel_at_period_end,
                            current_period_end=current_period_end,
-                           user_plan=user_plan)
+                           user_plan=user_plan, plans=plans,
+                           plan_key=plan_key)
 
 # ── Billing portal ────────────────────────────────────────────────────────────
 @auth_bp.route("/billing-portal")
@@ -707,6 +710,54 @@ def cancel_subscription():
         except Exception as e:
             flash(f"Error cancelling: {str(e)}", "error")
     return redirect(url_for("auth.account"))
+
+# ── Change plan ──────────────────────────────────────────────────────────────
+@auth_bp.route("/change-plan", methods=["POST"])
+def change_plan():
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+    user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
+    if not user:
+        return redirect(url_for("auth.login"))
+
+    plan_key = request.form.get("plan_key", "")
+    plan = get_plan(plan_key)
+    if not plan:
+        flash("Invalid plan selected.", "error")
+        return redirect(url_for("auth.account"))
+    if not plan.get("stripe_price_id"):
+        flash("This plan is not yet configured. Please contact support.", "error")
+        return redirect(url_for("auth.account"))
+
+    # If already on this plan, no action needed
+    if plan_key == (user.get("plan_key") or "plan_monthly"):
+        flash("You are already on this plan.", "info")
+        return redirect(url_for("auth.account"))
+
+    email = user["email"]
+    try:
+        customer_id = user.get("stripe_customer_id")
+        if not customer_id:
+            customer = stripe.Customer.create(email=email)
+            customer_id = customer.id
+            db_execute(_q(
+                "UPDATE users SET stripe_customer_id = ? WHERE email = ?"
+            ), (customer_id, email))
+
+        checkout = stripe.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=["card"],
+            line_items=[{"price": plan["stripe_price_id"], "quantity": 1}],
+            mode="subscription",
+            metadata={"plan_key": plan_key},
+            subscription_data={"metadata": {"plan_key": plan_key}},
+            success_url=request.host_url + "subscribe/success?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=request.host_url + "account",
+        )
+        return redirect(checkout.url, code=303)
+    except Exception as e:
+        flash(f"Error changing plan: {str(e)}", "error")
+        return redirect(url_for("auth.account"))
 
 # ── Password reset ────────────────────────────────────────────────────────────
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
