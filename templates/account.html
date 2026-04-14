@@ -139,7 +139,7 @@
                  style="width:18px;height:18px;accent-color:#1a3a5c;">
           <span style="font-weight:600;color:#222;">{{ plan.label }}</span>
           <span style="color:#999;margin:0 2px;">|</span>
-          <span style="color:#222;">{{ plan.display_price }}/month</span>
+          <span style="color:#222;">{{ plan.display_price }}</span>
           <span style="color:#999;margin:0 2px;">|</span>
           {% if plan.key == plan_key and cancel_at_period_end and renewal_date %}
             <span style="color:#856404;font-size:13px;">Access ends on {{ renewal_date }}</span>
