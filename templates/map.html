@@ -689,6 +689,19 @@
         Zoom in to see conserved lands (zoom 12+)
       </div>
 
+      <!-- Wetlands legend (hidden until layer is enabled) -->
+      <div id="wetlands-legend" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e8f6f8; border:1px solid #80cbc4; border-radius:3px;">
+        <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">VT Significant Wetlands</div>
+        <div style="font-size:10px; line-height:1.8;">
+          <span style="display:inline-block; width:14px; height:10px; background:#00897b; border:1px solid #00695c; margin-right:4px; vertical-align:middle;"></span>VSWI Regulatory &amp; Advisory Wetlands
+        </div>
+      </div>
+
+      <!-- Wetlands zoom notice (hidden until layer enabled + zoomed out) -->
+      <div id="wetlands-zoom-msg" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e0f2f1; border:1px solid #80cbc4; border-radius:3px; font-size:11px; color:#00695c;">
+        Zoom in to see wetlands (zoom 11+)
+      </div>
+
       <!-- County boundaries -->
       <div style="margin-bottom:6px;">
         <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
@@ -1555,6 +1568,35 @@ function updateConservedZoomMsg(){
     el.style.display = (conservedOn && map.getZoom() < 12) ? '' : 'none';
 }
 
+// ---- VSWI WETLANDS (Esri Dynamic Map Layer) ----
+let wetlandsOn = false;
+var wetlandsLayer = L.esri.dynamicMapLayer({
+    url: 'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_WATER_SP_NOCACHE_v2/MapServer',
+    layers: [193, 194],
+    opacity: 0.5,
+    minZoom: 11
+});
+wetlandsLayer.on('click', function(e) {
+    wetlandsLayer.identify()
+        .on(map)
+        .at(e.latlng)
+        .layers('visible:193,194')
+        .run(function(err, featureCollection) {
+            if (err || !featureCollection.features.length) return;
+            var props = featureCollection.features[0].properties;
+            L.popup()
+                .setLatLng(e.latlng)
+                .setContent('<b>Wetland Class:</b> ' + (props.CLASS_resolved || props.TYPE_1 || 'Wetland'))
+                .openOn(map);
+        });
+});
+
+function updateWetlandsZoomMsg(){
+    var el = document.getElementById('wetlands-zoom-msg');
+    if(!el) return;
+    el.style.display = (wetlandsOn && map.getZoom() < 11) ? '' : 'none';
+}
+
 // ---- LAYERS CONTROL ----
 L.control.layers(
   {
@@ -1574,6 +1616,7 @@ L.control.layers(
     "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
     "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
     "Conserved Lands (zoom 12+)": conservedLayer,
+    "Wetlands (zoom 11+)":       wetlandsLayer,
   }
 ).addTo(map);
 
@@ -1586,6 +1629,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
   if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = true; conservedLayer.bindPopup(function(layer){ return layer.feature.properties.NAME || 'Conserved Land'; }); updateConservedZoomMsg(); }
+  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = true; document.getElementById('wetlands-legend').style.display=''; updateWetlandsZoomMsg(); }
 });
 map.on('overlayremove', function(e){
   if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = false; }
@@ -1594,6 +1638,7 @@ map.on('overlayremove', function(e){
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
   if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = false; conservedLayer.unbindPopup(); updateConservedZoomMsg(); }
+  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = false; document.getElementById('wetlands-legend').style.display='none'; document.getElementById('wetlands-zoom-msg').style.display='none'; }
 });
 
 let markersLayer = L.layerGroup().addTo(map);
@@ -3521,7 +3566,7 @@ function clearAllForNameSearch(){
 // Named handlers so they can be temporarily detached during fitBounds.
 // ===================================================
 function onMoveEnd(){ loadData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
-function onZoomEnd(){ loadApproxData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); updateConservedZoomMsg(); } // loadData handled by moveend which always follows zoomend
+function onZoomEnd(){ loadApproxData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); updateConservedZoomMsg(); updateWetlandsZoomMsg(); } // loadData handled by moveend which always follows zoomend
 
 function initMapEvents(){
   restoreBdySettings();
