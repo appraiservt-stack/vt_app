@@ -690,7 +690,7 @@
       </div>
 
       <!-- County boundaries -->
-      <div>
+      <div style="margin-bottom:6px;">
         <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
         <div style="display:flex; align-items:center; gap:6px;">
           <label style="font-size:11px; min-width:40px;">Color:</label>
@@ -713,6 +713,31 @@
           </select>
           <label style="font-size:11px;">Labels:</label>
           <input type="checkbox" id="cntyBdyLabels" checked onchange="updateBoundaryStyle('cnty')">
+        </div>
+      </div>
+
+      <!-- VT Parcels -->
+      <div>
+        <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">VT Parcels</div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <label style="font-size:11px; min-width:40px;">Color:</label>
+          <input type="color" id="parcel-color" value="#FF6600"
+            oninput="updateParcelStyle()"
+            style="width:36px; height:24px; padding:1px; border:1px solid #ccc; cursor:pointer;">
+          <label style="font-size:11px;">Width:</label>
+          <input type="range" id="parcel-width" min="1" max="6" value="1" step="0.5"
+            oninput="updateParcelStyle(); document.getElementById('parcelWidthVal').textContent=this.value"
+            style="flex:1;">
+          <span id="parcelWidthVal" style="font-size:11px; min-width:20px;">1</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
+          <label style="font-size:11px; min-width:40px;">Style:</label>
+          <select id="parcelDash" oninput="updateParcelStyle()"
+            style="font-size:11px; padding:1px 3px; border:1px solid #ccc; border-radius:2px;">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+          </select>
         </div>
       </div>
     </div>
@@ -901,10 +926,10 @@ map.on("baselayerchange", function(e){
 // ============================================================
 // VT PARCELS — Esri Feature Layer from VCGI FeatureServer
 // Uses L.esri.featureLayer for automatic tile-based loading.
-// Only loads at zoom 14+. Click to show Grand List popup.
+// Only loads at zoom 11+. Click to show Grand List popup.
 // ============================================================
 const PARCEL_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
-const PARCEL_MIN_ZOOM = 12;
+const PARCEL_MIN_ZOOM = 11;
 
 const CF_WORKER = 'https://vt-map-proxy.quiet-scene-a739.workers.dev/';
 const PROXY = (url) => CF_WORKER + '?url=' + encodeURIComponent(url);
@@ -1385,6 +1410,15 @@ function updateBoundaryStyle(which){
   saveBdySettings();
 }
 
+function updateParcelStyle() {
+    var color = document.getElementById('parcel-color').value;
+    var width = document.getElementById('parcel-width').value;
+    var dash  = document.getElementById('parcelDash').value;
+    var dashArray = dash === 'dashed' ? '12,8' : dash === 'dotted' ? '3,6' : null;
+    parcelLayer.setStyle({ color: color, weight: parseInt(width), opacity: 0.8, fillOpacity: 0, dashArray: dashArray });
+    saveBdySettings();
+}
+
 // ---- Persist boundary + parcel style settings in localStorage ----
 function saveBdySettings(){
   const s = {
@@ -1396,6 +1430,9 @@ function saveBdySettings(){
     cntyWidth:  document.getElementById('cntyBdyWidth').value,
     cntyDash:   document.getElementById('cntyBdyDash').value,
     cntyLabels: document.getElementById('cntyBdyLabels').checked,
+    parcelColor: document.getElementById('parcel-color').value,
+    parcelWidth: document.getElementById('parcel-width').value,
+    parcelDash:  document.getElementById('parcelDash').value,
   };
   try{ localStorage.setItem('vtpt_bdy_settings', JSON.stringify(s)); }catch(e){}
 }
@@ -1412,6 +1449,11 @@ function restoreBdySettings(){
   if(s.cntyWidth)  { document.getElementById('cntyBdyWidth').value  = s.cntyWidth;  document.getElementById('cntyBdyWidthVal').textContent = s.cntyWidth; }
   if(s.cntyDash)   { document.getElementById('cntyBdyDash').value   = s.cntyDash; }
   if(s.cntyLabels !== undefined){ document.getElementById('cntyBdyLabels').checked = s.cntyLabels; }
+  if(s.parcelColor){ document.getElementById('parcel-color').value = s.parcelColor; }
+  if(s.parcelWidth){ document.getElementById('parcel-width').value = s.parcelWidth; document.getElementById('parcelWidthVal').textContent = s.parcelWidth; }
+  if(s.parcelDash) { document.getElementById('parcelDash').value   = s.parcelDash; }
+  // Apply restored parcel style to layer
+  updateParcelStyle();
 }
 
 // ---- Fetch and render boundary polygons + labels ----
@@ -1548,7 +1590,7 @@ L.control.layers(
   },
   {
     // Overlays — toggle independently of the basemap
-    "VT Parcels (zoom 12+)": parcelLayer,
+    "VT Parcels (zoom 11+)": parcelLayer,
     "Street Names (zoom 15+)": roadLabelLayer,
     "House Numbers (zoom 17+)": e911Layer,
     "FEMA Flood Zones":      femaFloodLayer,
@@ -1560,7 +1602,7 @@ L.control.layers(
 
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 12+)')  { parcelsOn = true; }
+  if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = true; }
   if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
@@ -1569,7 +1611,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = true; conservedLayer.bindPopup(function(layer){ return layer.feature.properties.NAME || 'Conserved Land'; }); updateConservedZoomMsg(); }
 });
 map.on('overlayremove', function(e){
-  if(e.name === 'VT Parcels (zoom 12+)')  { parcelsOn = false; }
+  if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = false; }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On = false; if(e911FetchCtrl) e911FetchCtrl.abort(); if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; } }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
