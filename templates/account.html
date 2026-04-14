@@ -133,7 +133,7 @@
     <h2>Subscription</h2>
     {% if user.subscription_status == 'active' %}
       <p style="font-size:14px;color:#333;margin-bottom:16px;">
-        You have an active subscription at <strong>$19.95/month</strong>.
+        You are subscribed to the <strong>{{ user_plan.label if user_plan else 'Monthly' }}</strong> plan at <strong>{{ user_plan.display_price if user_plan else '$24.95' }}/month</strong>.
       </p>
 
       {% if cancel_at_period_end %}
@@ -176,7 +176,7 @@
       <div style="background:#fff8e1;border:2px solid #f0c040;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
         <div style="font-size:15px;font-weight:700;color:#856404;margin-bottom:6px;">&#9200; Free Trial Active</div>
         <div style="font-size:13px;color:#555;">
-          Your card will be charged <strong>$19.95</strong> on <strong>{{ user.trial_ends_at[:10] }}</strong> unless you cancel before then.
+          Your card will be charged <strong>{{ user_plan.display_price if user_plan else '$24.95' }}</strong> on <strong>{{ user.trial_ends_at[:10] }}</strong> unless you cancel before then.
         </div>
       </div>
       <div class="actions">
@@ -192,14 +192,14 @@
         You are on a free trial. Subscribe to keep full access after your trial ends.
       </p>
       <div class="actions">
-        <a href="/subscribe" class="btn btn-primary">Subscribe — $19.95/mo</a>
+        <a href="/subscribe" class="btn btn-primary">Subscribe Now</a>
       </div>
     {% else %}
       <p style="font-size:14px;color:#c0392b;margin-bottom:16px;">
         Your subscription is inactive. Resubscribe to regain access.
       </p>
       <div class="actions">
-        <a href="/subscribe" class="btn btn-primary">Resubscribe — $19.95/mo</a>
+        <a href="/subscribe" class="btn btn-primary">Resubscribe</a>
       </div>
     {% endif %}
   </div>

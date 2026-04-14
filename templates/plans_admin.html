@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Subscription Plans — Admin</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; }
+  .topbar { background: #1a3a5c; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar a { color: #fff; text-decoration: none; font-size: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .container { max-width: 900px; margin: 30px auto; padding: 0 16px; }
+  h2 { font-size: 20px; color: #1a3a5c; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  th { background: #1a3a5c; color: #fff; padding: 12px 14px; text-align: left; font-size: 13px; }
+  td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #eee; color: #333; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f9fc; }
+  input[type="text"] {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1.5px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  input[type="text"]:focus {
+    border-color: #1a3a5c;
+    outline: none;
+  }
+  .btn-sm { display: inline-block; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+  .btn-green { background: #2d6a4f; color: #fff; }
+  .btn-green:hover { background: #235540; }
+  .btn-green:disabled { background: #aaa; cursor: default; }
+  .nav-links { margin-bottom: 20px; font-size: 13px; }
+  .nav-links a { color: #1a3a5c; text-decoration: none; margin-right: 16px; }
+  .nav-links a:hover { text-decoration: underline; }
+  .status-msg {
+    display: inline-block;
+    margin-left: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .status-msg.show { opacity: 1; }
+  .status-msg.ok { color: #2d6a4f; }
+  .status-msg.err { color: #c0392b; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <strong>VT Property Sales — Admin</strong>
+  <div style="display:flex;gap:16px;">
+    <a href="/admin">Users</a>
+    <a href="/admin/plans" style="font-weight:700;">Plans</a>
+    <a href="/admin/content">Content</a>
+    <a href="/admin/assessors">Assessors</a>
+    <a href="/logout">Sign Out</a>
+  </div>
+</div>
+<div class="container">
+  <h2>Subscription Plans</h2>
+  <p style="font-size:13px;color:#666;margin-bottom:20px;">
+    Edit display prices and Stripe Price IDs. Save each row individually.
+    Plans without a Stripe Price ID will block checkout with a friendly error.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Plan</th>
+        <th>Billing</th>
+        <th style="width:140px;">Display Price</th>
+        <th style="width:260px;">Stripe Price ID</th>
+        <th style="width:80px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for plan in plans %}
+      <tr id="row-{{ plan.key }}">
+        <td><strong>{{ plan.label }}</strong></td>
+        <td>
+          {% if plan.interval_count == 1 %}Monthly{% else %}Every {{ plan.interval_count }} months{% endif %}
+        </td>
+        <td>
+          <input type="text" id="price-{{ plan.key }}" value="{{ plan.display_price }}">
+        </td>
+        <td>
+          <input type="text" id="stripe-{{ plan.key }}" value="{{ plan.stripe_price_id or '' }}"
+                 placeholder="price_...">
+        </td>
+        <td style="text-align:center;">
+          <button class="btn-sm btn-green" onclick="savePlan('{{ plan.key }}')">Save</button>
+          <span class="status-msg" id="msg-{{ plan.key }}"></span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function savePlan(key) {
+  var price = document.getElementById('price-' + key).value;
+  var stripeId = document.getElementById('stripe-' + key).value;
+  var msgEl = document.getElementById('msg-' + key);
+
+  fetch('/admin/plans/save', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({key: key, display_price: price, stripe_price_id: stripeId})
+  })
+  .then(function(resp) { return resp.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      msgEl.textContent = 'Saved';
+      msgEl.className = 'status-msg ok show';
+    } else {
+      msgEl.textContent = data.error || 'Error';
+      msgEl.className = 'status-msg err show';
+    }
+    setTimeout(function() { msgEl.className = 'status-msg'; }, 2000);
+  })
+  .catch(function() {
+    msgEl.textContent = 'Error';
+    msgEl.className = 'status-msg err show';
+    setTimeout(function() { msgEl.className = 'status-msg'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>

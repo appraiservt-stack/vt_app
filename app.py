@@ -27,7 +27,7 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = True
 
 # ── Auth blueprint ────────────────────────────────────────────────────────────
-from auth import auth_bp, init_db, db_fetchone, db_fetchall, db_execute, get_db, user_has_access, days_left_in_trial, _q
+from auth import auth_bp, init_db, db_fetchone, db_fetchall, db_execute, get_db, user_has_access, days_left_in_trial, _q, get_active_plans
 app.register_blueprint(auth_bp)
 init_db()   # create users table if it doesn't exist
 
@@ -3272,7 +3272,8 @@ def terms():
     row = db_fetchone(_q("SELECT content FROM site_content WHERE key = ?"), ("terms",))
     content = row["content"] if row else ""
     is_admin = session.get("user_email", "").lower() == ADMIN_EMAIL_ASSESSOR
-    return render_template("terms.html", content=content, is_admin=is_admin)
+    plans = get_active_plans()
+    return render_template("terms.html", content=content, is_admin=is_admin, plans=plans)
 
 @app.route("/privacy")
 def privacy():

@@ -56,7 +56,7 @@ def _ph(s):
     return "%s" if _using_postgres() else "?"
 
 def init_db():
-    """Create the users table if it doesn't exist."""
+    """Create the users and subscription_plans tables if they don't exist."""
     if _using_postgres():
         sql = """
             CREATE TABLE IF NOT EXISTS users (
@@ -72,11 +72,44 @@ def init_db():
                 reset_token_expires     TEXT
             )
         """
+        plans_sql = """
+            CREATE TABLE IF NOT EXISTS subscription_plans (
+                key             TEXT PRIMARY KEY,
+                label           TEXT NOT NULL,
+                display_price   TEXT NOT NULL,
+                stripe_price_id TEXT,
+                billing_interval TEXT NOT NULL,
+                interval_count  INTEGER NOT NULL,
+                sort_order      INTEGER NOT NULL,
+                active          BOOLEAN DEFAULT TRUE
+            )
+        """
         conn = get_db()
         try:
             cur = conn.cursor()
             cur.execute(sql)
+            # Add plan_key column if missing
+            cur.execute("""
+                ALTER TABLE users ADD COLUMN plan_key TEXT DEFAULT 'plan_monthly'
+            """)
+        except Exception:
+            conn.rollback()
+        try:
+            cur = conn.cursor()
+            cur.execute(plans_sql)
+            # Seed default plans
+            cur.execute("""
+                INSERT INTO subscription_plans (key, label, display_price, stripe_price_id, billing_interval, interval_count, sort_order, active)
+                VALUES
+                    ('plan_monthly',  'Monthly',  '$24.95', '', 'month', 1,  1, TRUE),
+                    ('plan_3month',   '3-Month',  '$21.95', '', 'month', 3,  2, TRUE),
+                    ('plan_6month',   '6-Month',  '$18.95', '', 'month', 6,  3, TRUE),
+                    ('plan_12month',  '12-Month', '$16.95', '', 'month', 12, 4, TRUE)
+                ON CONFLICT (key) DO NOTHING
+            """)
             conn.commit()
+        except Exception:
+            conn.rollback()
         finally:
             conn.close()
     else:
@@ -97,6 +130,34 @@ def init_db():
                 reset_token_expires     TEXT
             )
         """)
+        # Add plan_key column if missing
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN plan_key TEXT DEFAULT 'plan_monthly'")
+        except Exception:
+            pass  # column already exists
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS subscription_plans (
+                key             TEXT PRIMARY KEY,
+                label           TEXT NOT NULL,
+                display_price   TEXT NOT NULL,
+                stripe_price_id TEXT,
+                billing_interval TEXT NOT NULL,
+                interval_count  INTEGER NOT NULL,
+                sort_order      INTEGER NOT NULL,
+                active          BOOLEAN DEFAULT 1
+            )
+        """)
+        # Seed default plans
+        for row in [
+            ('plan_monthly',  'Monthly',  '$24.95', '', 'month', 1,  1, 1),
+            ('plan_3month',   '3-Month',  '$21.95', '', 'month', 3,  2, 1),
+            ('plan_6month',   '6-Month',  '$18.95', '', 'month', 6,  3, 1),
+            ('plan_12month',  '12-Month', '$16.95', '', 'month', 12, 4, 1),
+        ]:
+            conn.execute(
+                "INSERT OR IGNORE INTO subscription_plans (key, label, display_price, stripe_price_id, billing_interval, interval_count, sort_order, active) VALUES (?,?,?,?,?,?,?,?)",
+                row,
+            )
         conn.commit()
         conn.close()
 
@@ -192,6 +253,15 @@ def days_left_in_trial(user) -> int:
 
 def is_in_trial(user) -> bool:
     return user["subscription_status"] in ("trial", "trialing")
+
+# ── Plan helpers ──────────────────────────────────────────────────────────────
+def get_active_plans():
+    """Return all active subscription plans, ordered by sort_order."""
+    return db_fetchall("SELECT * FROM subscription_plans WHERE active = " + ("TRUE" if _using_postgres() else "1") + " ORDER BY sort_order")
+
+def get_plan(key):
+    """Return a single plan by key."""
+    return db_fetchone(_q("SELECT * FROM subscription_plans WHERE key = ?"), (key,))
 
 # ── Blueprint ─────────────────────────────────────────────────────────────────
 auth_bp = Blueprint("auth", __name__)
@@ -289,6 +359,17 @@ def signup():
 
         # Create Stripe customer and checkout session with 14-day trial
         try:
+            # Signup always uses the default monthly plan
+            signup_plan = get_plan("plan_monthly")
+            signup_price_id = signup_plan["stripe_price_id"] if signup_plan else ""
+            if not signup_price_id:
+                # Fall back to env var for backwards compatibility during migration
+                signup_price_id = STRIPE_PRICE_ID
+            if not signup_price_id:
+                flash("Subscription plans are not yet configured. Please contact support.", "error")
+                db_execute(_q("DELETE FROM users WHERE email = ?"), (email,))
+                return render_template("signup.html")
+
             customer = stripe.Customer.create(email=email)
             db_execute(_q(
                 "UPDATE users SET stripe_customer_id = ? WHERE email = ?"
@@ -299,9 +380,10 @@ def signup():
             checkout = stripe.checkout.Session.create(
                 customer=customer.id,
                 payment_method_types=["card"],
-                line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+                line_items=[{"price": signup_price_id, "quantity": 1}],
                 mode="subscription",
-                subscription_data={"trial_period_days": TRIAL_DAYS},
+                subscription_data={"trial_period_days": TRIAL_DAYS, "metadata": {"plan_key": "plan_monthly"}},
+                metadata={"plan_key": "plan_monthly"},
                 success_url=request.host_url + "signup/success?session_id={CHECKOUT_SESSION_ID}",
                 cancel_url=request.host_url + "signup?cancelled=1",
             )
@@ -334,14 +416,16 @@ def signup_success():
         customer_id     = checkout.customer
         subscription_id = checkout.subscription
         email           = checkout.customer_details.email
+        plan_key        = (checkout.metadata or {}).get("plan_key", "plan_monthly")
 
         db_execute(_q("""
             UPDATE users SET
                 subscription_status    = 'trialing',
                 stripe_customer_id     = ?,
-                stripe_subscription_id = ?
+                stripe_subscription_id = ?,
+                plan_key               = ?
             WHERE email = ?
-        """), (customer_id, subscription_id, email))
+        """), (customer_id, subscription_id, plan_key, email))
 
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if user:
@@ -369,13 +453,26 @@ def logout():
 @auth_bp.route("/subscribe")
 def subscribe():
     email = request.args.get("email", session.get("user_email", ""))
+    plans = get_active_plans()
     return render_template("subscribe.html",
                            email=email,
+                           plans=plans,
                            publishable_key=STRIPE_PUBLISHABLE_KEY)
 
 @auth_bp.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
     email = request.form.get("email", session.get("user_email", ""))
+    plan_key = request.form.get("plan_key", "plan_monthly")
+
+    # Look up plan from DB
+    plan = get_plan(plan_key)
+    if not plan:
+        flash("Invalid plan selected.", "error")
+        return redirect(url_for("auth.subscribe"))
+    if not plan.get("stripe_price_id"):
+        flash("This plan is not yet configured. Please contact support.", "error")
+        return redirect(url_for("auth.subscribe"))
+
     try:
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         customer_id = user["stripe_customer_id"] if user else None
@@ -390,8 +487,10 @@ def create_checkout_session():
         checkout = stripe.checkout.Session.create(
             customer=customer_id,
             payment_method_types=["card"],
-            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            line_items=[{"price": plan["stripe_price_id"], "quantity": 1}],
             mode="subscription",
+            metadata={"plan_key": plan_key},
+            subscription_data={"metadata": {"plan_key": plan_key}},
             success_url=request.host_url + "subscribe/success?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.host_url + "subscribe",
         )
@@ -408,14 +507,16 @@ def subscribe_success():
         customer_id     = checkout.customer
         subscription_id = checkout.subscription
         email           = checkout.customer_details.email
+        plan_key        = (checkout.metadata or {}).get("plan_key", "plan_monthly")
 
         db_execute(_q("""
             UPDATE users SET
                 subscription_status    = 'active',
                 stripe_customer_id     = ?,
-                stripe_subscription_id = ?
+                stripe_subscription_id = ?,
+                plan_key               = ?
             WHERE email = ?
-        """), (customer_id, subscription_id, email))
+        """), (customer_id, subscription_id, plan_key, email))
 
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if user:
@@ -458,9 +559,16 @@ def stripe_webhook():
             status = "past_due"
         else:
             status = stripe_status
-        db_execute(_q(
-            "UPDATE users SET subscription_status = ? WHERE stripe_subscription_id = ?"
-        ), (status, sub["id"]))
+        # Store plan_key from subscription metadata if available
+        plan_key = (sub.get("metadata") or {}).get("plan_key")
+        if plan_key:
+            db_execute(_q(
+                "UPDATE users SET subscription_status = ?, plan_key = ? WHERE stripe_subscription_id = ?"
+            ), (status, plan_key, sub["id"]))
+        else:
+            db_execute(_q(
+                "UPDATE users SET subscription_status = ? WHERE stripe_subscription_id = ?"
+            ), (status, sub["id"]))
 
     elif event["type"] == "invoice.payment_failed":
         invoice = event["data"]["object"]
@@ -494,9 +602,13 @@ def account():
         except Exception:
             pass
 
+    # Look up current plan details
+    user_plan = get_plan(user.get("plan_key") or "plan_monthly")
+
     return render_template("account.html", user=user, trial_days=trial_days,
                            cancel_at_period_end=cancel_at_period_end,
-                           current_period_end=current_period_end)
+                           current_period_end=current_period_end,
+                           user_plan=user_plan)
 
 # ── Billing portal ────────────────────────────────────────────────────────────
 @auth_bp.route("/billing-portal")
@@ -557,11 +669,22 @@ def create_checkout_session_upgrade():
             db_execute(_q(
                 "UPDATE users SET stripe_customer_id = ? WHERE email = ?"
             ), (customer_id, email))
+        # Use the user's current plan, or default to monthly
+        upgrade_plan_key = user.get("plan_key", "plan_monthly") or "plan_monthly"
+        upgrade_plan = get_plan(upgrade_plan_key)
+        upgrade_price_id = upgrade_plan["stripe_price_id"] if upgrade_plan else ""
+        if not upgrade_price_id:
+            upgrade_price_id = STRIPE_PRICE_ID  # fallback during migration
+        if not upgrade_price_id:
+            flash("Subscription plans are not yet configured. Please contact support.", "error")
+            return redirect(url_for("auth.account"))
         checkout = stripe.checkout.Session.create(
             customer=customer_id,
             payment_method_types=["card"],
-            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            line_items=[{"price": upgrade_price_id, "quantity": 1}],
             mode="subscription",
+            metadata={"plan_key": upgrade_plan_key},
+            subscription_data={"metadata": {"plan_key": upgrade_plan_key}},
             success_url=request.host_url + "subscribe/success?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.host_url + "account",
         )
@@ -638,3 +761,25 @@ def admin():
         return redirect(url_for("auth.login"))
     users = db_fetchall("SELECT * FROM users ORDER BY created_at DESC")
     return render_template("admin.html", users=users)
+
+@auth_bp.route("/admin/plans")
+def plans_admin():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return redirect(url_for("auth.login"))
+    plans = db_fetchall("SELECT * FROM subscription_plans ORDER BY sort_order")
+    return render_template("plans_admin.html", plans=plans)
+
+@auth_bp.route("/admin/plans/save", methods=["POST"])
+def plans_save():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return jsonify({"error": "unauthorized"}), 403
+    data = request.get_json(force=True)
+    key = data.get("key", "").strip()
+    display_price = data.get("display_price", "").strip()
+    stripe_price_id = data.get("stripe_price_id", "").strip()
+    if not key:
+        return jsonify({"error": "key is required"}), 400
+    db_execute(_q(
+        "UPDATE subscription_plans SET display_price = ?, stripe_price_id = ? WHERE key = ?"
+    ), (display_price, stripe_price_id, key))
+    return jsonify({"ok": True})

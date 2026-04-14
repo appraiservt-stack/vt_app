@@ -37,6 +37,33 @@
 </style>
 </head>
 <body>
+{% if plans %}
+<div class="container" style="max-width:720px;margin:0 auto;padding:20px 16px 0;">
+  <div class="card" style="background:#fff;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.09);padding:24px 28px;margin-bottom:20px;">
+    <h3 style="font-size:16px;color:#1a3a5c;margin-bottom:14px;">Subscription Plans</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <thead>
+        <tr style="border-bottom:2px solid #e0e4ea;">
+          <th style="text-align:left;padding:8px 6px;color:#1a3a5c;">Plan</th>
+          <th style="text-align:left;padding:8px 6px;color:#1a3a5c;">Price</th>
+          <th style="text-align:left;padding:8px 6px;color:#1a3a5c;">Billing</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for plan in plans %}
+        <tr style="border-bottom:1px solid #eee;">
+          <td style="padding:8px 6px;font-weight:600;">{{ plan.label }}</td>
+          <td style="padding:8px 6px;">{{ plan.display_price }}/month</td>
+          <td style="padding:8px 6px;color:#666;">
+            {% if plan.interval_count == 1 %}Renews monthly{% else %}Billed every {{ plan.interval_count }} months{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
 {{ content | safe }}
 {% if is_admin %}
 <div style="margin-top:40px; text-align:center;">

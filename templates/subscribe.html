@@ -20,32 +20,57 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.25);
     padding: 40px 36px;
     width: 100%;
-    max-width: 420px;
+    max-width: 480px;
     text-align: center;
   }
   .logo h1 { font-size: 22px; color: #1a3a5c; font-weight: 700; margin-bottom: 6px; }
   .logo p  { font-size: 13px; color: #666; }
-  .price-box {
-    background: #f7f9fc;
-    border: 2px solid #1a3a5c;
-    border-radius: 10px;
-    padding: 24px;
-    margin: 28px 0;
+  .plans {
+    margin: 24px 0;
+    text-align: left;
   }
-  .price-box .amount {
-    font-size: 42px;
+  .plan-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 2px solid #e0e4ea;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .plan-option:hover {
+    border-color: #1a3a5c;
+    background: #f7f9fc;
+  }
+  .plan-option.selected {
+    border-color: #1a3a5c;
+    background: #f0f4f8;
+  }
+  .plan-option input[type="radio"] {
+    accent-color: #1a3a5c;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  .plan-details {
+    flex: 1;
+  }
+  .plan-label {
+    font-size: 15px;
     font-weight: 700;
     color: #1a3a5c;
   }
-  .price-box .amount span {
-    font-size: 18px;
-    font-weight: 400;
-    color: #666;
+  .plan-price {
+    font-size: 14px;
+    color: #333;
+    margin-top: 2px;
   }
-  .price-box .desc {
-    font-size: 13px;
-    color: #555;
-    margin-top: 8px;
+  .plan-desc {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
   }
   .features {
     text-align: left;
@@ -59,7 +84,7 @@
     padding: 6px 0;
     border-bottom: 1px solid #eee;
   }
-  .features li:before { content: "✓ "; color: #2d6a4f; font-weight: 700; }
+  .features li:before { content: "\2713 "; color: #2d6a4f; font-weight: 700; }
   .btn {
     display: block;
     width: 100%;
@@ -78,12 +103,14 @@
   .secure { font-size: 11px; color: #888; margin-top: 12px; }
   .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
   .alert-warning { background: #fff8e1; color: #856404; border: 1px solid #ffd966; }
+  .alert-error { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+  .alert-info { background: #e8f0fe; color: #1a3a5c; border: 1px solid #b3c6f5; }
 </style>
 </head>
 <body>
 <div class="card">
   <div class="logo">
-    <h1>🏔 VT Property Sales</h1>
+    <h1>VT Property Sales</h1>
     <p>Vermont Property Transfer Tool</p>
   </div>
 
@@ -93,28 +120,52 @@
     {% endfor %}
   {% endwith %}
 
-  <div class="price-box">
-    <div class="amount">$19<span>.95/mo</span></div>
-    <div class="desc">Full access · Cancel anytime</div>
-  </div>
-
-  <ul class="features">
-    <li>Unlimited property sales searches</li>
-    <li>Draw areas &amp; export to Excel</li>
-    <li>PTT-172 form generation</li>
-    <li>FEMA flood zone overlay</li>
-    <li>Town &amp; county boundary layers</li>
-    <li>VT Parcel grand list data</li>
-  </ul>
-
-  <form method="POST" action="/create-checkout-session">
+  <form method="POST" action="/create-checkout-session" id="plan-form">
     <input type="hidden" name="email" value="{{ email }}">
-    <button type="submit" class="btn">Subscribe with Stripe →</button>
+
+    <div class="plans">
+      <p style="font-size:14px;color:#1a3a5c;font-weight:700;margin-bottom:12px;">Choose your plan:</p>
+      {% for plan in plans %}
+      <label class="plan-option{% if loop.first %} selected{% endif %}">
+        <input type="radio" name="plan_key" value="{{ plan.key }}"{% if loop.first %} checked{% endif %}>
+        <div class="plan-details">
+          <div class="plan-label">{{ plan.label }}</div>
+          <div class="plan-price">{{ plan.display_price }}/month</div>
+          <div class="plan-desc">
+            {% if plan.interval_count == 1 %}Renews monthly{% else %}Billed every {{ plan.interval_count }} months{% endif %}
+          </div>
+        </div>
+      </label>
+      {% endfor %}
+    </div>
+
+    <ul class="features">
+      <li>Unlimited property sales searches</li>
+      <li>Draw areas &amp; export to Excel</li>
+      <li>PTT-172 form generation</li>
+      <li>FEMA flood zone overlay</li>
+      <li>Town &amp; county boundary layers</li>
+      <li>VT Parcel grand list data</li>
+    </ul>
+
+    <button type="submit" class="btn">Subscribe with Stripe &rarr;</button>
   </form>
 
   <div class="secure">
-    🔒 Secure payment via Stripe · Google Pay &amp; Apple Pay accepted
+    Secure payment via Stripe &middot; Google Pay &amp; Apple Pay accepted
   </div>
 </div>
+
+<script>
+  // Highlight selected plan
+  document.querySelectorAll('.plan-option input[type="radio"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      document.querySelectorAll('.plan-option').forEach(function(el) {
+        el.classList.remove('selected');
+      });
+      this.closest('.plan-option').classList.add('selected');
+    });
+  });
+</script>
 </body>
 </html>
