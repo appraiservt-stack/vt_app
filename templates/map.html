@@ -895,10 +895,10 @@ map.on("baselayerchange", function(e){
 // ============================================================
 // VT PARCELS — GeoJSON canvas renderer using VCGI FeatureServer
 // Fetches parcel polygons for current viewport, renders as canvas outlines.
-// Only loads at zoom 14+. Refreshes on moveend/zoomend.
+// Only loads at zoom 13+. Refreshes on moveend/zoomend.
 // ============================================================
 const PARCEL_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
-const PARCEL_MIN_ZOOM = 14;
+const PARCEL_MIN_ZOOM = 13;
 
 // Create pane so parcel outlines sit below markers but above basemap
 if(!map.getPane('parcelPane')){
@@ -1569,7 +1569,7 @@ L.control.layers(
   },
   {
     // Overlays — toggle independently of the basemap
-    "VT Parcels (zoom 14+)": parcelWmsLayer,
+    "VT Parcels (zoom 13+)": parcelWmsLayer,
     "Street Names (zoom 15+)": roadLabelLayer,
     "House Numbers (zoom 17+)": e911Layer,
     "FEMA Flood Zones":      femaFloodLayer,
@@ -1580,7 +1580,7 @@ L.control.layers(
 
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true;  loadParcels(); }
+  if(e.name === 'VT Parcels (zoom 13+)')  { parcelsOn = true;  loadParcels(); }
   if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
@@ -1588,7 +1588,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
 });
 map.on('overlayremove', function(e){
-  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = false; if(parcelFetchCtrl) parcelFetchCtrl.abort(); if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; } }
+  if(e.name === 'VT Parcels (zoom 13+)')  { parcelsOn = false; if(parcelFetchCtrl) parcelFetchCtrl.abort(); if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; } }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On = false; if(e911FetchCtrl) e911FetchCtrl.abort(); if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; } }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
