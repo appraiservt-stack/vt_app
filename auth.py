@@ -97,6 +97,12 @@ def init_db():
         try:
             cur = conn.cursor()
             cur.execute(plans_sql)
+            # Add stripe_price_id column if missing (for tables created before it existed)
+            try:
+                cur.execute("ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS stripe_price_id TEXT")
+            except Exception:
+                conn.rollback()
+                cur = conn.cursor()
             # Seed default plans
             cur.execute("""
                 INSERT INTO subscription_plans (key, label, display_price, stripe_price_id, billing_interval, interval_count, sort_order, active)
@@ -147,6 +153,11 @@ def init_db():
                 active          BOOLEAN DEFAULT 1
             )
         """)
+        # Add stripe_price_id column if missing (for tables created before it existed)
+        try:
+            conn.execute("ALTER TABLE subscription_plans ADD COLUMN stripe_price_id TEXT")
+        except Exception:
+            pass  # column already exists
         # Seed default plans
         for row in [
             ('plan_monthly',  'Monthly',  '$24.95', '', 'month', 1,  1, 1),
@@ -847,13 +858,16 @@ def plans_admin():
 def plans_save():
     if session.get("user_email") != ADMIN_EMAIL:
         return jsonify({"error": "unauthorized"}), 403
-    data = request.get_json(force=True)
-    key = data.get("key", "").strip()
-    display_price = data.get("display_price", "").strip()
-    stripe_price_id = data.get("stripe_price_id", "").strip()
-    if not key:
-        return jsonify({"error": "key is required"}), 400
-    db_execute(_q(
-        "UPDATE subscription_plans SET display_price = ?, stripe_price_id = ? WHERE key = ?"
-    ), (display_price, stripe_price_id, key))
-    return jsonify({"ok": True})
+    try:
+        data = request.get_json(force=True)
+        key = data.get("key", "").strip()
+        display_price = data.get("display_price", "").strip()
+        stripe_price_id = data.get("stripe_price_id", "").strip()
+        if not key:
+            return jsonify({"error": "key is required"}), 400
+        db_execute(_q(
+            "UPDATE subscription_plans SET display_price = ?, stripe_price_id = ? WHERE key = ?"
+        ), (display_price, stripe_price_id, key))
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500

@@ -3460,29 +3460,32 @@ def content_save():
 @app.route("/admin/plans/save-all", methods=["POST"])
 @_admin_required
 def plans_save_all():
-    data = request.get_json(force=True)
-    if not isinstance(data, list):
-        return jsonify({"error": "expected JSON array"}), 400
-    conn = get_db()
     try:
-        cur = conn.cursor()
-        for item in data:
-            key = item.get("key", "").strip()
-            display_price = item.get("display_price", "").strip()
-            stripe_price_id = item.get("stripe_price_id", "").strip()
-            if not key:
-                continue
-            cur.execute(
-                _q("UPDATE subscription_plans SET display_price = ?, stripe_price_id = ? WHERE key = ?"),
-                (display_price, stripe_price_id, key)
-            )
-        conn.commit()
-        return jsonify({"ok": True})
+        data = request.get_json(force=True)
+        if not isinstance(data, list):
+            return jsonify({"error": "expected JSON array"}), 400
+        conn = get_db()
+        try:
+            cur = conn.cursor()
+            for item in data:
+                key = item.get("key", "").strip()
+                display_price = item.get("display_price", "").strip()
+                stripe_price_id = item.get("stripe_price_id", "").strip()
+                if not key:
+                    continue
+                cur.execute(
+                    _q("UPDATE subscription_plans SET display_price = ?, stripe_price_id = ? WHERE key = ?"),
+                    (display_price, stripe_price_id, key)
+                )
+            conn.commit()
+            return jsonify({"ok": True})
+        except Exception as e:
+            conn.rollback()
+            return jsonify({"ok": False, "error": str(e)}), 500
+        finally:
+            conn.close()
     except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 # ── Assessor links routes ─────────────────────────────────────────────────────
 
