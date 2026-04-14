@@ -430,6 +430,7 @@
       &#9660; Names &amp; SPAN
     </div>
     <div id="namesDropdown" class="dropdown-content">
+      <button type="button" onclick="clearAllForNameSearch()" style="width:100%; padding:6px; background:#e6a817; color:#333; border:none; border-radius:3px; font-size:12px; font-weight:bold; cursor:pointer; margin-bottom:8px;">&#9888; Clear All Filters Before Searching</button>
       <div class="filter-label">Seller</div>
       <div class="filter-row">
         <label>Entity:</label>
@@ -465,6 +466,7 @@
         <label>SPAN:</label>
         <input type="text" id="spanInput" placeholder="e.g. 441-139-10408">
       </div>
+      <button type="button" onclick="applyFilters()" style="width:100%; padding:6px; background:#1F4E79; color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; margin-top:6px;">Apply Name/SPAN Search</button>
     </div>
 
     <!-- ===== OTHER FLAGS ===== -->
@@ -3480,6 +3482,37 @@ function clearAllCheckboxes(){
     map.on('zoomend', onZoomEnd);
     applyFilters();
   }, 400);
+}
+
+// ===================================================
+// CLEAR ALL FILTERS FOR NAME/SPAN SEARCH
+// Silently clears every filter so the user can do a clean name/SPAN search.
+// Does NOT call applyFilters() — the user enters their search and clicks Apply.
+// ===================================================
+function clearAllForNameSearch(){
+  ['buildingList','interestList','sellerUseList','buyerUseList','grandListList','pttList'].forEach(id => {
+    uncheckAllIn(id);
+  });
+  clearAllCounties();
+  clearAllTowns();
+  document.getElementById('dateFrom').value  = '';
+  document.getElementById('dateTo').value    = '';
+  document.getElementById('priceLow').value  = '';
+  document.getElementById('priceHigh').value = '';
+  document.getElementById('landLow').value   = '';
+  document.getElementById('landHigh').value  = '';
+  const noLandEl = document.getElementById('noLandCheck');
+  if(noLandEl) noLandEl.checked = false;
+  ['sellerEntity','sellerLast','sellerFirst',
+   'buyerEntity','buyerLast','buyerFirst',
+   'streetAddr','spanInput'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed'].forEach(name => {
+    const radio = document.querySelector('input[name="' + name + '"][value=""]');
+    if(radio) radio.checked = true;
+  });
+  nameSearchCache = null;
 }
 
 // ===================================================

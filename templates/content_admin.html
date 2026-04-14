@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin — Edit Site Content</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; }
+  .topbar { background: #1a3a5c; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar a { color: #fff; text-decoration: none; font-size: 14px; }
+  .topbar .nav-links { display: flex; gap: 18px; }
+  .container { max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+  h2 { font-size: 20px; color: #1a3a5c; margin-bottom: 20px; }
+  .tabs { display: flex; gap: 0; margin-bottom: 0; }
+  .tab {
+    padding: 10px 24px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid #ccc; border-bottom: none;
+    border-radius: 6px 6px 0 0; background: #e8ecf0; color: #555;
+  }
+  .tab.active { background: #fff; color: #1a3a5c; border-color: #1a3a5c; border-bottom: 1.5px solid #fff; margin-bottom: -1px; z-index: 1; }
+  .editor-card {
+    background: #fff; border-radius: 0 10px 10px 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 24px; border: 1.5px solid #1a3a5c; border-top: none;
+  }
+  textarea {
+    width: 100%; height: 500px; font-family: 'Courier New', monospace;
+    font-size: 13px; line-height: 1.5; padding: 14px;
+    border: 1.5px solid #ccc; border-radius: 6px; resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: #1a3a5c; }
+  .btn-row { display: flex; gap: 12px; margin-top: 16px; align-items: center; }
+  .btn-sm {
+    display: inline-block; padding: 8px 18px; border-radius: 4px;
+    font-size: 13px; font-weight: 600; cursor: pointer; border: none;
+    text-decoration: none; color: #fff;
+  }
+  .btn-green { background: #2d6a4f; }
+  .btn-green:hover { background: #235540; }
+  .btn-blue { background: #1a3a5c; }
+  .btn-blue:hover { background: #16304d; }
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .alert-success { background: #e8f8f0; color: #1e7e4a; border: 1px solid #b7dfc9; }
+  .alert-error { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <strong>VT Property Sales — Edit Site Content</strong>
+  <div class="nav-links">
+    <a href="/admin">Users</a>
+    <a href="/admin/assessors">Assessors</a>
+    <a href="/logout">Sign Out</a>
+  </div>
+</div>
+<div class="container">
+  <h2>Edit Site Content</h2>
+
+  <div id="alert" class="alert"></div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabTerms" onclick="switchTab('terms')">Terms of Service</div>
+    <div class="tab" id="tabPrivacy" onclick="switchTab('privacy')">Privacy Policy</div>
+  </div>
+
+  <div class="editor-card">
+    <textarea id="contentEditor"></textarea>
+    <div class="btn-row">
+      <button class="btn-sm btn-green" onclick="saveContent()">Save</button>
+      <a id="previewLink" href="/terms" target="_blank" class="btn-sm btn-blue" style="text-align:center;">Preview</a>
+      <span id="saveStatus" style="font-size:12px; color:#888;"></span>
+    </div>
+  </div>
+</div>
+<script>
+let currentKey = 'terms';
+
+function showAlert(msg, type) {
+  const el = document.getElementById('alert');
+  el.textContent = msg;
+  el.className = 'alert alert-' + type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+function switchTab(key) {
+  currentKey = key;
+  document.getElementById('tabTerms').className = key === 'terms' ? 'tab active' : 'tab';
+  document.getElementById('tabPrivacy').className = key === 'privacy' ? 'tab active' : 'tab';
+  document.getElementById('previewLink').href = key === 'terms' ? '/terms' : '/privacy';
+  loadContent(key);
+}
+
+function loadContent(key) {
+  document.getElementById('contentEditor').value = 'Loading...';
+  fetch('/admin/content/get?key=' + encodeURIComponent(key))
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('contentEditor').value = d.content || '';
+    })
+    .catch(() => {
+      document.getElementById('contentEditor').value = '';
+      showAlert('Failed to load content.', 'error');
+    });
+}
+
+function saveContent() {
+  const key = currentKey;
+  const content = document.getElementById('contentEditor').value;
+  document.getElementById('saveStatus').textContent = 'Saving...';
+  fetch('/admin/content/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: key, content: content })
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      showAlert('Saved successfully.', 'success');
+      document.getElementById('saveStatus').textContent = '';
+    } else {
+      showAlert(d.error || 'Save failed.', 'error');
+      document.getElementById('saveStatus').textContent = '';
+    }
+  })
+  .catch(() => {
+    showAlert('Network error — could not save.', 'error');
+    document.getElementById('saveStatus').textContent = '';
+  });
+}
+
+// On page load, check URL for ?page= param and load appropriate tab
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const page = params.get('page');
+  if (page === 'privacy') {
+    switchTab('privacy');
+  } else {
+    loadContent('terms');
+  }
+})();
+</script>
+</body>
+</html>

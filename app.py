@@ -68,6 +68,62 @@ def _init_assessor_links():
 
 _init_assessor_links()
 
+# ── Site content table (terms / privacy) ─────────────────────────────────────
+def _init_site_content():
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        from auth import _using_postgres
+        if _using_postgres():
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS site_content (
+                    key TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
+        else:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS site_content (
+                    key TEXT PRIMARY KEY,
+                    content TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+        conn.commit()
+
+        # Seed initial content from template files if rows don't exist yet
+        for key, filename in [("terms", "templates/terms.html"), ("privacy", "templates/privacy.html")]:
+            row = None
+            if _using_postgres():
+                cur.execute("SELECT key FROM site_content WHERE key = %s", (key,))
+            else:
+                cur.execute("SELECT key FROM site_content WHERE key = ?", (key,))
+            row = cur.fetchone()
+            if row is None:
+                filepath = Path(__file__).parent / filename
+                if filepath.exists():
+                    html = filepath.read_text(encoding="utf-8")
+                    # Extract body content between <body> and </body>
+                    import re as _re
+                    body_match = _re.search(r'<body[^>]*>(.*)</body>', html, _re.DOTALL)
+                    body_content = body_match.group(1).strip() if body_match else html
+                    if _using_postgres():
+                        cur.execute(
+                            "INSERT INTO site_content (key, content) VALUES (%s, %s) ON CONFLICT (key) DO NOTHING",
+                            (key, body_content)
+                        )
+                    else:
+                        cur.execute(
+                            "INSERT INTO site_content (key, content) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
+                            (key, body_content)
+                        )
+        conn.commit()
+    finally:
+        conn.close()
+
+_init_site_content()
+
 # ── Login required decorator ──────────────────────────────────────────────────
 ADMIN_EMAIL_LOCAL   = os.environ.get("ADMIN_EMAIL", "appraiservt@gmail.com").lower()
 ADMIN_PASSWORD_SET  = bool(os.environ.get("ADMIN_PASSWORD"))  # True only when env var exists
@@ -3195,11 +3251,17 @@ def ptt172(filename=None):  # noqa: C901
 # ── Policy pages ──────────────────────────────────────────────────────────────
 @app.route("/terms")
 def terms():
-    return render_template("terms.html")
+    row = db_fetchone(_q("SELECT content FROM site_content WHERE key = ?"), ("terms",))
+    content = row["content"] if row else ""
+    is_admin = session.get("user_email", "").lower() == ADMIN_EMAIL_ASSESSOR
+    return render_template("terms.html", content=content, is_admin=is_admin)
 
 @app.route("/privacy")
 def privacy():
-    return render_template("privacy.html")
+    row = db_fetchone(_q("SELECT content FROM site_content WHERE key = ?"), ("privacy",))
+    content = row["content"] if row else ""
+    is_admin = session.get("user_email", "").lower() == ADMIN_EMAIL_ASSESSOR
+    return render_template("privacy.html", content=content, is_admin=is_admin)
 
 @app.route("/contact", methods=["GET", "POST"])
 def contact():
@@ -3298,7 +3360,7 @@ def proxy_wms():
         return '', 502
 
 
-# ── Assessor links routes ─────────────────────────────────────────────────────
+# ── Admin decorator & shared constant ────────────────────────────────────────
 ADMIN_EMAIL_ASSESSOR = os.environ.get("ADMIN_EMAIL", "appraiservt@gmail.com").lower()
 
 def _admin_required(f):
@@ -3308,6 +3370,50 @@ def _admin_required(f):
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
     return decorated
+
+# ── Site content admin routes ─────────────────────────────────────────────────
+
+@app.route("/admin/content")
+@_admin_required
+def content_admin():
+    return render_template("content_admin.html")
+
+@app.route("/admin/content/get")
+@_admin_required
+def content_get():
+    key = request.args.get("key", "terms")
+    if key not in ("terms", "privacy"):
+        return jsonify({"error": "invalid key"}), 400
+    row = db_fetchone(_q("SELECT key, content FROM site_content WHERE key = ?"), (key,))
+    if row:
+        return jsonify({"key": row["key"], "content": row["content"]})
+    return jsonify({"key": key, "content": ""})
+
+@app.route("/admin/content/save", methods=["POST"])
+@_admin_required
+def content_save():
+    data = request.get_json(force=True)
+    key = data.get("key", "")
+    content = data.get("content", "")
+    if key not in ("terms", "privacy"):
+        return jsonify({"error": "invalid key"}), 400
+    from auth import _using_postgres
+    now = datetime.now(timezone.utc).isoformat()
+    if _using_postgres():
+        db_execute(
+            "INSERT INTO site_content (key, content, updated_at) VALUES (%s, %s, %s) "
+            "ON CONFLICT (key) DO UPDATE SET content = EXCLUDED.content, updated_at = EXCLUDED.updated_at",
+            (key, content, now)
+        )
+    else:
+        db_execute(
+            "INSERT INTO site_content (key, content, updated_at) VALUES (?, ?, ?) "
+            "ON CONFLICT (key) DO UPDATE SET content = excluded.content, updated_at = excluded.updated_at",
+            (key, content, now)
+        )
+    return jsonify({"ok": True})
+
+# ── Assessor links routes ─────────────────────────────────────────────────────
 
 @app.route("/assessor")
 def assessor_lookup():
