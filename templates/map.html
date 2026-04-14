@@ -1602,7 +1602,7 @@ L.control.layers(
 
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = true; }
+  if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = true; updateParcelStyle(); }
   if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
