@@ -684,6 +684,11 @@
         </div>
       </div>
 
+      <!-- Conserved Lands zoom notice (hidden until layer enabled + zoomed out) -->
+      <div id="conserved-zoom-msg" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e8f5e9; border:1px solid #81c784; border-radius:3px; font-size:11px; color:#2e7d32;">
+        Zoom in to see conserved lands (zoom 12+)
+      </div>
+
       <!-- County boundaries -->
       <div>
         <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
@@ -730,6 +735,7 @@
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<script src="https://unpkg.com/esri-leaflet@3/dist/esri-leaflet.js"></script>
 
 <script>
 // ===================================================
@@ -1557,6 +1563,31 @@ function _loadBoundaryLayer(which){
 function loadTownBoundaries(){ _loadBoundaryLayer('town'); }
 function loadCntyBoundaries(){ _loadBoundaryLayer('cnty'); }
 
+// ---- CONSERVED LANDS (Esri Feature Layer) ----
+let conservedOn = false;
+var conservedLayer = L.esri.featureLayer({
+    url: 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_VT_Protected_Lands_Database_WM_v2/FeatureServer/0',
+    style: function() {
+        return {
+            color: '#007a35',
+            weight: 1.5,
+            opacity: 0.7,
+            fillColor: '#00b050',
+            fillOpacity: 0.25
+        };
+    },
+    minZoom: 12
+});
+conservedLayer.bindPopup(function(layer) {
+    return layer.feature.properties.NAME || 'Conserved Land';
+});
+
+function updateConservedZoomMsg(){
+    var el = document.getElementById('conserved-zoom-msg');
+    if(!el) return;
+    el.style.display = (conservedOn && map.getZoom() < 12) ? '' : 'none';
+}
+
 // ---- LAYERS CONTROL ----
 L.control.layers(
   {
@@ -1575,6 +1606,7 @@ L.control.layers(
     "FEMA Flood Zones":      femaFloodLayer,
     "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
     "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
+    "Conserved Lands (zoom 12+)": conservedLayer,
   }
 ).addTo(map);
 
@@ -1586,6 +1618,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
+  if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = true; conservedLayer.bindPopup(function(layer){ return layer.feature.properties.NAME || 'Conserved Land'; }); updateConservedZoomMsg(); }
 });
 map.on('overlayremove', function(e){
   if(e.name === 'VT Parcels (zoom 13+)')  { parcelsOn = false; if(parcelFetchCtrl) parcelFetchCtrl.abort(); if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; } }
@@ -1593,6 +1626,7 @@ map.on('overlayremove', function(e){
   if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
+  if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = false; conservedLayer.unbindPopup(); updateConservedZoomMsg(); }
 });
 
 let markersLayer = L.layerGroup().addTo(map);
@@ -3520,7 +3554,7 @@ function clearAllForNameSearch(){
 // Named handlers so they can be temporarily detached during fitBounds.
 // ===================================================
 function onMoveEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
-function onZoomEnd(){ loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); } // loadData handled by moveend which always follows zoomend
+function onZoomEnd(){ loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); updateConservedZoomMsg(); } // loadData handled by moveend which always follows zoomend
 
 function initMapEvents(){
   restoreBdySettings();
