@@ -591,16 +591,16 @@ def account():
 
     # Fetch auto-renewal state from Stripe for active/trialing subscribers
     cancel_at_period_end = False
-    current_period_end = None
+    renewal_date = None
     if user.get("stripe_subscription_id") and user["subscription_status"] in ("active", "trialing"):
         try:
             sub = stripe.Subscription.retrieve(user["stripe_subscription_id"])
             cancel_at_period_end = sub.cancel_at_period_end
-            current_period_end = datetime.fromtimestamp(
+            renewal_date = datetime.fromtimestamp(
                 sub.current_period_end, tz=timezone.utc
             ).strftime("%B %d, %Y")
         except Exception:
-            pass
+            renewal_date = None
 
     # Look up current plan details and all plans for plan switcher
     plan_key = user.get("plan_key") or "plan_monthly"
@@ -609,7 +609,7 @@ def account():
 
     return render_template("account.html", user=user, trial_days=trial_days,
                            cancel_at_period_end=cancel_at_period_end,
-                           current_period_end=current_period_end,
+                           renewal_date=renewal_date,
                            user_plan=user_plan, plans=plans,
                            plan_key=plan_key)
 

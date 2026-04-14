@@ -141,12 +141,12 @@
           <span style="color:#999;margin:0 2px;">|</span>
           <span style="color:#222;">{{ plan.display_price }}/month</span>
           <span style="color:#999;margin:0 2px;">|</span>
-          {% if plan.key == plan_key and not cancel_at_period_end and current_period_end %}
-            <span style="color:#2d6a4f;font-size:13px;">Auto-Renews on {{ current_period_end }}</span>
-          {% elif plan.key == plan_key and cancel_at_period_end and current_period_end %}
-            <span style="color:#856404;font-size:13px;">Access ends on {{ current_period_end }}</span>
+          {% if plan.key == plan_key and cancel_at_period_end and renewal_date %}
+            <span style="color:#856404;font-size:13px;">Access ends on {{ renewal_date }}</span>
+          {% elif plan.key == plan_key and renewal_date %}
+            <span style="color:#2d6a4f;font-size:13px;">Auto-Renews on {{ renewal_date }}</span>
           {% else %}
-            <span style="color:transparent;font-size:13px;">—</span>
+            <span style="color:#999;font-size:13px;">Auto-Renews on</span>
           {% endif %}
         </label>
         {% endfor %}
@@ -158,7 +158,7 @@
       {% if cancel_at_period_end %}
       <div style="background:#fff8e1;border:1.5px solid #ffc107;border-radius:8px;padding:12px 16px;margin-top:16px;margin-bottom:16px;">
         <div style="font-size:13px;color:#856404;">
-          Your subscription will not renew. Access ends on <strong>{{ current_period_end }}</strong>.
+          Your subscription will not renew. Access ends on <strong>{{ renewal_date }}</strong>.
         </div>
       </div>
       <div class="actions">
