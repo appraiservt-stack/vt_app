@@ -898,7 +898,7 @@ map.on("baselayerchange", function(e){
 // Only loads at zoom 13+. Refreshes on moveend/zoomend.
 // ============================================================
 const PARCEL_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
-const PARCEL_MIN_ZOOM = 13;
+const PARCEL_MIN_ZOOM = 14;
 
 // Create pane so parcel outlines sit below markers but above basemap
 if(!map.getPane('parcelPane')){
