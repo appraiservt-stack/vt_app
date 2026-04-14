@@ -4791,7 +4791,7 @@ function placeSubjectPinBySpan(){
     f:              'json',
     resultRecordCount: '1'
   });
-  fetch(PARCEL_URL + '?' + params.toString())
+  fetch(PARCEL_QUERY_URL + '?' + params.toString())
   .then(r => r.json())
   .then(data => {
     const feats = data.features || [];
