@@ -136,6 +136,27 @@ def _init_site_content():
                             (body_content, key)
                         )
 
+        # Fix static "$19.95 per month" pricing in seeded terms content
+        if _using_postgres():
+            cur.execute("SELECT content FROM site_content WHERE key = %s", ("terms",))
+        else:
+            cur.execute("SELECT content FROM site_content WHERE key = ?", ("terms",))
+        row = cur.fetchone()
+        if row:
+            content = row["content"] if isinstance(row, dict) else row[0]
+            if "$19.95 per month" in content:
+                content = content.replace(
+                    "at <strong>$19.95 per month</strong>",
+                    "at the subscription rates listed above"
+                ).replace(
+                    "charged $19.95. Billing continues on a monthly basis on the same date each month unless you cancel.",
+                    "charged at your selected plan rate. Billing continues on a recurring basis unless you cancel."
+                )
+                if _using_postgres():
+                    cur.execute("UPDATE site_content SET content = %s WHERE key = %s", (content, "terms"))
+                else:
+                    cur.execute("UPDATE site_content SET content = ? WHERE key = ?", (content, "terms"))
+
         conn.commit()
     finally:
         conn.close()
@@ -3395,7 +3416,8 @@ def _admin_required(f):
 @app.route("/admin/content")
 @_admin_required
 def content_admin():
-    return render_template("content_admin.html")
+    plans = get_active_plans()
+    return render_template("content_admin.html", plans=plans)
 
 @app.route("/admin/content/get")
 @_admin_required
@@ -3434,6 +3456,33 @@ def content_save():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route("/admin/plans/save-all", methods=["POST"])
+@_admin_required
+def plans_save_all():
+    data = request.get_json(force=True)
+    if not isinstance(data, list):
+        return jsonify({"error": "expected JSON array"}), 400
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        for item in data:
+            key = item.get("key", "").strip()
+            display_price = item.get("display_price", "").strip()
+            stripe_price_id = item.get("stripe_price_id", "").strip()
+            if not key:
+                continue
+            cur.execute(
+                _q("UPDATE subscription_plans SET display_price = ?, stripe_price_id = ? WHERE key = ?"),
+                (display_price, stripe_price_id, key)
+            )
+        conn.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
 # ── Assessor links routes ─────────────────────────────────────────────────────
 

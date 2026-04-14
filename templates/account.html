@@ -134,19 +134,19 @@
     {% if user.subscription_status == 'active' %}
       <form method="POST" action="/change-plan" id="changePlanForm">
         {% for plan in plans %}
-        <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eee;cursor:pointer;font-size:14px;">
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eee;cursor:pointer;font-size:14px;">
           <input type="radio" name="plan_key" value="{{ plan.key }}" {% if plan.key == plan_key %}checked{% endif %}
                  style="width:18px;height:18px;accent-color:#1a3a5c;">
           <span style="font-weight:600;color:#222;">{{ plan.label }}</span>
-          <span style="margin-left:4px;color:#222;">{{ plan.display_price }}/month</span>
+          <span style="color:#999;margin:0 2px;">|</span>
+          <span style="color:#222;">{{ plan.display_price }}/month</span>
+          <span style="color:#999;margin:0 2px;">|</span>
           {% if plan.key == plan_key and not cancel_at_period_end and current_period_end %}
-            <span style="color:#2d6a4f;font-size:13px;margin-left:auto;">Your subscription auto-renews on {{ current_period_end }}</span>
+            <span style="color:#2d6a4f;font-size:13px;">Auto-Renews on {{ current_period_end }}</span>
           {% elif plan.key == plan_key and cancel_at_period_end and current_period_end %}
-            <span style="color:#856404;font-size:13px;margin-left:auto;">Access ends on {{ current_period_end }}</span>
+            <span style="color:#856404;font-size:13px;">Access ends on {{ current_period_end }}</span>
           {% else %}
-            <span style="color:#999;font-size:13px;margin-left:auto;">
-              {% if plan.interval_count == 1 %}Renews monthly{% else %}Billed every {{ plan.interval_count }} months{% endif %}
-            </span>
+            <span style="color:transparent;font-size:13px;">—</span>
           {% endif %}
         </label>
         {% endfor %}

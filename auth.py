@@ -734,6 +734,29 @@ def change_plan():
         flash("You are already on this plan.", "info")
         return redirect(url_for("auth.account"))
 
+    subscription_id = user.get("stripe_subscription_id")
+
+    # If user has an active Stripe subscription, modify it in place with proration
+    if subscription_id and user["subscription_status"] in ("active", "trialing"):
+        try:
+            sub = stripe.Subscription.retrieve(subscription_id)
+            existing_item_id = sub["items"]["data"][0]["id"]
+            stripe.Subscription.modify(
+                subscription_id,
+                items=[{"id": existing_item_id, "price": plan["stripe_price_id"]}],
+                proration_behavior="create_prorations",
+                metadata={"plan_key": plan_key},
+            )
+            db_execute(_q(
+                "UPDATE users SET plan_key = ? WHERE id = ?"
+            ), (plan_key, user["id"]))
+            flash(f"Plan changed to {plan['label']}. Proration will be applied to your next invoice.", "success")
+            return redirect(url_for("auth.account"))
+        except Exception as e:
+            flash(f"Error changing plan: {str(e)}", "error")
+            return redirect(url_for("auth.account"))
+
+    # Fallback: no active subscription (e.g. trial without card) — create new checkout session
     email = user["email"]
     try:
         customer_id = user.get("stripe_customer_id")
