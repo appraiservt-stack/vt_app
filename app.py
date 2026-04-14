@@ -92,8 +92,8 @@ def _init_site_content():
             """)
         conn.commit()
 
-        # Seed initial content from template files if rows don't exist yet
-        for key, filename in [("terms", "templates/terms.html"), ("privacy", "templates/privacy.html")]:
+        # Seed initial content from default content files if rows don't exist yet
+        for key, filename in [("terms", "templates/terms_default.html"), ("privacy", "templates/privacy_default.html")]:
             row = None
             if _using_postgres():
                 cur.execute("SELECT key FROM site_content WHERE key = %s", (key,))
@@ -103,11 +103,7 @@ def _init_site_content():
             if row is None:
                 filepath = Path(__file__).parent / filename
                 if filepath.exists():
-                    html = filepath.read_text(encoding="utf-8")
-                    # Extract body content between <body> and </body>
-                    import re as _re
-                    body_match = _re.search(r'<body[^>]*>(.*)</body>', html, _re.DOTALL)
-                    body_content = body_match.group(1).strip() if body_match else html
+                    body_content = filepath.read_text(encoding="utf-8").strip()
                     if _using_postgres():
                         cur.execute(
                             "INSERT INTO site_content (key, content) VALUES (%s, %s) ON CONFLICT (key) DO NOTHING",
@@ -118,6 +114,28 @@ def _init_site_content():
                             "INSERT INTO site_content (key, content) VALUES (?, ?) ON CONFLICT (key) DO NOTHING",
                             (key, body_content)
                         )
+        # Fix existing rows that were seeded with raw Jinja2 template tags
+        for key, filename in [("terms", "templates/terms_default.html"), ("privacy", "templates/privacy_default.html")]:
+            if _using_postgres():
+                cur.execute("SELECT content FROM site_content WHERE key = %s", (key,))
+            else:
+                cur.execute("SELECT content FROM site_content WHERE key = ?", (key,))
+            row = cur.fetchone()
+            if row and "{{ content" in (row["content"] if isinstance(row, dict) else row[0]):
+                filepath = Path(__file__).parent / filename
+                if filepath.exists():
+                    body_content = filepath.read_text(encoding="utf-8").strip()
+                    if _using_postgres():
+                        cur.execute(
+                            "UPDATE site_content SET content = %s WHERE key = %s",
+                            (body_content, key)
+                        )
+                    else:
+                        cur.execute(
+                            "UPDATE site_content SET content = ? WHERE key = ?",
+                            (body_content, key)
+                        )
+
         conn.commit()
     finally:
         conn.close()
