@@ -1293,69 +1293,44 @@ function loadRoadLabels(){
 map.on('moveend zoomend', loadRoadLabels);
 
 // ============================================================
-// FEMA FLOOD ZONES — via Flask proxy + Esri MapServer export
-// Confirmed working: loads PNG tiles instantly, no CORS issues
-// Only shows AE, A, Floodway (excludes Zone X to avoid covering whole map)
+// FEMA FLOOD ZONES — via L.esri.featureLayer + MapServer/20
+// Shows AE, A, Floodway zones only (excludes Zone X to avoid covering whole map)
 // ============================================================
 if(!map.getPane('femaPane')){
   const fp = map.createPane('femaPane');
   fp.style.zIndex = 350;
-  fp.style.pointerEvents = 'none';
 }
 
-// Dynamic image overlay — fetches one image covering the entire viewport.
-// No tile seams, no zoom disappearing. Redraws on every moveend/zoomend.
-function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
-  let overlay = null;
-  let pending = null;
-  let isOn = false;
-  const group = L.layerGroup();
-
-  function load(){
-    if(!isOn) return;
-    if(map.getZoom() < (minZoom||8)){ if(overlay){ group.removeLayer(overlay); overlay=null; } return; }
-    // Remove stale overlay immediately so stretched image doesn't show during load
-    if(overlay){ group.removeLayer(overlay); overlay=null; }
-    const b = map.getBounds();
-    const sw = L.CRS.EPSG3857.project(b.getSouthWest());
-    const ne = L.CRS.EPSG3857.project(b.getNorthEast());
-    const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
-    const size = map.getSize();
-    const exportUrl = serviceUrl + '/export?bbox=' + bbox +
-      '&bboxSR=102100&layers=show:' + layerIds +
-      '&size=' + size.x + ',' + size.y +
-      '&imageSR=102100&dpi=96&format=png32&transparent=true&f=image';
-    // Use direct URL for FEMA (CORS allowed), Cloudflare Worker for ANR servers
-    const url = serviceUrl.includes('fema.gov')
-      ? exportUrl
-      : CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
-    pending = null;
-    const img = new Image();
-    pending = img;
-    const snapBounds = b; // capture bounds at request time
-    img.onload = function(){
-      if(img !== pending) return;
-      overlay = L.imageOverlay(url, snapBounds, { opacity: opacity, pane: pane, interactive: false });
-      group.addLayer(overlay);
-    };
-    img.src = url;
-  }
-
-  map.on('moveend zoomend', load);
-
-  return {
-    layer: group,
-    enable:  function(){ isOn = true;  load(); },
-    disable: function(){ isOn = false; if(overlay){ group.removeLayer(overlay); overlay=null; } }
-  };
-}
-
-const femaOverlay = makeDynamicOverlay(
-  'https://hazards.fema.gov/arcgis/rest/services/FIRMette/NFHLREST_FIRMette/MapServer',
-  '19,20', 'femaPane', 0.85, 10
-);
-const femaFloodLayer = femaOverlay.layer;
+const FEMA_MIN_ZOOM = 10;
 let femaOn = false;
+
+var femaFloodLayer = L.esri.featureLayer({
+  url: 'https://hazards.fema.gov/arcgis/rest/services/FIRMette/NFHLREST_FIRMette/MapServer/20',
+  minZoom: FEMA_MIN_ZOOM,
+  where: "FLD_ZONE = 'AE' OR FLD_ZONE = 'A' OR ZONE_SUBTY = 'FLOODWAY'",
+  pane: 'femaPane',
+  style: function(feature) {
+    var zone = (feature.properties.FLD_ZONE || '').toUpperCase();
+    var subtype = (feature.properties.ZONE_SUBTY || '').toUpperCase();
+    if (subtype.indexOf('FLOODWAY') !== -1) {
+      return { color: '#b03030', weight: 1, fillColor: '#e87878', fillOpacity: 0.4, opacity: 0.6 };
+    }
+    if (zone === 'AE') {
+      return { color: '#5a9ab5', weight: 1, fillColor: '#a8d4e6', fillOpacity: 0.4, opacity: 0.6 };
+    }
+    if (zone === 'A') {
+      return { color: '#c87040', weight: 1, fillColor: '#f0c8a0', fillOpacity: 0.4, opacity: 0.6 };
+    }
+    return { color: '#88b4d0', weight: 1, fillColor: '#c8e0f0', fillOpacity: 0.2, opacity: 0.4 };
+  },
+  onEachFeature: function(feature, layer) {
+    var zone = feature.properties.FLD_ZONE || 'Unknown';
+    var subtype = feature.properties.ZONE_SUBTY || '';
+    var label = subtype.toUpperCase().indexOf('FLOODWAY') !== -1 ? 'Floodway' : 'Zone ' + zone;
+    layer.bindPopup('<b>FEMA Flood Zone: ' + label + '</b>' +
+      (subtype ? '<br>Subtype: ' + subtype : ''));
+  }
+});
 function loadFema(){}
 
 // parcelLayer (L.esri.featureLayer) initialized above in the VT PARCELS section
@@ -1607,7 +1582,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = true; updateParcelStyle(); }
   if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
-  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; document.getElementById('fema-legend').style.display=''; }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
   if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = true; conservedLayer.bindPopup(function(layer){ return layer.feature.properties.NAME || 'Conserved Land'; }); updateConservedZoomMsg(); }
@@ -1615,7 +1590,7 @@ map.on('overlayadd', function(e){
 map.on('overlayremove', function(e){
   if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = false; }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On = false; if(e911FetchCtrl) e911FetchCtrl.abort(); if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; } }
-  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
   if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = false; conservedLayer.unbindPopup(); updateConservedZoomMsg(); }
