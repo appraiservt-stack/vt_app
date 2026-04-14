@@ -939,12 +939,14 @@ var parcelLayer = L.esri.featureLayer({
     url: 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1',
     minZoom: PARCEL_MIN_ZOOM,
     style: function() {
-        return {
-            color: '#FF6600',
-            weight: 1,
-            opacity: 0.8,
-            fillOpacity: 0
-        };
+        var colorEl = document.getElementById('parcel-color');
+        var widthEl = document.getElementById('parcel-width');
+        var styleEl = document.getElementById('parcelDash');
+        var color = colorEl ? colorEl.value : '#FF6600';
+        var width = widthEl ? parseInt(widthEl.value) || 1 : 1;
+        var dash = styleEl ? styleEl.value : 'solid';
+        var dashArray = dash === 'dashed' ? '6,4' : dash === 'dotted' ? '2,4' : null;
+        return { color: color, weight: width, opacity: 0.8, fillOpacity: 0, dashArray: dashArray };
     }
 });
 
@@ -1097,8 +1099,8 @@ function onParcelClick(e){
   })
   .catch(err => console.warn('Parcel click query error:', err));
 }
-parcelLayer.on('click', onParcelClick);   // left-click parcel polygon
-map.on('contextmenu', onParcelClick);     // right-click anywhere (legacy)
+// Left-click disabled to avoid popup on map drag; use right-click only
+map.on('contextmenu', onParcelClick);     // right-click anywhere
 
 // ============================================================
 // E911 ADDRESS NUMBERS — fetches VT statewide address points
