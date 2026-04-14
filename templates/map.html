@@ -899,79 +899,31 @@ map.on("baselayerchange", function(e){
 });
 
 // ============================================================
-// VT PARCELS — GeoJSON canvas renderer using VCGI FeatureServer
-// Fetches parcel polygons for current viewport, renders as canvas outlines.
-// Only loads at zoom 13+. Refreshes on moveend/zoomend.
+// VT PARCELS — Esri Feature Layer from VCGI FeatureServer
+// Uses L.esri.featureLayer for automatic tile-based loading.
+// Only loads at zoom 14+. Click to show Grand List popup.
 // ============================================================
 const PARCEL_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
 const PARCEL_MIN_ZOOM = 14;
 
-// Create pane so parcel outlines sit below markers but above basemap
-if(!map.getPane('parcelPane')){
-  const pp = map.createPane('parcelPane');
-  pp.style.zIndex = 360;
-  pp.style.pointerEvents = 'none';
-}
-
 const CF_WORKER = 'https://vt-map-proxy.quiet-scene-a739.workers.dev/';
 const PROXY = (url) => CF_WORKER + '?url=' + encodeURIComponent(url);
 
-// parcelGeoLayer: Leaflet GeoJSON layer holding current viewport parcels
-// parcelWmsLayer: L.layerGroup wrapper (used in layer control)
-const parcelWmsLayer = L.layerGroup();
-let   parcelGeoLayer = null;   // current GeoJSON layer inside parcelWmsLayer
-let   parcelsOn      = false;
-let   parcelLayer    = parcelWmsLayer;  // legacy alias
-let   parcelFetchCtrl = null;           // AbortController for in-flight request
+let parcelsOn = false;
+var parcelLayer = L.esri.featureLayer({
+    url: 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1',
+    minZoom: PARCEL_MIN_ZOOM,
+    style: function() {
+        return {
+            color: '#FF6600',
+            weight: 1,
+            opacity: 0.8,
+            fillOpacity: 0
+        };
+    }
+});
 
-function loadParcels(){
-  if(!parcelsOn) return;
-  if(map.getZoom() < PARCEL_MIN_ZOOM){
-    if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; }
-    return;
-  }
-
-  // Abort any in-flight request
-  if(parcelFetchCtrl) parcelFetchCtrl.abort();
-  parcelFetchCtrl = new AbortController();
-  const signal = parcelFetchCtrl.signal;
-
-  const b  = map.getBounds();
-  const sw = L.CRS.EPSG3857.project(b.getSouthWest());
-  const ne = L.CRS.EPSG3857.project(b.getNorthEast());
-  const env = `${sw.x},${sw.y},${ne.x},${ne.y}`;
-
-  const params = new URLSearchParams({
-    where:           '1=1',
-    geometry:        env,
-    geometryType:    'esriGeometryEnvelope',
-    inSR:            '102100',
-    spatialRel:      'esriSpatialRelIntersects',
-    outFields:       'SPAN,TNAME,E911ADDR,OWNER1,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,GLYEAR,CAT,MUNGL1PCT,PROPTYPE',
-    returnGeometry:  'true',
-    outSR:           '4326',
-    f:               'geojson',
-    resultRecordCount: '500',
-  });
-
-  fetch(PARCEL_QUERY_URL + '?' + params.toString(), { signal })
-  .then(r => r.json())
-  .then(geojson => {
-    if(signal.aborted) return;
-    // Remove old layer
-    if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; }
-    if(!parcelsOn) return;
-    parcelGeoLayer = L.geoJSON(geojson, {
-      pane:   'parcelPane',
-      style:  { color: '#e65c00', weight: 1, fill: false, opacity: 0.7 },
-      interactive: false,
-    });
-    parcelWmsLayer.addLayer(parcelGeoLayer);
-  })
-  .catch(err => { if(err.name !== 'AbortError') console.warn('Parcel fetch error:', err); });
-}
-
-// Click handler — query parcel data at click location
+// Click handler — query full parcel attributes at click location
 function onParcelClick(e){
   if(!parcelsOn) return;
   if(map.getZoom() < PARCEL_MIN_ZOOM) return;
@@ -1120,9 +1072,8 @@ function onParcelClick(e){
   })
   .catch(err => console.warn('Parcel click query error:', err));
 }
-map.on('contextmenu', onParcelClick);  // right-click to show Grand List popup
-
-// loadParcels defined above in VT PARCELS section
+parcelLayer.on('click', onParcelClick);   // left-click parcel polygon
+map.on('contextmenu', onParcelClick);     // right-click anywhere (legacy)
 
 // ============================================================
 // E911 ADDRESS NUMBERS — fetches VT statewide address points
@@ -1380,10 +1331,7 @@ const femaFloodLayer = femaOverlay.layer;
 let femaOn = false;
 function loadFema(){}
 
-// Initialize parcel overlay here — after makeDynamicOverlay is defined.
-// Routes through Cloudflare Worker proxy (ANR server requires it).
-// Loads image only on img.onload — prevents blank/stretched overlays.
-// parcelWmsLayer/loadParcels initialized above in the VT PARCELS section
+// parcelLayer (L.esri.featureLayer) initialized above in the VT PARCELS section
 
 // ============================================================
 // TOWN & COUNTY BOUNDARY LAYERS
@@ -1600,7 +1548,7 @@ L.control.layers(
   },
   {
     // Overlays — toggle independently of the basemap
-    "VT Parcels (zoom 13+)": parcelWmsLayer,
+    "VT Parcels (zoom 14+)": parcelLayer,
     "Street Names (zoom 15+)": roadLabelLayer,
     "House Numbers (zoom 17+)": e911Layer,
     "FEMA Flood Zones":      femaFloodLayer,
@@ -1612,7 +1560,7 @@ L.control.layers(
 
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 13+)')  { parcelsOn = true;  loadParcels(); }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true; }
   if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
@@ -1621,7 +1569,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = true; conservedLayer.bindPopup(function(layer){ return layer.feature.properties.NAME || 'Conserved Land'; }); updateConservedZoomMsg(); }
 });
 map.on('overlayremove', function(e){
-  if(e.name === 'VT Parcels (zoom 13+)')  { parcelsOn = false; if(parcelFetchCtrl) parcelFetchCtrl.abort(); if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; } }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = false; }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On = false; if(e911FetchCtrl) e911FetchCtrl.abort(); if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; } }
   if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
@@ -3553,8 +3501,8 @@ function clearAllForNameSearch(){
 // MAP EVENTS & INIT — attached AFTER codes load
 // Named handlers so they can be temporarily detached during fitBounds.
 // ===================================================
-function onMoveEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
-function onZoomEnd(){ loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); updateConservedZoomMsg(); } // loadData handled by moveend which always follows zoomend
+function onMoveEnd(){ loadData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
+function onZoomEnd(){ loadApproxData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); updateConservedZoomMsg(); } // loadData handled by moveend which always follows zoomend
 
 function initMapEvents(){
   restoreBdySettings();
