@@ -1201,8 +1201,8 @@ map.on('contextmenu', function(e) {
           '<button class="popup-tab active" onclick="switchTab(this,\'grand-list-content\')">Grand List</button>' +
           '<button class="popup-tab" onclick="switchTab(this,\'conservation-content\')">Conservation</button>' +
         '</div>' +
-        '<div id="grand-list-content" class="popup-content">' + parcelContent + '</div>' +
-        '<div id="conservation-content" class="popup-content" style="display:none">' + conservedContent + '</div>' +
+        '<div id="grand-list-content" class="popup-content" style="min-height:150px">' + parcelContent + '</div>' +
+        '<div id="conservation-content" class="popup-content" style="display:none;min-height:150px">' + conservedContent + '</div>' +
       '</div>';
     } else if (doParcels) {
       // Only parcels
