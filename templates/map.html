@@ -1196,13 +1196,13 @@ map.on('contextmenu', function(e) {
       // Both layers active — tabbed popup
       var parcelContent = parcelAttrs ? buildParcelPopupHTML(parcelAttrs) : '<div style="font-size:12px;padding:8px;color:#888;">No data at this location</div>';
       var conservedContent = conservedAttrs ? buildConservedPopupHTML(conservedAttrs) : '<div style="font-size:12px;padding:8px;color:#888;">No data at this location</div>';
-      html = '<div class="dual-popup">' +
+      html = '<div class="dual-popup" style="min-width:460px">' +
         '<div class="popup-tabs">' +
           '<button class="popup-tab active" onclick="switchTab(this,\'grand-list-content\')">Grand List</button>' +
           '<button class="popup-tab" onclick="switchTab(this,\'conservation-content\')">Conservation</button>' +
         '</div>' +
-        '<div id="grand-list-content" class="popup-content" style="min-height:150px">' + parcelContent + '</div>' +
-        '<div id="conservation-content" class="popup-content" style="display:none;min-height:150px">' + conservedContent + '</div>' +
+        '<div id="grand-list-content" class="popup-content" style="height:520px">' + parcelContent + '</div>' +
+        '<div id="conservation-content" class="popup-content" style="display:none;height:520px">' + conservedContent + '</div>' +
       '</div>';
     } else if (doParcels) {
       // Only parcels
