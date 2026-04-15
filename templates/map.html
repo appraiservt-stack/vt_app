@@ -211,6 +211,20 @@
             pointer-events: auto;
             cursor: default;
         }
+        /* Tabbed popup styles */
+        .dual-popup .popup-tabs {
+            display: flex; border-bottom: 2px solid #ddd; margin-bottom: 6px;
+            width: 100%; overflow: hidden; box-sizing: border-box;
+        }
+        .dual-popup .popup-tab {
+            flex: 1; padding: 4px 6px; border: none; background: #f0f0f0;
+            cursor: pointer; font-size: 11px; font-weight: bold; color: #555;
+            border-radius: 4px 4px 0 0;
+        }
+        .dual-popup .popup-tab.active {
+            background: #1a7a1a; color: white;
+        }
+        .dual-popup .popup-tab:hover:not(.active) { background: #e0e0e0; }
     </style>
 </head>
 <body>
@@ -686,15 +700,17 @@
 
       <!-- Conserved Lands zoom notice (hidden until layer enabled + zoomed out) -->
       <div id="conserved-zoom-msg" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e8f5e9; border:1px solid #81c784; border-radius:3px; font-size:11px; color:#2e7d32;">
-        Zoom in to see conserved lands (zoom 12+)
+        Zoom in to see conserved lands (zoom 11+)
       </div>
 
       <!-- Wetlands legend (hidden until layer is enabled) -->
       <div id="wetlands-legend" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e8f6f8; border:1px solid #80cbc4; border-radius:3px;">
         <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">VT Significant Wetlands</div>
         <div style="font-size:10px; line-height:1.8;">
-          <span style="display:inline-block; width:14px; height:10px; background:#90c090; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Significant Wetlands (VSWI)<br>
-          <span style="display:inline-block; width:14px; height:10px; background:#e8e890; border:1px solid #b0b060; margin-right:4px; vertical-align:middle;"></span>Advisory Wetlands
+          <span style="display:inline-block; width:16px; height:16px; background:#D6904F; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Class I Wetland<br>
+          <span style="display:inline-block; width:16px; height:16px; background:#F9F774; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Class II Wetland<br>
+          <span style="display:inline-block; width:16px; height:16px; background:#B5F774; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Advisory Wetland<br>
+          <span style="display:inline-block; width:16px; height:16px; background:#F5E6C8; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Wetland Buffer
         </div>
       </div>
 
@@ -964,37 +980,22 @@ var parcelLayer = L.esri.featureLayer({
     }
 });
 
-// Click handler — query full parcel attributes at click location
-function onParcelClick(e){
-  if(!parcelsOn) return;
-  if(map.getZoom() < PARCEL_MIN_ZOOM) return;
-  const toMerc = (lng, lat) => [
-    lng * 20037508.34 / 180,
-    Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180
-  ];
-  const pt = toMerc(e.latlng.lng, e.latlng.lat);
-  const d = 5; // small buffer in meters
-  const env = `${pt[0]-d},${pt[1]-d},${pt[0]+d},${pt[1]+d}`;
-  const params = new URLSearchParams({
-    where: '1=1',
-    geometry: env,
-    geometryType: 'esriGeometryEnvelope',
-    inSR: '102100',
-    spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'SPAN,GLIST_SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,HSITEVAL,GLYEAR,YEAR,CAT,MUNGL1PCT,RESCODE,UVREDUC_HS,UVREDUC_NR,MAPID,PARCID,SOURCENAME,SOURCETYPE,EDITDATE,EDITOR,NRES_FLV,VETEXAMT,EXAMT_HS,EXAMT_NR',
-    returnGeometry: 'false',
-    outSR: '4326',
-    f: 'json',
-    resultRecordCount: '1'
-  });
-  fetch(PARCEL_QUERY_URL + '?' + params.toString())
-  .then(r => r.json())
-  .then(data => {
-    const feats = data.features || [];
-    if(!feats.length) return;
-    const p = feats[0].attributes;
+// ---- CONSERVED LANDS QUERY URL ----
+const CONSERVED_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_VT_Protected_Lands_Database_WM_v2/FeatureServer/0/query';
+
+// ---- switchTab for tabbed popups ----
+function switchTab(btn, contentId) {
+  var parent = btn.closest('.dual-popup');
+  parent.querySelectorAll('.popup-tab').forEach(function(t){ t.classList.remove('active'); });
+  btn.classList.add('active');
+  parent.querySelectorAll('.popup-content').forEach(function(c){ c.style.display = 'none'; });
+  parent.querySelector('#' + contentId).style.display = '';
+}
+
+// ---- Build Grand List popup HTML from parcel attributes ----
+function buildParcelPopupHTML(p) {
     const fmt$ = v => (v != null && v !== '' && v !== 0) ? '$' + Number(v).toLocaleString() : '—';
-    const fmt$0 = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—'; // includes $0
+    const fmt$0 = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
     const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
     const row  = (label, val, bold) => val && val !== '—'
       ? `<tr><td style="color:#555;padding:1px 4px 1px 0;white-space:nowrap">${label}:</td><td${bold?' style="font-weight:bold"':''}>${val}</td></tr>`
@@ -1024,44 +1025,32 @@ function onParcelClick(e){
     const mapid    = p.MAPID   || '';
     const parcid   = p.PARCID  || '';
 
-    // Owner type
     const RESCODE_MAP = {
       'T': 'Town Resident','N': 'Non-Resident','C': 'Commercial/Industrial',
       'X': 'Exempt','F': 'Farm','M': 'Mobile Home','O': 'Other'
     };
     const ownerType = RESCODE_MAP[p.RESCODE] || p.RESCODE || '';
 
-    // Current Use
     const uvHS = Number(p.UVREDUC_HS) || 0;
     const uvNR = Number(p.UVREDUC_NR) || 0;
     const currentUse = (uvHS > 0 || uvNR > 0)
       ? `Enrolled (reduction: ${fmt$0(uvHS + uvNR)})`
       : 'Not Enrolled';
 
-    // GIS source
     const src = [p.SOURCENAME, p.SOURCETYPE].filter(s => s && s !== 'UNKNOWN').join(' / ') || 'Unknown';
-    const editInfo = p.EDITDATE && p.EDITDATE !== 'UNKNOWN'
-      ? `${p.EDITOR || ''} ${p.EDITDATE || ''}`.trim()
-      : '';
 
-    const html = `
+    return `
       <div style="font-size:12px; min-width:240px; max-width:300px;">
         <div style="background:#1a7a1a;color:white;font-weight:bold;padding:4px 8px;
                     border-radius:3px 3px 0 0;margin-bottom:6px;">
           &#x1F4CB; Grand List Data
         </div>
-
-        <!-- Address & Town -->
         <div style="font-weight:bold;font-size:13px;margin-bottom:2px;">${addr}${addr&&town?', ':''}${town}</div>
-
-        <!-- Ownership -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Ownership</div>
           <div style="font-weight:bold;">${owner1}${owner2?'<br>'+owner2:''}</div>
           ${ownerType ? `<div style="font-size:10px;color:#666;margin-top:1px;">Type: ${ownerType}</div>` : ''}
         </div>
-
-        <!-- Valuation -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Valuation (${glyear} Grand List)</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1073,8 +1062,6 @@ function onParcelClick(e){
             ${row('Mun. 1% GL', munGL, false)}
           </table>
         </div>
-
-        <!-- Homestead -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Homestead</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1085,8 +1072,6 @@ function onParcelClick(e){
             ${exNR !== '—' ? row('Exemption (NR)', exNR, false) : ''}
           </table>
         </div>
-
-        <!-- Description & Current Use -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Description</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1096,8 +1081,6 @@ function onParcelClick(e){
             ${row('Current Use', currentUse, false)}
           </table>
         </div>
-
-        <!-- IDs & GIS Info -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Parcel Info</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1109,12 +1092,135 @@ function onParcelClick(e){
           </table>
         </div>
       </div>`;
-    L.popup({ maxWidth: 320, maxHeight: 520 }).setLatLng(e.latlng).setContent(html).openOn(map);
-  })
-  .catch(err => console.warn('Parcel click query error:', err));
 }
-// Left-click disabled to avoid popup on map drag; use right-click only
-map.on('contextmenu', onParcelClick);     // right-click anywhere
+
+// ---- Build Conserved Lands popup HTML from feature attributes ----
+function buildConservedPopupHTML(p) {
+    const fields = [
+      ['Name', p.NAME],
+      ['Act 59 Category', p.ACT59CAT],
+      ['Aggregate Date', p.AGGDATE],
+      ['Date Acquired', p.DATEAQRD],
+      ['Designation', p.DESIGNAT],
+      ['GAP Status', p.GAPSTATUS],
+      ['GIS Acres', p.GISACRES != null ? Number(p.GISACRES).toFixed(2) : null],
+      ['GIS Steward', p.GISSTEWARD],
+      ['Interest Org Type', p.INT_ORGTYP],
+      ['Listed Acres', p.LISTED_AC != null ? Number(p.LISTED_AC).toFixed(2) : null],
+      ['Owner Kind', p.OWNERKIND],
+      ['Primary Agency 1', p.PAGENCY1],
+      ['Primary Agency 2', p.PAGENCY2],
+      ['Polygon ID', p.POLYID],
+      ['Protection Type 1', p.PTYPE1],
+      ['Protection Type 2', p.PTYPE2],
+      ['Public Access', p.PUBACCESS],
+      ['Source Acres', p.SOURCE_ACR != null ? Number(p.SOURCE_ACR).toFixed(2) : null],
+      ['Source Layer', p.SOURCE_LYR],
+      ['Source ID', p.SOURCEID]
+    ];
+    var rows = '';
+    fields.forEach(function(f) {
+      var val = f[1];
+      if (val != null && val !== '' && val !== 'Null' && val !== 'null') {
+        rows += '<b>' + f[0] + ':</b> ' + val + '<br>';
+      }
+    });
+    if (!rows) rows = 'No data at this location';
+    return '<div style="font-size:12px;min-width:240px;max-width:320px;">' +
+      '<div style="background:#007a35;color:white;font-weight:bold;padding:4px 8px;border-radius:3px 3px 0 0;margin-bottom:6px;">&#x1F333; Conservation Data</div>' +
+      rows + '</div>';
+}
+
+// ---- Fetch parcel attributes at a point ----
+function fetchParcelAtPoint(latlng) {
+  const toMerc = (lng, lat) => [
+    lng * 20037508.34 / 180,
+    Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180
+  ];
+  const pt = toMerc(latlng.lng, latlng.lat);
+  const d = 5;
+  const env = `${pt[0]-d},${pt[1]-d},${pt[0]+d},${pt[1]+d}`;
+  const params = new URLSearchParams({
+    where: '1=1',
+    geometry: env,
+    geometryType: 'esriGeometryEnvelope',
+    inSR: '102100',
+    spatialRel: 'esriSpatialRelIntersects',
+    outFields: 'SPAN,GLIST_SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,HSITEVAL,GLYEAR,YEAR,CAT,MUNGL1PCT,RESCODE,UVREDUC_HS,UVREDUC_NR,MAPID,PARCID,SOURCENAME,SOURCETYPE,EDITDATE,EDITOR,NRES_FLV,VETEXAMT,EXAMT_HS,EXAMT_NR',
+    returnGeometry: 'false',
+    outSR: '4326',
+    f: 'json',
+    resultRecordCount: '1'
+  });
+  return fetch(PARCEL_QUERY_URL + '?' + params.toString())
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var feats = data.features || [];
+      return feats.length ? feats[0].attributes : null;
+    });
+}
+
+// ---- Fetch conserved lands attributes at a point ----
+function fetchConservedAtPoint(latlng) {
+  const params = new URLSearchParams({
+    geometry: latlng.lng + ',' + latlng.lat,
+    geometryType: 'esriGeometryPoint',
+    spatialRel: 'esriSpatialRelIntersects',
+    outFields: 'NAME,ACT59CAT,AGGDATE,DATEAQRD,DESIGNAT,GAPSTATUS,GISACRES,GISSTEWARD,INT_ORGTYP,LISTED_AC,OWNERKIND,PAGENCY1,PAGENCY2,POLYID,PTYPE1,PTYPE2,PUBACCESS,SOURCE_ACR,SOURCE_LYR,SOURCEID',
+    f: 'geojson',
+    inSR: '4326'
+  });
+  return fetch(CONSERVED_QUERY_URL + '?' + params.toString())
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var feats = data.features || [];
+      return feats.length ? feats[0].properties : null;
+    });
+}
+
+// ---- Unified right-click handler for parcels + conserved lands ----
+map.on('contextmenu', function(e) {
+  var doParcels = parcelsOn && map.getZoom() >= PARCEL_MIN_ZOOM;
+  var doConserved = conservedOn;
+  if (!doParcels && !doConserved) return;
+
+  var promises = [];
+  // index 0 = parcel, index 1 = conserved
+  promises.push(doParcels ? fetchParcelAtPoint(e.latlng) : Promise.resolve(null));
+  promises.push(doConserved ? fetchConservedAtPoint(e.latlng) : Promise.resolve(null));
+
+  Promise.all(promises).then(function(results) {
+    var parcelAttrs = results[0];
+    var conservedAttrs = results[1];
+    var html = '';
+
+    if (doParcels && doConserved) {
+      // Both layers active — tabbed popup
+      var parcelContent = parcelAttrs ? buildParcelPopupHTML(parcelAttrs) : '<div style="font-size:12px;padding:8px;color:#888;">No data at this location</div>';
+      var conservedContent = conservedAttrs ? buildConservedPopupHTML(conservedAttrs) : '<div style="font-size:12px;padding:8px;color:#888;">No data at this location</div>';
+      html = '<div class="dual-popup" style="min-width:460px">' +
+        '<div class="popup-tabs">' +
+          '<button class="popup-tab active" onclick="switchTab(this,\'grand-list-content\')">Grand List</button>' +
+          '<button class="popup-tab" onclick="switchTab(this,\'conservation-content\')">Conservation</button>' +
+        '</div>' +
+        '<div id="grand-list-content" class="popup-content" style="height:520px">' + parcelContent + '</div>' +
+        '<div id="conservation-content" class="popup-content" style="display:none;height:520px">' + conservedContent + '</div>' +
+      '</div>';
+    } else if (doParcels) {
+      // Only parcels
+      if (!parcelAttrs) return;
+      html = buildParcelPopupHTML(parcelAttrs);
+    } else if (doConserved) {
+      // Only conserved lands
+      if (!conservedAttrs) return;
+      html = buildConservedPopupHTML(conservedAttrs);
+    }
+
+    if (html) {
+      L.popup({ maxWidth: 480, maxHeight: 520 }).setLatLng(e.latlng).setContent(html).openOn(map);
+    }
+  }).catch(function(err){ console.warn('Right-click query error:', err); });
+});
 
 // ============================================================
 // E911 ADDRESS NUMBERS — fetches VT statewide address points
@@ -1557,16 +1663,14 @@ var conservedLayer = L.esri.featureLayer({
             fillOpacity: 0.25
         };
     },
-    minZoom: 12
+    minZoom: 11
 });
-conservedLayer.bindPopup(function(layer) {
-    return layer.feature.properties.NAME || 'Conserved Land';
-});
+// Left-click popup removed — conserved lands use right-click contextmenu handler
 
 function updateConservedZoomMsg(){
     var el = document.getElementById('conserved-zoom-msg');
     if(!el) return;
-    el.style.display = (conservedOn && map.getZoom() < 12) ? '' : 'none';
+    el.style.display = (conservedOn && map.getZoom() < 11) ? '' : 'none';
 }
 
 // ---- VSWI WETLANDS (image export via makeDynamicOverlay) ----
@@ -1619,6 +1723,7 @@ function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
 if(!map.getPane('wetlandsPane')){
   const wp = map.createPane('wetlandsPane');
   wp.style.zIndex = 345;
+  wp.style.filter = 'saturate(2) contrast(1.2)';
 }
 
 let wetlandsOn = false;
@@ -1652,7 +1757,7 @@ L.control.layers(
     "FEMA Flood Zones":      femaFloodLayer,
     "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
     "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
-    "Conserved Lands (zoom 12+)": conservedLayer,
+    "Conserved Lands (zoom 11+)": conservedLayer,
     "Wetlands (zoom 11+)":       wetlandsLayer,
   }
 ).addTo(map);
@@ -1665,7 +1770,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'FEMA Flood Zones')       { femaOn    = true; document.getElementById('fema-legend').style.display=''; }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
-  if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = true; conservedLayer.bindPopup(function(layer){ return layer.feature.properties.NAME || 'Conserved Land'; }); updateConservedZoomMsg(); }
+  if(e.name === 'Conserved Lands (zoom 11+)'){ conservedOn = true; updateConservedZoomMsg(); }
   if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = true; wetlandsOverlay.enable(); document.getElementById('wetlands-legend').style.display=''; updateWetlandsZoomMsg(); }
 });
 map.on('overlayremove', function(e){
@@ -1674,7 +1779,7 @@ map.on('overlayremove', function(e){
   if(e.name === 'FEMA Flood Zones')       { femaOn    = false; document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
-  if(e.name === 'Conserved Lands (zoom 12+)'){ conservedOn = false; conservedLayer.unbindPopup(); updateConservedZoomMsg(); }
+  if(e.name === 'Conserved Lands (zoom 11+)'){ conservedOn = false; updateConservedZoomMsg(); }
   if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = false; wetlandsOverlay.disable(); document.getElementById('wetlands-legend').style.display='none'; document.getElementById('wetlands-zoom-msg').style.display='none'; }
 });
 
