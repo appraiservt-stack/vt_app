@@ -619,7 +619,7 @@ def build_where_clause(filters):
     the county-bounds coordinate validation (not a data filter).
     """
     # Exclude $0 transfers (refinances, name changes, family transfers, etc.)
-    # unless user is searching by a specific SPAN — then show all transfers.
+    # unless user is searching by a specific SPAN or street address — then show all transfers.
     # Base exclusions for map display:
     # - Timeshares (intPrpType='05') go to the TS collector dot, never black dots
     # - Unlanded mobile homes (TownGlCat='03' AND landSize=0) go to MH collector dot
@@ -632,7 +632,7 @@ def build_where_clause(filters):
         "NOT ((blCn1 IN ('4','04') OR (blCn2 IS NOT NULL AND blCn2 IN ('4','04')) OR (blCn3 IS NOT NULL AND blCn3 IN ('4','04'))) AND (landSize = 0 OR landSize IS NULL))",
     ]
 
-    if not filters.get('span'):
+    if not filters.get('span') and not filters.get('street'):
         clauses.append('ValPdOrTrn > 0')
 
     # County filter
