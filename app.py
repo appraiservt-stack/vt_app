@@ -618,12 +618,12 @@ def build_where_clause(filters):
     lifting across 218K+ records.  Python post-filtering is only used for
     the county-bounds coordinate validation (not a data filter).
     """
-    # Always exclude $0 transfers (refinances, name changes, family transfers, etc.)
+    # Exclude $0 transfers (refinances, name changes, family transfers, etc.)
+    # unless user is searching by a specific SPAN — then show all transfers.
     # Base exclusions for map display:
     # - Timeshares (intPrpType='05') go to the TS collector dot, never black dots
     # - Unlanded mobile homes (TownGlCat='03' AND landSize=0) go to MH collector dot
     clauses = [
-        "ValPdOrTrn > 0",
         # intPrpType=5 or 05 -> TS collector. Period. Nothing else.
         "intPrpType NOT IN ('05','5')",
         # Mobile home (blCn1/2/3=4 or 04) with no land -> MH collector.
@@ -631,6 +631,9 @@ def build_where_clause(filters):
         # or ArcGIS SQL treats NULL IN (...) unpredictably, excluding condos.
         "NOT ((blCn1 IN ('4','04') OR (blCn2 IS NOT NULL AND blCn2 IN ('4','04')) OR (blCn3 IS NOT NULL AND blCn3 IN ('4','04'))) AND (landSize = 0 OR landSize IS NULL))",
     ]
+
+    if not filters.get('span'):
+        clauses.append('ValPdOrTrn > 0')
 
     # County filter
     # ArcGIS has inconsistent countyCode padding — some records use '9', others '09'.
