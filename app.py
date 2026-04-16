@@ -7,6 +7,8 @@ import io
 import math
 import re
 import os
+import sys
+import subprocess
 from pathlib import Path
 try:
     from dotenv import load_dotenv
@@ -162,6 +164,44 @@ def _init_site_content():
         conn.close()
 
 _init_site_content()
+
+# ── Geocoding runs table ──────────────────────────────────────────────────
+def _init_geocoding_runs():
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        from auth import _using_postgres
+        if _using_postgres():
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS geocoding_runs (
+                    id SERIAL PRIMARY KEY,
+                    run_date TIMESTAMP DEFAULT NOW(),
+                    date_from DATE NOT NULL,
+                    records_found INTEGER DEFAULT 0,
+                    records_added INTEGER DEFAULT 0,
+                    status TEXT DEFAULT 'pending',
+                    notes TEXT,
+                    dry_run BOOLEAN DEFAULT FALSE
+                )
+            """)
+        else:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS geocoding_runs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    date_from DATE NOT NULL,
+                    records_found INTEGER DEFAULT 0,
+                    records_added INTEGER DEFAULT 0,
+                    status TEXT DEFAULT 'pending',
+                    notes TEXT,
+                    dry_run BOOLEAN DEFAULT 0
+                )
+            """)
+        conn.commit()
+    finally:
+        conn.close()
+
+_init_geocoding_runs()
 
 # ── Login required decorator ──────────────────────────────────────────────────
 ADMIN_EMAIL_LOCAL   = os.environ.get("ADMIN_EMAIL", "appraiservt@gmail.com").lower()
@@ -3534,6 +3574,39 @@ def assessors_save():
             ON CONFLICT(town_name) DO UPDATE SET url = excluded.url, url2 = excluded.url2, updated_at = excluded.updated_at
         """), (town, url, url2 or None, now))
     return jsonify({"ok": True, "town_name": town, "url": url, "url2": url2 or None})
+
+# ── Geocoding admin routes ────────────────────────────────────────────────
+
+@app.route("/admin/geocoding")
+@_admin_required
+def geocoding_admin():
+    return render_template("geocoding_admin.html")
+
+@app.route("/admin/geocoding/run", methods=["POST"])
+@_admin_required
+def geocoding_run():
+    data = request.get_json(force=True)
+    date_from = data.get("date_from", "")
+    dry_run = bool(data.get("dry_run", False))
+
+    cmd = [sys.executable, "geocode_approx.py", "--log-to-db", "--date-from", date_from]
+    if dry_run:
+        cmd.append("--dry-run")
+
+    try:
+        subprocess.Popen(cmd, cwd=os.path.dirname(os.path.abspath(__file__)))
+        return jsonify({"ok": True, "message": "Geocoding job started."})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/admin/geocoding/history")
+@_admin_required
+def geocoding_history():
+    rows = db_fetchall(_q(
+        "SELECT id, run_date, date_from, records_found, records_added, status, notes, dry_run "
+        "FROM geocoding_runs ORDER BY run_date DESC"
+    ))
+    return jsonify(rows)
 
 
 if __name__ == "__main__":

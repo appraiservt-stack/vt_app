@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin — Geocoding</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; }
+  .topbar { background: #1a3a5c; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar a { color: #fff; text-decoration: none; font-size: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .topbar .admin-nav { display: flex; gap: 18px; }
+  .topbar .admin-nav a.active { font-weight: 700; }
+  .container { max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+  h2 { font-size: 20px; color: #1a3a5c; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  th { background: #1a3a5c; color: #fff; padding: 12px 14px; text-align: left; font-size: 13px; }
+  td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #eee; color: #333; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f9fc; }
+  .btn-sm { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; color: #fff; }
+  .btn-green { background: #2d6a4f; }
+  .btn-green:hover { background: #235540; }
+  .form-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 20px 24px; margin-bottom: 24px; }
+  .form-card h3 { font-size: 15px; color: #1a3a5c; margin-bottom: 14px; }
+  .form-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .form-group { display: flex; flex-direction: column; }
+  .form-group label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 4px; }
+  .form-group input[type="date"] { padding: 8px 10px; border: 1.5px solid #ccc; border-radius: 6px; font-size: 13px; }
+  .form-group input[type="date"]:focus { outline: none; border-color: #1a3a5c; }
+  .checkbox-group { display: flex; align-items: center; gap: 6px; padding-bottom: 2px; }
+  .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; }
+  .checkbox-group label { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 0; }
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .alert-success { background: #e8f8f0; color: #1e7e4a; border: 1px solid #b7dfc9; }
+  .alert-error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .badge-success { background: #e8f8f0; color: #1e7e4a; }
+  .badge-pending { background: #fff3e0; color: #e65100; }
+  .badge-error   { background: #fde8e8; color: #c0392b; }
+  .badge-dry     { background: #e3f2fd; color: #1565c0; }
+  .empty-msg { text-align: center; color: #999; padding: 24px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <strong>VT Property Sales — Geocoding</strong>
+  <div class="admin-nav">
+    <a href="/admin/assessors">Assessors</a>
+    <a href="/admin/plans">Plans</a>
+    <a href="/admin/content">Content</a>
+    <a href="/admin/geocoding" class="active">Geocoding</a>
+    <a href="/logout">Sign Out</a>
+  </div>
+</div>
+<div class="container">
+  <h2>Geocoding Runs</h2>
+
+  <div id="alert" class="alert"></div>
+
+  <div class="form-card">
+    <h3>Run Now</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Date From</label>
+        <input type="date" id="dateFrom">
+      </div>
+      <div class="checkbox-group">
+        <input type="checkbox" id="dryRun">
+        <label for="dryRun">Dry Run</label>
+      </div>
+      <div class="form-group">
+        <button class="btn-sm btn-green" style="padding:8px 18px; font-size:13px;" onclick="runGeocoding()">Run Geocoding</button>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Run Date</th>
+        <th>Date From</th>
+        <th>Found</th>
+        <th>Added</th>
+        <th>Dry Run</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <tr><td colspan="7" class="empty-msg">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+<script>
+function showAlert(msg, type) {
+  var el = document.getElementById('alert');
+  el.textContent = msg;
+  el.className = 'alert alert-' + type;
+  el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 5000);
+}
+
+function esc(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function loadHistory() {
+  fetch('/admin/geocoding/history')
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      var tbody = document.getElementById('tbody');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">No geocoding runs yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      rows.forEach(function(r) {
+        var tr = document.createElement('tr');
+        var runDate = (r.run_date || '').replace('T', ' ').slice(0, 19);
+        var dateFrom = (r.date_from || '').slice(0, 10);
+        var statusClass = r.status === 'success' ? 'success' : (r.status === 'pending' ? 'pending' : 'error');
+        var dryBadge = r.dry_run ? '<span class="badge badge-dry">Yes</span>' : 'No';
+        tr.innerHTML =
+          '<td>' + esc(runDate) + '</td>' +
+          '<td>' + esc(dateFrom) + '</td>' +
+          '<td>' + (r.records_found || 0) + '</td>' +
+          '<td>' + (r.records_added || 0) + '</td>' +
+          '<td>' + dryBadge + '</td>' +
+          '<td><span class="badge badge-' + statusClass + '">' + esc(r.status || '') + '</span></td>' +
+          '<td style="max-width:300px;word-break:break-word;font-size:12px;">' + esc(r.notes || '') + '</td>';
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(function() {
+      document.getElementById('tbody').innerHTML = '<tr><td colspan="7" class="empty-msg">Failed to load history.</td></tr>';
+    });
+}
+
+function runGeocoding() {
+  var dateFrom = document.getElementById('dateFrom').value;
+  var dryRun = document.getElementById('dryRun').checked;
+  if (!dateFrom) {
+    showAlert('Please select a Date From.', 'error');
+    return;
+  }
+  fetch('/admin/geocoding/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date_from: dateFrom, dry_run: dryRun })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      showAlert(d.message || 'Geocoding job started.', 'success');
+      setTimeout(loadHistory, 3000);
+    } else {
+      showAlert(d.error || 'Failed to start job.', 'error');
+    }
+  })
+  .catch(function() { showAlert('Network error.', 'error'); });
+}
+
+// Set default date to 7 days ago
+(function() {
+  var d = new Date();
+  d.setDate(d.getDate() - 7);
+  document.getElementById('dateFrom').value = d.toISOString().slice(0, 10);
+})();
+
+loadHistory();
+</script>
+</body>
+</html>

@@ -37,8 +37,9 @@ import json
 import time
 import os
 import re
+import sys
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR    = os.path.dirname(os.path.abspath(__file__))
@@ -692,14 +693,49 @@ def fetch_all_approx(school_to_town, town_to_county, span_prefix_map=None, date_
     return all_approx
 
 
+# ── DB logging ─────────────────────────────────────────────────────────────────
+
+def _log_run_to_db(date_from, records_found, records_added, status, notes, dry_run):
+    """Write run results to geocoding_runs table via DATABASE_URL env var."""
+    db_url = os.environ.get("DATABASE_URL")
+    if not db_url:
+        print("[log-to-db] DATABASE_URL not set — skipping DB log.")
+        return
+    try:
+        import psycopg2
+        import psycopg2.extras
+        conn = psycopg2.connect(db_url)
+        conn.cursor_factory = psycopg2.extras.RealDictCursor
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO geocoding_runs (date_from, records_found, records_added, status, notes, dry_run)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (date_from, records_found, records_added, status, notes, dry_run))
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"[log-to-db] Run logged to geocoding_runs table.")
+    except Exception as e:
+        print(f"[log-to-db] Error logging to DB: {e}")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(description='Geocode approx VT property records')
     parser.add_argument('--date-from', default=None,
         help='Only process records with closeDate >= this date (YYYY-MM-DD). '
-             'Use for test runs, e.g. --date-from 2025-04-11 for last 12 months.')
+             'Defaults to 7 days ago if not specified.')
+    parser.add_argument('--dry-run', action='store_true',
+        help='Go through all motions but do NOT write to geocoded_approx.json.')
+    parser.add_argument('--log-to-db', action='store_true',
+        help='Write run results to geocoding_runs table via DATABASE_URL env var.')
     args = parser.parse_args()
+
+    # Auto-calculate date-from as 7 days ago if not specified
+    if args.date_from is None:
+        args.date_from = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+        print(f"No --date-from specified, defaulting to 7 days ago: {args.date_from}")
     print("=" * 60)
     print("VT Property Sales — Approx Record Geocoder")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -745,8 +781,7 @@ def main():
 
     # Fetch approx records
     date_from_filter = args.date_from
-    if date_from_filter:
-        print(f"Date filter: only processing records with closeDate >= {date_from_filter}")
+    print(f"Date filter: only processing records with closeDate >= {date_from_filter}")
     approx_records = fetch_all_approx(school_to_town, town_to_county, span_prefix_map,
                                        date_from=date_from_filter)
 
@@ -758,6 +793,15 @@ def main():
 
     if not to_process:
         print("Nothing new to process. File is up to date.")
+        if args.log_to_db:
+            _log_run_to_db(
+                date_from=date_from_filter,
+                records_found=0,
+                records_added=0,
+                status="success",
+                notes="No new records to process",
+                dry_run=args.dry_run,
+            )
         return
 
     print("-" * 60)
@@ -864,13 +908,30 @@ def main():
 
         # Save every 25 records
         if i % 25 == 0:
-            with open(OUTPUT_FILE, "w") as f:
-                json.dump(existing, f, indent=2)
-            print(f"  [saved {len(existing):,} records]")
+            if not args.dry_run:
+                with open(OUTPUT_FILE, "w") as f:
+                    json.dump(existing, f, indent=2)
+                print(f"  [saved {len(existing):,} records]")
+            else:
+                print(f"  [dry-run: would save {len(existing):,} records]")
 
     # Final save
-    with open(OUTPUT_FILE, "w") as f:
-        json.dump(existing, f, indent=2)
+    if not args.dry_run:
+        with open(OUTPUT_FILE, "w") as f:
+            json.dump(existing, f, indent=2)
+    else:
+        print("[DRY RUN] Skipping write to geocoded_approx.json")
+
+    records_found = len(to_process)
+    records_added = e911_success + span_success + sibling_success + nom_success
+    status = "success"
+    notes_parts = []
+    if args.dry_run:
+        notes_parts.append("DRY RUN")
+    notes_parts.append(
+        f"e911={e911_success}, span={span_success}, sibling={sibling_success}, "
+        f"nominatim={nom_success}, failed={nom_fail}, skipped={skipped}"
+    )
 
     print("-" * 60)
     print(f"E911 resolved:      {e911_success:,}")
@@ -881,11 +942,24 @@ def main():
     print(f"Skipped (no addr):  {skipped:,}")
     print(f"Total in file:      {len(existing):,}")
     print(f"File: {OUTPUT_FILE}")
-    print()
-    print("Next steps:")
-    print("  git add geocoded_approx.json")
-    print('  git commit -m "Update geocoded approx records"')
-    print("  git push origin main")
+
+    # Log results to database if requested
+    if args.log_to_db:
+        _log_run_to_db(
+            date_from=date_from_filter,
+            records_found=records_found,
+            records_added=records_added,
+            status=status,
+            notes="; ".join(notes_parts),
+            dry_run=args.dry_run,
+        )
+
+    if not args.dry_run:
+        print()
+        print("Next steps:")
+        print("  git add geocoded_approx.json")
+        print('  git commit -m "Update geocoded approx records"')
+        print("  git push origin main")
 
 
 if __name__ == "__main__":
