@@ -124,7 +124,7 @@
     <input type="hidden" name="email" value="{{ email }}">
 
     <div class="plans">
-      <p style="font-size:14px;color:#1a3a5c;font-weight:700;margin-bottom:12px;">Choose your plan:</p>
+      <p style="font-size:14px;color:#1a3a5c;font-weight:700;margin-bottom:12px;">Choose Your Subscription:</p>
       {% for plan in plans %}
       <label class="plan-option{% if loop.first %} selected{% endif %}">
         <input type="radio" name="plan_key" value="{{ plan.key }}"{% if loop.first %} checked{% endif %}>
