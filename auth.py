@@ -618,11 +618,21 @@ def account():
     user_plan = get_plan(plan_key)
     plans = get_active_plans()
 
+    # Format trial end date for display when user is in trialing status
+    trial_end_date = None
+    if user["subscription_status"] == "trialing" and user.get("trial_ends_at"):
+        try:
+            trial_end_date = datetime.strptime(
+                user["trial_ends_at"][:10], "%Y-%m-%d"
+            ).strftime("%B %-d, %Y")
+        except (ValueError, TypeError):
+            trial_end_date = None
+
     return render_template("account.html", user=user, trial_days=trial_days,
                            cancel_at_period_end=cancel_at_period_end,
                            renewal_date=renewal_date,
                            user_plan=user_plan, plans=plans,
-                           plan_key=plan_key)
+                           plan_key=plan_key, trial_end_date=trial_end_date)
 
 # ── Billing portal ────────────────────────────────────────────────────────────
 @auth_bp.route("/billing-portal")
