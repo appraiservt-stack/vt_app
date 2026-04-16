@@ -78,7 +78,7 @@
   <table>
     <thead>
       <tr>
-        <th>Run Date</th>
+        <th style="min-width:160px">Run Date</th>
         <th>Date From</th>
         <th>Found</th>
         <th>Added</th>
@@ -119,7 +119,7 @@ function loadHistory() {
       tbody.innerHTML = '';
       rows.forEach(function(r) {
         var tr = document.createElement('tr');
-        var runDate = (r.run_date || '').replace('T', ' ').slice(0, 19);
+        var runDate = r.run_date ? new Date(r.run_date).toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit', hour12:true }) : '';
         var dateFrom = (r.date_from || '').slice(0, 10);
         var statusClass = r.status === 'success' ? 'success' : (r.status === 'pending' ? 'pending' : 'error');
         var dryBadge = r.dry_run ? '<span class="badge badge-dry">Yes</span>' : 'No';
