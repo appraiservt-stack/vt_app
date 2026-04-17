@@ -242,6 +242,7 @@
             <span class="code-line">H4</span>
             <span class="code-desc {% if rec.rentedAfter in [True, 'Yes', 'YES', 'true', 'TRUE', '1', 1] %}check-yes{% else %}check-no{% endif %}">
               Rented after: {{ 'Yes' if rec.rentedAfter in [True, 'Yes', 'YES', 'true', 'TRUE', '1', 1] else 'No' }}
+              <!-- DEBUG rentedAfter raw value: [{{ rec.rentedAfter }}] type: {{ rec.rentedAfter.__class__.__name__ }} -->
             </span>
           </div>
           <div class="code-row">
