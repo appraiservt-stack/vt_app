@@ -234,14 +234,14 @@
           </div>
           <div class="code-row">
             <span class="code-line">H3</span>
-            <span class="code-desc {% if rec.rentedBefore in [True, 'Yes', 'YES', 'true', 'TRUE', '1', 1] %}check-yes{% else %}check-no{% endif %}">
-              Rented before: {{ 'Yes' if rec.rentedBefore in [True, 'Yes', 'YES', 'true', 'TRUE', '1', 1] else 'No' }}
+            <span class="code-desc {% if rec.rentedBefore in [True, 'Yes', 'YES', 'true', 'TRUE', 'True', '1', 1] %}check-yes{% else %}check-no{% endif %}">
+              Rented before: {{ 'Yes' if rec.rentedBefore in [True, 'Yes', 'YES', 'true', 'TRUE', 'True', '1', 1] else 'No' }}
             </span>
           </div>
           <div class="code-row">
             <span class="code-line">H4</span>
-            <span class="code-desc {% if rec.rentedAfter in [True, 'Yes', 'YES', 'true', 'TRUE', '1', 1] %}check-yes{% else %}check-no{% endif %}">
-              Rented after: {{ 'Yes' if rec.rentedAfter in [True, 'Yes', 'YES', 'true', 'TRUE', '1', 1] else 'No' }}
+            <span class="code-desc {% if rec.rentedAfter in [True, 'Yes', 'YES', 'true', 'TRUE', 'True', '1', 1] %}check-yes{% else %}check-no{% endif %}">
+              Rented after: {{ 'Yes' if rec.rentedAfter in [True, 'Yes', 'YES', 'true', 'TRUE', 'True', '1', 1] else 'No' }}
               <!-- DEBUG rentedAfter raw value: [{{ rec.rentedAfter }}] type: {{ rec.rentedAfter.__class__.__name__ }} -->
             </span>
           </div>
