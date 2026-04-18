@@ -5504,7 +5504,7 @@ const CP_COLORS = [
   document.addEventListener('mousemove', function(e){
     if(!resizing) return;
     const dx = startX - e.clientX;
-    const w = Math.min(800, Math.max(320, startW + dx));
+    const w = Math.min(window.innerWidth - 60, Math.max(320, startW + dx));
     document.getElementById('chartsPanel').style.width = w + 'px';
   });
   document.addEventListener('mouseup', function(){
@@ -5687,13 +5687,29 @@ function cpRenderCharts(data){
   // ---- Volume chart (bar) ----
   if(_cpVolumeChart){ _cpVolumeChart.destroy(); _cpVolumeChart = null; }
   var ctxV = document.getElementById('cpChartVolume').getContext('2d');
-  var volDatasets = [];
 
+  // Build unified period labels first
+  var cpLabelSet = {};
+  if(isMultiSeries){
+    data.series.forEach(function(s){ (s.periods||[]).forEach(function(p){ cpLabelSet[p]=1; }); });
+  } else {
+    (data.periods||[]).forEach(function(p){ cpLabelSet[p]=1; });
+  }
+  var cpLabels = Object.keys(cpLabelSet).sort();
+
+  // Helper: align a series data array to unified labels, filling 0 for missing periods
+  function alignToLabels(periods, values){
+    var map = {};
+    (periods||[]).forEach(function(p,i){ map[p] = values[i]; });
+    return cpLabels.map(function(p){ return map[p] != null ? map[p] : 0; });
+  }
+
+  var volDatasets = [];
   if(isMultiSeries){
     data.series.forEach(function(s, idx){
       volDatasets.push({
         label: s.label || ('Series ' + (idx+1)),
-        data: s.counts,
+        data: alignToLabels(s.periods, s.counts),
         backgroundColor: CP_COLORS[idx % CP_COLORS.length] + 'b3',
         borderColor: CP_COLORS[idx % CP_COLORS.length],
         borderWidth: 1
@@ -5702,21 +5718,12 @@ function cpRenderCharts(data){
   } else {
     volDatasets.push({
       label: 'Sales Count',
-      data: data.counts,
+      data: alignToLabels(data.periods, data.counts),
       backgroundColor: 'rgba(26,58,92,0.7)',
       borderColor: '#1a3a5c',
       borderWidth: 1
     });
   }
-
-  // Unified periods across all series
-  var cpLabelSet = {};
-  if(isMultiSeries){
-    data.series.forEach(function(s){ (s.periods||[]).forEach(function(p){ cpLabelSet[p]=1; }); });
-  } else {
-    (data.periods||[]).forEach(function(p){ cpLabelSet[p]=1; });
-  }
-  var cpLabels = Object.keys(cpLabelSet).sort();
   _cpVolumeChart = new Chart(ctxV, {
     type: 'bar',
     data: { labels: cpLabels, datasets: volDatasets },
@@ -5741,7 +5748,7 @@ function cpRenderCharts(data){
       var c = CP_COLORS[idx % CP_COLORS.length];
       priceDatasets.push({
         label: (s.label || 'Series ' + (idx+1)) + ' Median',
-        data: s.medians,
+        data: alignToLabels(s.periods, s.medians),
         borderColor: c,
         backgroundColor: c + '1a',
         tension: 0.2, pointRadius: 3, borderWidth: 2
@@ -5763,14 +5770,14 @@ function cpRenderCharts(data){
   } else {
     priceDatasets.push({
       label: 'Median',
-      data: data.medians,
+      data: alignToLabels(data.periods, data.medians),
       borderColor: '#1565c0',
       backgroundColor: 'rgba(21,101,192,0.1)',
       tension: 0.2, pointRadius: 3, borderWidth: 2
     });
     priceDatasets.push({
       label: 'Average',
-      data: data.averages,
+      data: alignToLabels(data.periods, data.averages),
       borderColor: '#e65100',
       backgroundColor: 'rgba(230,81,0,0.1)',
       tension: 0.2, pointRadius: 3, borderWidth: 2
@@ -5839,7 +5846,7 @@ function cpRenderHeatmap(data){
   if(!vals.length) return;
   var minVal = Math.min.apply(null, vals);
   var maxVal = Math.max.apply(null, vals);
-  var range = maxVal - minVal || 1;
+  var range = maxVal - minVal || maxVal || 1;
 
   var towns = Object.keys(heatmap).sort();
   towns.forEach(function(town){
