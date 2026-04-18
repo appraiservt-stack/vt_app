@@ -5709,9 +5709,10 @@ function cpRenderCharts(data){
     });
   }
 
+  var cpLabels = isMultiSeries ? (data.series[0].periods || []) : (data.periods || []);
   _cpVolumeChart = new Chart(ctxV, {
     type: 'bar',
-    data: { labels: data.periods, datasets: volDatasets },
+    data: { labels: cpLabels, datasets: volDatasets },
     options: {
       responsive: true,
       plugins: { legend: { display: isMultiSeries, position: 'bottom', labels: { font: { size: 9 } } } },
@@ -5784,7 +5785,7 @@ function cpRenderCharts(data){
 
   _cpPriceChart = new Chart(ctxP, {
     type: 'line',
-    data: { labels: data.periods, datasets: priceDatasets },
+    data: { labels: cpLabels, datasets: priceDatasets },
     options: {
       responsive: true,
       plugins: {
