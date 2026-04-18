@@ -3618,13 +3618,13 @@ def charts_data():
     """Aggregate sales data for the charts panel.
 
     Query params:
-        county       – county code (e.g. '04') or empty for all
-        town         – town name or empty for all
-        building_type – comma-separated blCn codes (e.g. '2,5') or empty
+        county       – comma-separated county codes (e.g. '04,12') or empty for all
+        town         – comma-separated town names (e.g. 'Northfield,Barre') or empty for all
+        building_type – comma-separated blCn codes (e.g. '2,5'), 'vacant' for vacant land, or empty
         date_from    – YYYY-MM-DD
         date_to      – YYYY-MM-DD
         grouping     – month | quarter | year (default: year)
-    Returns JSON: {periods, counts, medians, averages}
+    Returns JSON: {series: [...], heatmap: [...]}
     """
     county        = request.args.get("county", "").strip()
     town          = request.args.get("town", "").strip()
@@ -3635,6 +3635,19 @@ def charts_data():
 
     if grouping not in ("month", "quarter", "year"):
         grouping = "year"
+
+    # ---- Parse multi-select towns ----
+    towns = [t.strip() for t in town.split(",") if t.strip()] if town else []
+
+    # Build a mapping: town_name -> list of schoolCodes
+    town_school_map = {}  # {town_name_upper: [schoolCode, ...]}
+    for t in towns:
+        t_upper = t.upper()
+        codes = []
+        for code, mapped_town in SCHOOL_TO_TOWN.items():
+            if mapped_town.upper() == t_upper:
+                codes.append(str(code))
+        town_school_map[t_upper] = codes
 
     # ---- Build WHERE clause ----
     clauses = ["ValPdOrTrn > 0"]
@@ -3650,30 +3663,38 @@ def charts_data():
         codes_sql = ",".join([f"'{c}'" for c in sorted(all_codes)])
         clauses.append(f"countyCode IN ({codes_sql})")
 
-    # Town — convert to schoolCode
-    if town:
-        town_upper = town.strip().upper()
-        school_codes = []
-        for code, mapped_town in SCHOOL_TO_TOWN.items():
-            if mapped_town.upper() == town_upper:
-                school_codes.append(str(code))
-        if school_codes:
-            codes_sql = ",".join([f"'{c}'" for c in school_codes])
+    # Town — convert all selected towns to schoolCodes
+    if towns:
+        all_school_codes = []
+        for t_upper, sc_list in town_school_map.items():
+            all_school_codes.extend(sc_list)
+        if all_school_codes:
+            codes_sql = ",".join([f"'{c}'" for c in all_school_codes])
             clauses.append(f"schoolCode IN ({codes_sql})")
         else:
             clauses.append("1=0")
 
-    # Building type — blCn1/blCn2/blCn3
+    # Building type — blCn1/blCn2/blCn3; 'vacant' = vacant land
     if building_type:
         raw_codes = [c.strip() for c in building_type.split(",") if c.strip()]
-        all_forms = set()
-        for c in raw_codes:
-            all_forms.add(c.zfill(2))
-            all_forms.add(c.lstrip('0') or '0')
-        quoted = ','.join(f"'{v}'" for v in sorted(all_forms))
-        clauses.append(
-            f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
-        )
+        has_vacant = "vacant" in [c.lower() for c in raw_codes]
+        normal_codes = [c for c in raw_codes if c.lower() != "vacant"]
+
+        bt_parts = []
+        if normal_codes:
+            all_forms = set()
+            for c in normal_codes:
+                all_forms.add(c.zfill(2))
+                all_forms.add(c.lstrip('0') or '0')
+            quoted = ','.join(f"'{v}'" for v in sorted(all_forms))
+            bt_parts.append(
+                f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
+            )
+        if has_vacant:
+            bt_parts.append("(blCn1 IN ('01','1') OR blCn1 IS NULL)")
+
+        if bt_parts:
+            clauses.append("(" + " OR ".join(bt_parts) + ")")
 
     # Date range
     if date_from:
@@ -3692,44 +3713,128 @@ def charts_data():
     where = " AND ".join(clauses)
 
     # ---- Fetch all matching records (paginated) ----
-    fields = "closeDate,ValPdOrTrn"
+    multi_town = len(towns) > 1
+    fields = "closeDate,ValPdOrTrn,schoolCode" if multi_town else "closeDate,ValPdOrTrn"
     features = fetch_all_features(where, fields=fields)
 
-    # ---- Parse and group ----
-    buckets = {}  # key -> list of prices
-    for f in features:
-        attr = f.get("attributes", {})
-        price = attr.get("ValPdOrTrn")
-        close_ts = attr.get("closeDate")
-        if not price or price <= 0 or not close_ts:
-            continue
-        # closeDate is epoch-ms in ArcGIS
+    # ---- Helper: resolve schoolCode -> town name ----
+    def _school_to_town_label(sc):
+        """Return the display-cased town name for a schoolCode."""
         try:
-            dt = datetime.utcfromtimestamp(close_ts / 1000)
-        except Exception:
-            continue
-        if grouping == "month":
-            key = dt.strftime("%Y-%m")
-        elif grouping == "quarter":
-            q = (dt.month - 1) // 3 + 1
-            key = f"{dt.year}-Q{q}"
+            sc_int = int(sc)
+        except (TypeError, ValueError):
+            return None
+        return SCHOOL_TO_TOWN.get(sc_int)
+
+    # ---- Parse and group ----
+    if multi_town:
+        # Reverse map: schoolCode (str) -> town_name_upper
+        sc_to_town_upper = {}
+        for t_upper, sc_list in town_school_map.items():
+            for sc in sc_list:
+                sc_to_town_upper[sc] = t_upper
+
+        # Per-town buckets: {town_upper: {period_key: [prices]}}
+        town_buckets = {t_upper: {} for t_upper in town_school_map}
+        # Heatmap accumulators: {town_upper: [all prices]}
+        town_all_prices = {t_upper: [] for t_upper in town_school_map}
+
+        for f in features:
+            attr = f.get("attributes", {})
+            price = attr.get("ValPdOrTrn")
+            close_ts = attr.get("closeDate")
+            sc = attr.get("schoolCode")
+            if not price or price <= 0 or not close_ts:
+                continue
+            sc_str = str(int(sc)) if sc is not None else None
+            t_upper = sc_to_town_upper.get(sc_str)
+            if not t_upper:
+                continue
+            try:
+                dt = datetime.utcfromtimestamp(close_ts / 1000)
+            except Exception:
+                continue
+            if grouping == "month":
+                key = dt.strftime("%Y-%m")
+            elif grouping == "quarter":
+                q = (dt.month - 1) // 3 + 1
+                key = f"{dt.year}-Q{q}"
+            else:
+                key = str(dt.year)
+            town_buckets[t_upper].setdefault(key, []).append(price)
+            town_all_prices[t_upper].append(price)
+
+        # Build display-case lookup from the original town param
+        town_display = {}
+        for t in towns:
+            town_display[t.upper()] = t.title()
+
+        # Build series per town
+        series = []
+        heatmap = []
+        for t_upper in town_school_map:
+            buckets = town_buckets[t_upper]
+            sorted_keys = sorted(buckets.keys())
+            label = town_display.get(t_upper, t_upper.title())
+            series.append({
+                "label":    label,
+                "periods":  sorted_keys,
+                "counts":   [len(buckets[k]) for k in sorted_keys],
+                "medians":  [round(statistics.median(buckets[k]), 2) for k in sorted_keys],
+                "averages": [round(sum(buckets[k]) / len(buckets[k]), 2) for k in sorted_keys],
+            })
+            all_p = town_all_prices[t_upper]
+            heatmap.append({
+                "town":   label,
+                "count":  len(all_p),
+                "median": round(statistics.median(all_p), 2) if all_p else 0,
+            })
+
+        return jsonify({"series": series, "heatmap": heatmap})
+    else:
+        # Single town or statewide
+        if len(towns) == 1:
+            label = towns[0].title()
         else:
-            key = str(dt.year)
-        buckets.setdefault(key, []).append(price)
+            label = "Statewide"
 
-    # ---- Sort and compute stats ----
-    sorted_keys = sorted(buckets.keys())
-    periods  = sorted_keys
-    counts   = [len(buckets[k]) for k in sorted_keys]
-    medians  = [round(statistics.median(buckets[k]), 2) for k in sorted_keys]
-    averages = [round(sum(buckets[k]) / len(buckets[k]), 2) for k in sorted_keys]
+        buckets = {}
+        all_prices = []
+        for f in features:
+            attr = f.get("attributes", {})
+            price = attr.get("ValPdOrTrn")
+            close_ts = attr.get("closeDate")
+            if not price or price <= 0 or not close_ts:
+                continue
+            try:
+                dt = datetime.utcfromtimestamp(close_ts / 1000)
+            except Exception:
+                continue
+            if grouping == "month":
+                key = dt.strftime("%Y-%m")
+            elif grouping == "quarter":
+                q = (dt.month - 1) // 3 + 1
+                key = f"{dt.year}-Q{q}"
+            else:
+                key = str(dt.year)
+            buckets.setdefault(key, []).append(price)
+            all_prices.append(price)
 
-    return jsonify({
-        "periods":  periods,
-        "counts":   counts,
-        "medians":  medians,
-        "averages": averages,
-    })
+        sorted_keys = sorted(buckets.keys())
+        series = [{
+            "label":    label,
+            "periods":  sorted_keys,
+            "counts":   [len(buckets[k]) for k in sorted_keys],
+            "medians":  [round(statistics.median(buckets[k]), 2) for k in sorted_keys],
+            "averages": [round(sum(buckets[k]) / len(buckets[k]), 2) for k in sorted_keys],
+        }]
+        heatmap = [{
+            "town":   label,
+            "count":  len(all_prices),
+            "median": round(statistics.median(all_prices), 2) if all_prices else 0,
+        }]
+
+        return jsonify({"series": series, "heatmap": heatmap})
 
 
 if __name__ == "__main__":
