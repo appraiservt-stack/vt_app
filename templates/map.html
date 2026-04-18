@@ -5709,7 +5709,14 @@ function cpRenderCharts(data){
     });
   }
 
-  var cpLabels = isMultiSeries ? (data.series[0].periods || []) : (data.periods || []);
+  // Unified periods across all series
+  var cpLabelSet = {};
+  if(isMultiSeries){
+    data.series.forEach(function(s){ (s.periods||[]).forEach(function(p){ cpLabelSet[p]=1; }); });
+  } else {
+    (data.periods||[]).forEach(function(p){ cpLabelSet[p]=1; });
+  }
+  var cpLabels = Object.keys(cpLabelSet).sort();
   _cpVolumeChart = new Chart(ctxV, {
     type: 'bar',
     data: { labels: cpLabels, datasets: volDatasets },
@@ -5745,7 +5752,7 @@ function cpRenderCharts(data){
           priceDatasets.push({
             label: (s.label || 'Series ' + (idx+1)) + ' Trend',
             data: trend,
-            borderColor: '#999',
+            borderColor: c,
             borderDash: [6,4],
             tension: 0, pointRadius: 0, borderWidth: 1.5,
             fill: false
@@ -5774,7 +5781,7 @@ function cpRenderCharts(data){
         priceDatasets.push({
           label: 'Trendline',
           data: trend,
-          borderColor: '#999',
+          borderColor: '#1565c0',
           borderDash: [6,4],
           tension: 0, pointRadius: 0, borderWidth: 1.5,
           fill: false
@@ -5816,8 +5823,12 @@ function cpSetHeatmapMode(mode, btn){
 function cpRenderHeatmap(data){
   var grid = document.getElementById('cpHeatmapGrid');
   grid.innerHTML = '';
-  var heatmap = data.heatmap;
-  if(!heatmap || !Object.keys(heatmap).length) return;
+  var heatmapArr = data.heatmap;
+  if(!heatmapArr || !heatmapArr.length) return;
+
+  // Convert array to object keyed by town
+  var heatmap = {};
+  heatmapArr.forEach(function(h){ heatmap[h.town] = {count: h.count, median: h.median}; });
 
   // Compute min/max for color scaling
   var vals = [];
