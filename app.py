@@ -6,6 +6,7 @@ import csv
 import io
 import math
 import re
+import statistics
 import os
 import sys
 import subprocess
@@ -3610,6 +3611,125 @@ def geocoding_history():
         "FROM geocoding_runs ORDER BY run_date DESC"
     ))
     return jsonify(rows)
+
+
+@app.route("/charts/data")
+def charts_data():
+    """Aggregate sales data for the charts panel.
+
+    Query params:
+        county       – county code (e.g. '04') or empty for all
+        town         – town name or empty for all
+        building_type – comma-separated blCn codes (e.g. '2,5') or empty
+        date_from    – YYYY-MM-DD
+        date_to      – YYYY-MM-DD
+        grouping     – month | quarter | year (default: year)
+    Returns JSON: {periods, counts, medians, averages}
+    """
+    county        = request.args.get("county", "").strip()
+    town          = request.args.get("town", "").strip()
+    building_type = request.args.get("building_type", "").strip()
+    date_from     = request.args.get("date_from", "").strip()
+    date_to       = request.args.get("date_to", "").strip()
+    grouping      = request.args.get("grouping", "year").strip().lower()
+
+    if grouping not in ("month", "quarter", "year"):
+        grouping = "year"
+
+    # ---- Build WHERE clause ----
+    clauses = ["ValPdOrTrn > 0"]
+
+    # County — include both padded and unpadded forms
+    if county:
+        codes = [c.strip() for c in county.split(",") if c.strip()]
+        all_codes = set()
+        for c in codes:
+            all_codes.add(c)
+            all_codes.add(str(int(c)))
+            all_codes.add(c.zfill(2))
+        codes_sql = ",".join([f"'{c}'" for c in sorted(all_codes)])
+        clauses.append(f"countyCode IN ({codes_sql})")
+
+    # Town — convert to schoolCode
+    if town:
+        town_upper = town.strip().upper()
+        school_codes = []
+        for code, mapped_town in SCHOOL_TO_TOWN.items():
+            if mapped_town.upper() == town_upper:
+                school_codes.append(str(code))
+        if school_codes:
+            codes_sql = ",".join([f"'{c}'" for c in school_codes])
+            clauses.append(f"schoolCode IN ({codes_sql})")
+        else:
+            clauses.append("1=0")
+
+    # Building type — blCn1/blCn2/blCn3
+    if building_type:
+        raw_codes = [c.strip() for c in building_type.split(",") if c.strip()]
+        all_forms = set()
+        for c in raw_codes:
+            all_forms.add(c.zfill(2))
+            all_forms.add(c.lstrip('0') or '0')
+        quoted = ','.join(f"'{v}'" for v in sorted(all_forms))
+        clauses.append(
+            f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
+        )
+
+    # Date range
+    if date_from:
+        try:
+            datetime.strptime(date_from, "%Y-%m-%d")
+            clauses.append(f"closeDate >= DATE '{date_from}'")
+        except Exception:
+            pass
+    if date_to:
+        try:
+            datetime.strptime(date_to, "%Y-%m-%d")
+            clauses.append(f"closeDate <= DATE '{date_to}'")
+        except Exception:
+            pass
+
+    where = " AND ".join(clauses)
+
+    # ---- Fetch all matching records (paginated) ----
+    fields = "closeDate,ValPdOrTrn"
+    features = fetch_all_features(where, fields=fields)
+
+    # ---- Parse and group ----
+    buckets = {}  # key -> list of prices
+    for f in features:
+        attr = f.get("attributes", {})
+        price = attr.get("ValPdOrTrn")
+        close_ts = attr.get("closeDate")
+        if not price or price <= 0 or not close_ts:
+            continue
+        # closeDate is epoch-ms in ArcGIS
+        try:
+            dt = datetime.utcfromtimestamp(close_ts / 1000)
+        except Exception:
+            continue
+        if grouping == "month":
+            key = dt.strftime("%Y-%m")
+        elif grouping == "quarter":
+            q = (dt.month - 1) // 3 + 1
+            key = f"{dt.year}-Q{q}"
+        else:
+            key = str(dt.year)
+        buckets.setdefault(key, []).append(price)
+
+    # ---- Sort and compute stats ----
+    sorted_keys = sorted(buckets.keys())
+    periods  = sorted_keys
+    counts   = [len(buckets[k]) for k in sorted_keys]
+    medians  = [round(statistics.median(buckets[k]), 2) for k in sorted_keys]
+    averages = [round(sum(buckets[k]) / len(buckets[k]), 2) for k in sorted_keys]
+
+    return jsonify({
+        "periods":  periods,
+        "counts":   counts,
+        "medians":  medians,
+        "averages": averages,
+    })
 
 
 if __name__ == "__main__":

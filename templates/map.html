@@ -225,6 +225,58 @@
             background: #1a7a1a; color: white;
         }
         .dual-popup .popup-tab:hover:not(.active) { background: #e0e0e0; }
+
+        /* ---- CHARTS PANEL ---- */
+        #chartsPanel {
+            position: fixed;
+            top: 0; right: 0;
+            width: 380px; height: 100vh;
+            background: #fafafa;
+            border-left: 1px solid #ccc;
+            z-index: 2000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+            overflow-y: auto;
+        }
+        #chartsPanel.open { transform: translateX(0); }
+        #chartsPanel .cp-header {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #1a3a5c; color: #fff; padding: 8px 12px;
+            font-weight: bold; font-size: 14px;
+        }
+        #chartsPanel .cp-header button {
+            background: none; border: none; color: #fff; font-size: 18px;
+            cursor: pointer; line-height: 1;
+        }
+        #chartsPanel .cp-body { padding: 10px 12px; flex: 1; }
+        #chartsPanel .cp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+        #chartsPanel .cp-row label { min-width: 55px; font-size: 11px; color: #555; }
+        #chartsPanel .cp-row select,
+        #chartsPanel .cp-row input[type=date] {
+            flex: 1; padding: 3px 4px; border: 1px solid #ccc; border-radius: 2px; font-size: 12px;
+        }
+        .cp-toggle-row { display: flex; gap: 0; margin: 8px 0; }
+        .cp-toggle-row button {
+            flex: 1; padding: 5px 0; font-size: 11px; font-weight: bold;
+            border: 1px solid #1a3a5c; background: #e8edf2; color: #1a3a5c;
+            cursor: pointer;
+        }
+        .cp-toggle-row button:first-child { border-radius: 3px 0 0 3px; }
+        .cp-toggle-row button:last-child  { border-radius: 0 3px 3px 0; }
+        .cp-toggle-row button.active { background: #1a3a5c; color: #fff; }
+        .cp-bldg-checks { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-bottom: 6px; }
+        .cp-bldg-checks label { font-size: 11px; white-space: nowrap; }
+        #chartsApplyBtn {
+            width: 100%; padding: 5px; background: #1F4E79; color: white;
+            border: none; border-radius: 3px; font-size: 12px; font-weight: bold;
+            cursor: pointer; margin-bottom: 8px;
+        }
+        #chartsApplyBtn:hover { background: #163a5a; }
+        .cp-chart-wrap { margin-bottom: 12px; }
+        .cp-chart-wrap h4 { margin: 0 0 4px 0; font-size: 12px; color: #333; }
     </style>
 </head>
 <body>
@@ -577,6 +629,13 @@
       </button>
     </div>
 
+    <!-- ===== CHARTS BUTTON ===== -->
+    <button onclick="toggleChartsPanel()"
+      style="width:100%; padding:6px; margin-top:6px; background:#6a1b9a; color:white;
+             border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer;">
+      &#128202; Charts
+    </button>
+
     <!-- ===== SUBJECT PROPERTY PIN ===== -->
     <div style="border-top:1px solid #ddd; padding-top:6px; margin-top:4px;">
       <div class="section-title" style="margin-bottom:4px;">&#128204; Subject Property Pin</div>
@@ -788,9 +847,59 @@
 
 </div><!-- end container -->
 
+<!-- ==================== CHARTS PANEL ==================== -->
+<div id="chartsPanel">
+  <div class="cp-header">
+    <span>&#128202; Charts</span>
+    <button onclick="toggleChartsPanel()">&times;</button>
+  </div>
+  <div class="cp-body">
+    <div class="cp-row">
+      <label>County:</label>
+      <select id="cpCounty" onchange="cpUpdateTowns()">
+        <option value="">All Counties</option>
+      </select>
+    </div>
+    <div class="cp-row">
+      <label>Town:</label>
+      <select id="cpTown">
+        <option value="">All Towns</option>
+      </select>
+    </div>
+    <div style="font-size:11px; font-weight:bold; color:#333; margin-bottom:3px;">Building Type:</div>
+    <div class="cp-bldg-checks" id="cpBldgChecks"></div>
+    <div class="cp-row">
+      <label>From:</label>
+      <input type="date" id="cpDateFrom">
+    </div>
+    <div class="cp-row">
+      <label>To:</label>
+      <input type="date" id="cpDateTo">
+    </div>
+    <button id="chartsApplyBtn" onclick="cpFetchCharts()">Apply</button>
+
+    <div class="cp-toggle-row">
+      <button onclick="cpSetGrouping('month', this)" class="">Monthly</button>
+      <button onclick="cpSetGrouping('quarter', this)" class="">Quarterly</button>
+      <button onclick="cpSetGrouping('year', this)" class="active">Yearly</button>
+    </div>
+
+    <div class="cp-chart-wrap">
+      <h4>Sales Volume</h4>
+      <canvas id="cpChartVolume" height="180"></canvas>
+    </div>
+    <div class="cp-chart-wrap">
+      <h4>Price Trends &mdash; Median &amp; Average</h4>
+      <canvas id="cpChartPrice" height="200"></canvas>
+    </div>
+    <div id="cpStatus" style="font-size:11px; color:#555; min-height:16px;"></div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://unpkg.com/esri-leaflet@3/dist/esri-leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 
 <script>
 // ===================================================
@@ -5267,6 +5376,180 @@ function submitContactForm() {
   .catch(() => {
     status.style.color = '#c0392b';
     status.textContent = 'Network error. Please try again.';
+  });
+}
+</script>
+
+<script>
+// ===================================================
+// CHARTS PANEL
+// ===================================================
+let _cpGrouping = 'year';
+let _cpVolumeChart = null;
+let _cpPriceChart  = null;
+
+function toggleChartsPanel(){
+  const p = document.getElementById('chartsPanel');
+  const isOpen = p.classList.contains('open');
+  if(isOpen){
+    p.classList.remove('open');
+  } else {
+    p.classList.add('open');
+    cpInitIfNeeded();
+  }
+}
+
+function cpInitIfNeeded(){
+  const sel = document.getElementById('cpCounty');
+  if(sel.options.length > 1) return; // already initialized
+  // Populate county dropdown
+  countyCodesSorted.forEach(code => {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = countyMap[code];
+    sel.appendChild(opt);
+  });
+  // Populate building type checkboxes
+  const bldgContainer = document.getElementById('cpBldgChecks');
+  const bldgTypes = {
+    '2': 'Single Family', '6': 'Multi-Family', '5': 'Condo',
+    '4': 'Mobile Home', '9': 'Commercial', '20': 'Other'
+  };
+  Object.entries(bldgTypes).forEach(([code, label]) => {
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" value="${code}"> ${label}`;
+    bldgContainer.appendChild(lbl);
+  });
+  // Default dates: last 2 years
+  const now = new Date();
+  const twoYearsAgo = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+  document.getElementById('cpDateFrom').value = twoYearsAgo.toISOString().slice(0,10);
+  document.getElementById('cpDateTo').value   = now.toISOString().slice(0,10);
+}
+
+function cpUpdateTowns(){
+  const countyCode = document.getElementById('cpCounty').value;
+  const townSel = document.getElementById('cpTown');
+  townSel.innerHTML = '<option value="">All Towns</option>';
+  if(!countyCode) return;
+  const towns = townsByCounty[countyCode];
+  if(!towns) return;
+  const sorted = [...towns].sort();
+  sorted.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    townSel.appendChild(opt);
+  });
+}
+
+function cpSetGrouping(g, btn){
+  _cpGrouping = g;
+  document.querySelectorAll('.cp-toggle-row button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cpFetchCharts();
+}
+
+function cpFetchCharts(){
+  const county = document.getElementById('cpCounty').value;
+  const town   = document.getElementById('cpTown').value;
+  const dateFrom = document.getElementById('cpDateFrom').value;
+  const dateTo   = document.getElementById('cpDateTo').value;
+  const bldgChecks = document.querySelectorAll('#cpBldgChecks input:checked');
+  const bldgCodes = [...bldgChecks].map(c => c.value).join(',');
+  const status = document.getElementById('cpStatus');
+  status.textContent = 'Loading...';
+
+  const params = new URLSearchParams();
+  if(county)   params.set('county', county);
+  if(town)     params.set('town', town);
+  if(bldgCodes) params.set('building_type', bldgCodes);
+  if(dateFrom) params.set('date_from', dateFrom);
+  if(dateTo)   params.set('date_to', dateTo);
+  params.set('grouping', _cpGrouping);
+
+  fetch('/charts/data?' + params.toString())
+    .then(r => r.json())
+    .then(data => {
+      status.textContent = data.periods.length ? '' : 'No data for this selection.';
+      cpRenderCharts(data);
+    })
+    .catch(err => {
+      status.textContent = 'Error loading chart data.';
+      console.error('Charts fetch error:', err);
+    });
+}
+
+function cpRenderCharts(data){
+  // Volume chart (bar)
+  if(_cpVolumeChart){ _cpVolumeChart.destroy(); _cpVolumeChart = null; }
+  const ctxV = document.getElementById('cpChartVolume').getContext('2d');
+  _cpVolumeChart = new Chart(ctxV, {
+    type: 'bar',
+    data: {
+      labels: data.periods,
+      datasets: [{
+        label: 'Sales Count',
+        data: data.counts,
+        backgroundColor: 'rgba(26,58,92,0.7)',
+        borderColor: '#1a3a5c',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+        y: { beginAtZero: true, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // Price chart (line)
+  if(_cpPriceChart){ _cpPriceChart.destroy(); _cpPriceChart = null; }
+  const ctxP = document.getElementById('cpChartPrice').getContext('2d');
+  _cpPriceChart = new Chart(ctxP, {
+    type: 'line',
+    data: {
+      labels: data.periods,
+      datasets: [
+        {
+          label: 'Median',
+          data: data.medians,
+          borderColor: '#1565c0',
+          backgroundColor: 'rgba(21,101,192,0.1)',
+          tension: 0.2,
+          pointRadius: 3,
+          borderWidth: 2
+        },
+        {
+          label: 'Average',
+          data: data.averages,
+          borderColor: '#e65100',
+          backgroundColor: 'rgba(230,81,0,0.1)',
+          tension: 0.2,
+          pointRadius: 3,
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 } } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+        y: {
+          beginAtZero: false,
+          ticks: {
+            font: { size: 10 },
+            callback: function(v){ return '$' + v.toLocaleString(); }
+          }
+        }
+      }
+    }
   });
 }
 </script>
