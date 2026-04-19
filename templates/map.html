@@ -1095,12 +1095,22 @@ function buildParcelPopupHTML(p) {
 }
 
 // ---- Build Conserved Lands popup HTML from feature attributes ----
+function fmtConservedDate(val) {
+  if (val == null || val === '' || val === 'Null') return null;
+  var n = Number(val);
+  if (!isNaN(n) && n > 0) {
+    var d = new Date(n);
+    return d.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
+  }
+  return val;
+}
+
 function buildConservedPopupHTML(p) {
     const fields = [
       ['Name', p.NAME],
       ['Act 59 Category', p.ACT59CAT],
-      ['Aggregate Date', p.AGGDATE],
-      ['Date Acquired', p.DATEAQRD],
+      ['Aggregate Date', fmtConservedDate(p.AGGDATE)],
+      ['Date Acquired', fmtConservedDate(p.DATEAQRD)],
       ['Designation', p.DESIGNAT],
       ['GAP Status', p.GAPSTATUS],
       ['GIS Acres', p.GISACRES != null ? Number(p.GISACRES).toFixed(2) : null],
