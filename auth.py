@@ -434,7 +434,7 @@ def signup_success():
         customer_id     = checkout.customer
         subscription_id = checkout.subscription
         email           = checkout.customer_details.email
-        plan_key        = checkout.metadata.get("plan_key", "plan_monthly") if checkout.metadata else "plan_monthly"
+        plan_key        = checkout.metadata["plan_key"] if (checkout.metadata and "plan_key" in checkout.metadata) else "plan_monthly"
 
         db_execute(_q("""
             UPDATE users SET
@@ -528,7 +528,7 @@ def subscribe_success():
         customer_id     = checkout.customer
         subscription_id = checkout.subscription
         email           = checkout.customer_details.email
-        plan_key        = checkout.metadata.get("plan_key", "plan_monthly") if checkout.metadata else "plan_monthly"
+        plan_key        = checkout.metadata["plan_key"] if (checkout.metadata and "plan_key" in checkout.metadata) else "plan_monthly"
 
         db_execute(_q("""
             UPDATE users SET
