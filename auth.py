@@ -967,7 +967,9 @@ def users_list():
     if session.get("user_email") != ADMIN_EMAIL:
         return jsonify({"error": "unauthorized"}), 403
     users = db_fetchall(
-        "SELECT id, email, subscription_status, plan_key, created_at"
+        "SELECT id, email, first_name, last_name, phone,"
+        " subscription_status, plan_key, stripe_customer_id,"
+        " stripe_subscription_id, created_at, trial_ends_at"
         " FROM users ORDER BY created_at DESC"
     )
     return jsonify(users)
