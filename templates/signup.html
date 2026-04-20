@@ -271,5 +271,16 @@
     });
   });
 </script>
+<script>
+// Phone number auto-formatter
+document.getElementById('phone').addEventListener('input', function(e){
+  var val = e.target.value.replace(/\D/g, '').substring(0, 10);
+  var fmt = '';
+  if(val.length > 0) fmt = '(' + val.substring(0,3);
+  if(val.length >= 4) fmt += ') ' + val.substring(3,6);
+  if(val.length >= 7) fmt += '-' + val.substring(6,10);
+  e.target.value = fmt;
+});
+</script>
 </body>
 </html>
