@@ -96,6 +96,14 @@ def init_db():
             conn.rollback()
         try:
             cur = conn.cursor()
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name TEXT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+        try:
+            cur = conn.cursor()
             cur.execute(plans_sql)
             # Add stripe_price_id column if missing (for tables created before it existed)
             try:
@@ -141,6 +149,12 @@ def init_db():
             conn.execute("ALTER TABLE users ADD COLUMN plan_key TEXT DEFAULT 'plan_monthly'")
         except Exception:
             pass  # column already exists
+        # Add name/phone columns if missing
+        for col in ("first_name TEXT", "last_name TEXT", "phone TEXT"):
+            try:
+                conn.execute(f"ALTER TABLE users ADD COLUMN {col}")
+            except Exception:
+                pass  # column already exists
         conn.execute("""
             CREATE TABLE IF NOT EXISTS subscription_plans (
                 key             TEXT PRIMARY KEY,
@@ -331,13 +345,19 @@ def signup():
     On success, webhook (or /subscribe/success) sets status to 'trialing'.
     """
     if request.method == "POST":
-        email    = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "")
-        confirm  = request.form.get("confirm", "")
-        plan_key = request.form.get("plan_key", "plan_monthly")
+        email      = request.form.get("email", "").strip().lower()
+        password   = request.form.get("password", "")
+        confirm    = request.form.get("confirm", "")
+        plan_key   = request.form.get("plan_key", "plan_monthly")
+        first_name = request.form.get("first_name", "").strip()
+        last_name  = request.form.get("last_name", "").strip()
+        phone      = request.form.get("phone", "").strip() or None
 
         plans = get_active_plans()
 
+        if not first_name or not last_name:
+            flash("First name and last name are required.", "error")
+            return render_template("signup.html", plans=plans)
         if not email or "@" not in email:
             flash("Please enter a valid email address.", "error")
             return render_template("signup.html", plans=plans)
@@ -372,12 +392,12 @@ def signup():
         try:
             db_execute(_q("""
                 INSERT INTO users
-                (email, password_hash, created_at, trial_ends_at, subscription_status, plan_key)
-                VALUES (?, ?, ?, ?, 'pending_payment', ?)
+                (email, password_hash, created_at, trial_ends_at, subscription_status, plan_key, first_name, last_name, phone)
+                VALUES (?, ?, ?, ?, 'pending_payment', ?, ?, ?, ?)
             """), (email, hash_password(password),
                    datetime.now(timezone.utc).isoformat(),
                    trial_end.isoformat(),
-                   plan_key))
+                   plan_key, first_name, last_name, phone))
         except Exception as e:
             flash(f"Error creating account: {str(e)}", "error")
             return render_template("signup.html", plans=plans)
@@ -734,13 +754,57 @@ def cancel_subscription():
     user = db_fetchone(_q("SELECT * FROM users WHERE id = ?"), (session["user_id"],))
     if user and user["stripe_subscription_id"]:
         try:
-            stripe.Subscription.modify(
-                user["stripe_subscription_id"], cancel_at_period_end=True
-            )
-            flash("Your subscription will cancel at the end of the billing period.", "info")
+            # Trial users: cancel immediately (no charge); active users: cancel at period end
+            if user["subscription_status"] == "trialing":
+                stripe.Subscription.cancel(user["stripe_subscription_id"])
+                db_execute(_q(
+                    "UPDATE users SET subscription_status = 'cancelled' WHERE id = ?"
+                ), (user["id"],))
+                # Send cancellation email via Resend
+                _send_cancellation_email(user["email"])
+                session.clear()
+                return redirect(url_for("auth.cancelled"))
+            else:
+                stripe.Subscription.modify(
+                    user["stripe_subscription_id"], cancel_at_period_end=True
+                )
+                flash("Your subscription will cancel at the end of the billing period.", "info")
         except Exception as e:
             flash(f"Error cancelling: {str(e)}", "error")
     return redirect(url_for("auth.account"))
+
+@auth_bp.route("/cancelled")
+def cancelled():
+    return render_template("cancelled.html")
+
+def _send_cancellation_email(email):
+    """Send trial cancellation confirmation email via Resend."""
+    import requests as http_requests
+    resend_key = os.environ.get("RESEND_API_KEY", "")
+    from_email = os.environ.get("CONTACT_FROM_EMAIL", "info@vtpropertysales.com")
+    if not resend_key:
+        return
+    try:
+        http_requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": from_email,
+                "to": [email],
+                "subject": "Your VT Property Sales Trial Has Been Cancelled",
+                "text": (
+                    "Thank you for trying VTPropertySales.com. Your payment will not be charged.\n"
+                    "To reach us please send an email to info@VTPropertySales.com\n\n"
+                    "If this was a mistake, you can sign up again at vtpropertysales.com"
+                ),
+            },
+            timeout=10,
+        )
+    except Exception:
+        pass  # best-effort — don't block the cancellation flow
 
 # ── Change plan ──────────────────────────────────────────────────────────────
 @auth_bp.route("/change-plan", methods=["POST"])
