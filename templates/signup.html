@@ -108,6 +108,63 @@
   .alert-error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
   .alert-info    { background: #e8f0fe; color: #1a3a5c; border: 1px solid #b3c6f5; }
   .alert-success { background: #e8f8f0; color: #1e7e4a; border: 1px solid #b7dfc9; }
+
+  /* Plan selector */
+  .plans {
+    margin: 0 0 20px 0;
+    text-align: left;
+  }
+  .plan-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 2px solid #e0e4ea;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .plan-option:hover {
+    border-color: #1a3a5c;
+    background: #f7f9fc;
+  }
+  .plan-option.selected {
+    border-color: #1a3a5c;
+    background: #f0f4f8;
+  }
+  .plan-option input[type="radio"] {
+    accent-color: #1a3a5c;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  .plan-details {
+    flex: 1;
+  }
+  .plan-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a3a5c;
+  }
+  .plan-price {
+    font-size: 14px;
+    color: #333;
+    margin-top: 2px;
+  }
+  .plan-desc {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+  .plan-note {
+    text-align: center;
+    font-size: 12px;
+    color: #2d6a4f;
+    font-weight: 600;
+    margin-top: 4px;
+    margin-bottom: 0;
+  }
 </style>
 </head>
 <body>
@@ -139,7 +196,24 @@
     </div>
   </div>
 
-  <form method="POST" action="/signup">
+  <form method="POST" action="/signup" id="signup-form">
+    <div class="plans">
+      <p style="font-size:14px;color:#1a3a5c;font-weight:700;margin-bottom:12px;">Choose Your Plan:</p>
+      {% for plan in plans %}
+      <label class="plan-option{% if plan.key == 'plan_monthly' %} selected{% endif %}">
+        <input type="radio" name="plan_key" value="{{ plan.key }}"{% if plan.key == 'plan_monthly' %} checked{% endif %}>
+        <div class="plan-details">
+          <div class="plan-label">{{ plan.label }}</div>
+          <div class="plan-price">{{ plan.display_price }}/month</div>
+          <div class="plan-desc">
+            {% if plan.interval_count == 1 %}Renews monthly{% else %}Billed every {{ plan.interval_count }} months{% endif %}
+          </div>
+        </div>
+      </label>
+      {% endfor %}
+      <p class="plan-note">All plans include a 14-day free trial</p>
+    </div>
+
     <label for="email">Email Address <span style="color:#c0392b;">*</span></label>
     <input type="email" id="email" name="email" required
            placeholder="you@example.com" autocomplete="email">
@@ -170,5 +244,17 @@
     <a href="/contact" style="color:#999; text-decoration:none;">Contact</a>
   </div>
 </div>
+
+<script>
+  // Highlight selected plan
+  document.querySelectorAll('.plan-option input[type="radio"]').forEach(function(radio) {
+    radio.addEventListener('change', function() {
+      document.querySelectorAll('.plan-option').forEach(function(el) {
+        el.classList.remove('selected');
+      });
+      this.closest('.plan-option').classList.add('selected');
+    });
+  });
+</script>
 </body>
 </html>

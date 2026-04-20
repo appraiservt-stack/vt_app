@@ -334,53 +334,59 @@ def signup():
         email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         confirm  = request.form.get("confirm", "")
+        plan_key = request.form.get("plan_key", "plan_monthly")
+
+        plans = get_active_plans()
 
         if not email or "@" not in email:
             flash("Please enter a valid email address.", "error")
-            return render_template("signup.html")
+            return render_template("signup.html", plans=plans)
         if len(password) < 8:
             flash("Password must be at least 8 characters.", "error")
-            return render_template("signup.html")
+            return render_template("signup.html", plans=plans)
         if password != confirm:
             flash("Passwords do not match.", "error")
-            return render_template("signup.html")
+            return render_template("signup.html", plans=plans)
 
         # Check for existing account
         existing = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if existing:
             flash("An account with that email already exists. Please log in.", "error")
-            return render_template("signup.html")
+            return render_template("signup.html", plans=plans)
+
+        # Look up the selected plan
+        signup_plan = get_plan(plan_key)
+        if not signup_plan:
+            signup_plan = get_plan("plan_monthly")
+            plan_key = "plan_monthly"
+        signup_price_id = signup_plan["stripe_price_id"] if signup_plan else ""
+        if not signup_price_id:
+            # Fall back to env var for backwards compatibility during migration
+            signup_price_id = STRIPE_PRICE_ID
+        if not signup_price_id:
+            flash("This plan is not yet configured. Please try another plan or contact support.", "error")
+            return render_template("signup.html", plans=plans)
 
         # Create account with pending_payment status
         trial_end = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)
         try:
             db_execute(_q("""
                 INSERT INTO users
-                (email, password_hash, created_at, trial_ends_at, subscription_status)
-                VALUES (?, ?, ?, ?, 'pending_payment')
+                (email, password_hash, created_at, trial_ends_at, subscription_status, plan_key)
+                VALUES (?, ?, ?, ?, 'pending_payment', ?)
             """), (email, hash_password(password),
                    datetime.now(timezone.utc).isoformat(),
-                   trial_end.isoformat()))
+                   trial_end.isoformat(),
+                   plan_key))
         except Exception as e:
             flash(f"Error creating account: {str(e)}", "error")
-            return render_template("signup.html")
+            return render_template("signup.html", plans=plans)
 
         # Store email in session for the checkout flow
         session["pending_email"] = email
 
         # Create Stripe customer and checkout session with 14-day trial
         try:
-            # Signup always uses the default monthly plan
-            signup_plan = get_plan("plan_monthly")
-            signup_price_id = signup_plan["stripe_price_id"] if signup_plan else ""
-            if not signup_price_id:
-                # Fall back to env var for backwards compatibility during migration
-                signup_price_id = STRIPE_PRICE_ID
-            if not signup_price_id:
-                flash("Subscription plans are not yet configured. Please contact support.", "error")
-                db_execute(_q("DELETE FROM users WHERE email = ?"), (email,))
-                return render_template("signup.html")
-
             customer = stripe.Customer.create(email=email)
             db_execute(_q(
                 "UPDATE users SET stripe_customer_id = ? WHERE email = ?"
@@ -393,8 +399,8 @@ def signup():
                 payment_method_types=["card"],
                 line_items=[{"price": signup_price_id, "quantity": 1}],
                 mode="subscription",
-                subscription_data={"trial_period_days": TRIAL_DAYS, "metadata": {"plan_key": "plan_monthly"}},
-                metadata={"plan_key": "plan_monthly"},
+                subscription_data={"trial_period_days": TRIAL_DAYS, "metadata": {"plan_key": plan_key}},
+                metadata={"plan_key": plan_key},
                 success_url=request.host_url + "signup/success?session_id={CHECKOUT_SESSION_ID}",
                 cancel_url=request.host_url + "signup?cancelled=1",
             )
@@ -403,7 +409,7 @@ def signup():
             # If Stripe fails, delete the pending account and show error
             db_execute(_q("DELETE FROM users WHERE email = ?"), (email,))
             flash(f"Payment setup error: {str(e)}", "error")
-            return render_template("signup.html")
+            return render_template("signup.html", plans=plans)
 
     cancelled = request.args.get("cancelled")
     if cancelled:
@@ -415,7 +421,8 @@ def signup():
             ), (pending,))
         flash("Signup cancelled. No account was created and your card was not charged.", "info")
 
-    return render_template("signup.html")
+    plans = get_active_plans()
+    return render_template("signup.html", plans=plans)
 
 
 @auth_bp.route("/signup/success")
