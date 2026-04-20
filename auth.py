@@ -434,7 +434,7 @@ def signup_success():
         customer_id     = checkout.customer
         subscription_id = checkout.subscription
         email           = checkout.customer_details.email
-        plan_key        = (checkout.metadata or {}).get("plan_key", "plan_monthly")
+        plan_key        = dict(checkout.metadata or {}).get("plan_key", "plan_monthly")
 
         db_execute(_q("""
             UPDATE users SET
@@ -525,7 +525,7 @@ def subscribe_success():
         customer_id     = checkout.customer
         subscription_id = checkout.subscription
         email           = checkout.customer_details.email
-        plan_key        = (checkout.metadata or {}).get("plan_key", "plan_monthly")
+        plan_key        = dict(checkout.metadata or {}).get("plan_key", "plan_monthly")
 
         db_execute(_q("""
             UPDATE users SET
