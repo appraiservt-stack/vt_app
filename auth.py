@@ -458,7 +458,10 @@ def signup_success():
         flash("Account created! Welcome to VT Property Sales.", "success")
         return redirect(url_for("auth.login"))
     except Exception as e:
-        flash(f"Could not confirm signup: {str(e)}", "error")
+        import traceback, logging
+        logging.error(f"signup_success error: {type(e).__name__}: {repr(e)}")
+        logging.error(traceback.format_exc())
+        flash(f"Could not confirm signup: {type(e).__name__}: {str(e)}", "error")
         return redirect(url_for("auth.signup"))
 
 # ── Logout ────────────────────────────────────────────────────────────────────
