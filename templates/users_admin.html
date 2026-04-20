@@ -9,11 +9,12 @@
   .topbar { background: #1a3a5c; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
   .topbar a { color: #fff; text-decoration: none; font-size: 14px; }
   .topbar .nav-links { display: flex; gap: 18px; }
-  .container { max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+  .container { max-width: 1400px; margin: 30px auto; padding: 0 16px; }
   h2 { font-size: 20px; color: #1a3a5c; margin-bottom: 20px; }
-  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
-  th { background: #1a3a5c; color: #fff; padding: 12px 14px; text-align: left; font-size: 13px; }
-  td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #eee; color: #333; }
+  .table-wrap { overflow-x: auto; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  table { width: 100%; border-collapse: collapse; background: #fff; min-width: 1100px; }
+  th { background: #1a3a5c; color: #fff; padding: 12px 14px; text-align: left; font-size: 13px; white-space: nowrap; }
+  td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #eee; color: #333; white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #f7f9fc; }
   .btn-sm { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; color: #fff; }
@@ -51,18 +52,26 @@
 
   <input type="text" class="search-box" id="searchBox" placeholder="Search by email…" oninput="filterRows()">
 
-  <table>
-    <thead>
-      <tr>
-        <th>Email</th>
-        <th>Status</th>
-        <th>Plan</th>
-        <th>Joined</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Phone</th>
+          <th>Status</th>
+          <th>Plan</th>
+          <th>Joined</th>
+          <th>Trial End</th>
+          <th>Stripe Customer ID</th>
+          <th>Stripe Subscription ID</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
 </div>
 <script>
 var allUsers = [];
@@ -96,9 +105,15 @@ function renderRows(users) {
     var tr = document.createElement('tr');
     tr.innerHTML =
       '<td>' + esc(u.email) + '</td>' +
+      '<td>' + esc(u.first_name || '') + '</td>' +
+      '<td>' + esc(u.last_name || '') + '</td>' +
+      '<td>' + esc(u.phone || '') + '</td>' +
       '<td><span class="badge ' + badgeClass(u.subscription_status) + '">' + esc(u.subscription_status || '') + '</span></td>' +
       '<td>' + esc(u.plan_key || '') + '</td>' +
       '<td>' + (u.created_at || '').slice(0, 10) + '</td>' +
+      '<td>' + (u.trial_ends_at || '').slice(0, 10) + '</td>' +
+      '<td>' + esc(u.stripe_customer_id || '') + '</td>' +
+      '<td>' + esc(u.stripe_subscription_id || '') + '</td>' +
       '<td><button class="btn-sm btn-red" onclick="deleteUser(\'' + esc(u.email).replace(/'/g, "\\'") + '\')">Delete</button></td>';
     tbody.appendChild(tr);
   });
