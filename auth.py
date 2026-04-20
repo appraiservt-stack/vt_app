@@ -881,3 +881,33 @@ def plans_save():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
+@auth_bp.route("/admin/users")
+def users_admin():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return redirect(url_for("auth.login"))
+    return render_template("users_admin.html")
+
+@auth_bp.route("/admin/users/list")
+def users_list():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return jsonify({"error": "unauthorized"}), 403
+    users = db_fetchall(
+        "SELECT id, email, subscription_status, plan_key, created_at"
+        " FROM users ORDER BY created_at DESC"
+    )
+    return jsonify(users)
+
+@auth_bp.route("/admin/users/delete", methods=["POST"])
+def users_delete():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return jsonify({"error": "unauthorized"}), 403
+    try:
+        data = request.get_json(force=True)
+        email = (data.get("email") or "").strip()
+        if not email:
+            return jsonify({"error": "email is required"}), 400
+        db_execute(_q("DELETE FROM users WHERE email = ?"), (email,))
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500

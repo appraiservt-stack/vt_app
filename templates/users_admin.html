@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin — User Management</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; }
+  .topbar { background: #1a3a5c; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar a { color: #fff; text-decoration: none; font-size: 14px; }
+  .topbar .nav-links { display: flex; gap: 18px; }
+  .container { max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+  h2 { font-size: 20px; color: #1a3a5c; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  th { background: #1a3a5c; color: #fff; padding: 12px 14px; text-align: left; font-size: 13px; }
+  td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid #eee; color: #333; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f9fc; }
+  .btn-sm { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; color: #fff; }
+  .btn-red { background: #c0392b; }
+  .btn-red:hover { background: #a93226; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .badge-active   { background: #e8f8f0; color: #2d6a4f; }
+  .badge-trial    { background: #e8f0fe; color: #1a3a5c; }
+  .badge-cancelled{ background: #fde8e8; color: #c0392b; }
+  .badge-past_due { background: #fff8e1; color: #856404; }
+  .alert { padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .alert-success { background: #e8f8f0; color: #1e7e4a; border: 1px solid #b7dfc9; }
+  .alert-error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
+  .search-box { padding: 8px 12px; border: 1.5px solid #ccc; border-radius: 6px; font-size: 13px; width: 300px; margin-bottom: 16px; }
+  .search-box:focus { outline: none; border-color: #1a3a5c; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <strong>VT Property Sales — User Management</strong>
+  <div class="nav-links">
+    <a href="/" style="margin-right:12px;">← Back to Map</a>
+    <a href="/admin/assessors">Assessors</a>
+    <a href="/admin/plans">Plans</a>
+    <a href="/admin/content">Content</a>
+    <a href="/admin/geocoding">Geocoding</a>
+    <a href="/admin/users" style="font-weight:700;">Users</a>
+    <a href="/logout">Sign Out</a>
+  </div>
+</div>
+<div class="container">
+  <h2>User Management</h2>
+
+  <div id="alert" class="alert"></div>
+
+  <input type="text" class="search-box" id="searchBox" placeholder="Search by email…" oninput="filterRows()">
+
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Plan</th>
+        <th>Joined</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<script>
+var allUsers = [];
+
+function showAlert(msg, type) {
+  var el = document.getElementById('alert');
+  el.textContent = msg;
+  el.className = 'alert alert-' + type;
+  el.style.display = 'block';
+  setTimeout(function() { el.style.display = 'none'; }, 3000);
+}
+
+function esc(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function badgeClass(status) {
+  if (status === 'active') return 'badge-active';
+  if (status === 'trial') return 'badge-trial';
+  if (status === 'cancelled') return 'badge-cancelled';
+  if (status === 'past_due') return 'badge-past_due';
+  return '';
+}
+
+function renderRows(users) {
+  var tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  users.forEach(function(u) {
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + esc(u.email) + '</td>' +
+      '<td><span class="badge ' + badgeClass(u.subscription_status) + '">' + esc(u.subscription_status || '') + '</span></td>' +
+      '<td>' + esc(u.plan_key || '') + '</td>' +
+      '<td>' + (u.created_at || '').slice(0, 10) + '</td>' +
+      '<td><button class="btn-sm btn-red" onclick="deleteUser(\'' + esc(u.email).replace(/'/g, "\\'") + '\')">Delete</button></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function loadUsers() {
+  fetch('/admin/users/list')
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      allUsers = rows;
+      filterRows();
+    });
+}
+
+function filterRows() {
+  var q = document.getElementById('searchBox').value.toLowerCase();
+  if (!q) { renderRows(allUsers); return; }
+  renderRows(allUsers.filter(function(u) {
+    return u.email.toLowerCase().indexOf(q) !== -1;
+  }));
+}
+
+function deleteUser(email) {
+  if (!confirm('Are you sure you want to delete ' + email + '?')) return;
+  fetch('/admin/users/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.error) { showAlert(d.error, 'error'); return; }
+    showAlert('Deleted ' + email, 'success');
+    loadUsers();
+  })
+  .catch(function() { showAlert('Network error', 'error'); });
+}
+
+loadUsers();
+</script>
+</body>
+</html>
