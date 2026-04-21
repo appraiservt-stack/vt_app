@@ -211,20 +211,6 @@
             pointer-events: auto;
             cursor: default;
         }
-        /* Tabbed popup styles */
-        .dual-popup .popup-tabs {
-            display: flex; border-bottom: 2px solid #ddd; margin-bottom: 6px;
-            width: 100%; overflow: hidden; box-sizing: border-box;
-        }
-        .dual-popup .popup-tab {
-            flex: 1; padding: 4px 6px; border: none; background: #f0f0f0;
-            cursor: pointer; font-size: 11px; font-weight: bold; color: #555;
-            border-radius: 4px 4px 0 0;
-        }
-        .dual-popup .popup-tab.active {
-            background: #1a7a1a; color: white;
-        }
-        .dual-popup .popup-tab:hover:not(.active) { background: #e0e0e0; }
     </style>
 </head>
 <body>
@@ -239,7 +225,7 @@
                 margin-bottom:4px; font-size:11px;">
       <span>{{ user_email }}</span>
       <span style="display:flex; gap:10px;">
-        <a href="/account" target="_blank" rel="noopener noreferrer" style="color:#90caf9; text-decoration:none;">Account</a>
+        <a href="/account" style="color:#90caf9; text-decoration:none;">Account</a>
         <a href="#" onclick="openContactForm(); return false;" style="color:#ffd700; text-decoration:none; font-weight:700;">Contact Us</a>
         <a href="/logout" style="color:#90caf9; text-decoration:none;">Sign Out</a>
       </span>
@@ -252,19 +238,45 @@
       <span style="color:#856404; font-weight:700;">
         &#9200; Free trial: <strong>{{ trial_days }} day{{ 's' if trial_days != 1 else '' }} remaining</strong>
       </span>
-      <a href="/account" target="_blank" rel="noopener noreferrer" style="background:#1a3a5c; color:#fff; padding:3px 10px;
+      <a href="/account" style="background:#1a3a5c; color:#fff; padding:3px 10px;
                                border-radius:4px; text-decoration:none; font-size:11px;
                                font-weight:700; white-space:nowrap;">Subscribe Now</a>
     </div>
     {% endif %}
     <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
       <h3 style="margin:0;">VT Property Transfer Tool</h3>
-      <a href="/static/docs/Search-Instructions.pdf" target="_blank"
+      <button id="searchTipsBtn" onclick="toggleSearchTips(event)"
         style="padding:3px 8px; font-size:11px; font-weight:bold; background:#add8e6; color:#1a3a5c;
-               border:1px solid #7ab8d4; border-radius:3px; cursor:pointer; white-space:nowrap;
-               text-decoration:none; display:inline-block;">
+               border:1px solid #7ab8d4; border-radius:3px; cursor:pointer; white-space:nowrap;">
         Search Tips
-      </a>
+      </button>
+    </div>
+    <!-- Search Tips popup -->
+    <div id="searchTipsPopup" style="display:none; position:absolute; left:330px; top:8px;
+         width:340px; background:white; border:1px solid #aaa; border-radius:5px;
+         box-shadow:2px 4px 12px rgba(0,0,0,0.25); padding:10px 12px; z-index:9999;
+         font-size:11px; line-height:1.6; max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <b style="font-size:12px;">Search Tips</b>
+        <span onclick="document.getElementById('searchTipsPopup').style.display='none'"
+          style="cursor:pointer; font-size:14px; color:#666;">&times;</span>
+      </div>
+      <ol style="margin:0; padding-left:16px;">
+        <li>The sales database starts on January 1, 2019 through present date. On startup transfers are loaded into the map window.</li>
+        <li>The map displays up to 2,000 records. As the map is zoomed in more records populate in the window area.</li>
+        <li>If the user hovers over a property a popup window will show the sale history.</li>
+        <li>The user can select whichever search criteria they desire by selecting or unselecting checkboxes.</li>
+        <li>The default setting includes $0 sales, such as family transfers, corrective deeds, etc. Setting $1 in the Sale Price eliminates them.</li>
+        <li>The user can download all filtered sales or sales selected from the map selections using the two download buttons.</li>
+        <li>Clicking on a search heading opens the search box. Clicking it again closes the search box.</li>
+        <li>Filtering by County(s) and/or Town(s) is recommended to be enabled before other refinement filters are set.</li>
+        <li>Immediately above the Location heading the display shows X sales at X properties. The second number is how many sales are in the current window. If the first number is more than the second number this indicates some of the properties have more than one transaction during the date range. This will identify sale/resale properties.</li>
+        <li>The default startup for the map loads all sales and checks all possible property selection options.</li>
+        <li>As selection options are enabled or disabled the Apply Filters button can be clicked at any time to update the search criteria.</li>
+        <li style="background:#fffde7; border-left:3px solid #f9a825; margin-top:6px; padding:4px 6px; list-style-position:inside;">
+          <b>NEIGHBORHOOD COMPARISON:</b> The polygon, circle, or box can be used to highlight different neighborhoods on the same map at the same time. The map will calculate the High, Low, Average, Median, and count of sales in each selection. $0 are not included in the calculations. Filtering applies to the entire map, not individual polygons, boxes, or circles. If you select Single Family Homes, for example, all highlighted areas will contain only Single Family Homes.
+        </li>
+      </ol>
     </div>
 
     <!-- STATUS -->
@@ -333,13 +345,6 @@
       <div class="filter-row">
         <label>High:</label>
         <input type="number" id="landHigh" placeholder="No maximum" min="0" step="0.01">
-      </div>
-      <div class="filter-row" style="margin-top:4px;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
-          <input type="checkbox" id="noLandCheck"
-                 onchange="if(this.checked){ document.getElementById('landLow').value=''; document.getElementById('landHigh').value=''; }">
-          No land (sale did not involve land)
-        </label>
       </div>
     </div>
 
@@ -444,7 +449,6 @@
       &#9660; Names &amp; SPAN
     </div>
     <div id="namesDropdown" class="dropdown-content">
-      <button type="button" onclick="clearAllForNameSearch()" style="width:100%; padding:6px; background:#e6a817; color:#333; border:none; border-radius:3px; font-size:12px; font-weight:bold; cursor:pointer; margin-bottom:8px;">&#9888; Clear All Filters Before Searching</button>
       <div class="filter-label">Seller</div>
       <div class="filter-row">
         <label>Entity:</label>
@@ -480,7 +484,6 @@
         <label>SPAN:</label>
         <input type="text" id="spanInput" placeholder="e.g. 441-139-10408">
       </div>
-      <button type="button" onclick="applyFilters()" style="width:100%; padding:6px; background:#1F4E79; color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; margin-top:6px;">Apply Name/SPAN Search</button>
     </div>
 
     <!-- ===== OTHER FLAGS ===== -->
@@ -489,20 +492,12 @@
     </div>
     <div id="flagsDropdown" class="dropdown-content">
       <div class="filter-row" style="gap:8px;">
-        <label style="min-width:auto; font-size:12px;">Enrolled in Current Use Prior to Sale:</label>
+        <label style="min-width:auto; font-size:12px;">Enrolled in Current Use:</label>
       </div>
       <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
         <label><input type="radio" name="enrolledCurrentUse" value="" checked> Any</label>
         <label><input type="radio" name="enrolledCurrentUse" value="true"> Yes</label>
         <label><input type="radio" name="enrolledCurrentUse" value="false"> No</label>
-      </div>
-      <div class="filter-row" style="gap:8px;">
-        <label style="min-width:auto; font-size:12px;">Current Use Continues After Sale:</label>
-      </div>
-      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
-        <label><input type="radio" name="currentUseContinues" value="" checked> Any</label>
-        <label><input type="radio" name="currentUseContinues" value="true"> Yes</label>
-        <label><input type="radio" name="currentUseContinues" value="false"> No</label>
       </div>
       <div class="filter-row" style="gap:8px;">
         <label style="min-width:auto; font-size:12px;">Development Rights Previously Conveyed:</label>
@@ -521,33 +516,13 @@
         <label><input type="radio" name="buyerAdjoining" value="false"> No</label>
       </div>
       <div class="filter-row" style="gap:8px;">
-        <label style="min-width:auto; font-size:12px;">Rented Before Sale:</label>
-      </div>
-      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
-        <label><input type="radio" name="rentedBefore" value="" checked> Any</label>
-        <label><input type="radio" name="rentedBefore" value="true"> Yes</label>
-        <label><input type="radio" name="rentedBefore" value="false"> No</label>
-      </div>
-      <div class="filter-row" style="gap:8px;">
-        <label style="min-width:auto; font-size:12px;">Rented After Sale:</label>
+        <label style="min-width:auto; font-size:12px;">Foreclosed Property:</label>
       </div>
       <div style="display:flex; gap:10px; margin-left:4px;">
-        <label><input type="radio" name="rentedAfter" value="" checked> Any</label>
-        <label><input type="radio" name="rentedAfter" value="true"> Yes</label>
-        <label><input type="radio" name="rentedAfter" value="false"> No</label>
+        <label><input type="radio" name="foreclosed" value="" checked> Any</label>
+        <label><input type="radio" name="foreclosed" value="true"> Yes</label>
+        <label><input type="radio" name="foreclosed" value="false"> No</label>
       </div>
-    </div>
-
-    <!-- ===== ASSESSOR RECORDS ===== -->
-    <div class="dropdown-box" onclick="toggleDropdown('assessorDropdown')">
-      &#9660; Assessor Records
-    </div>
-    <div id="assessorDropdown" class="dropdown-content">
-      <div class="filter-row">
-        <label style="min-width:auto; font-size:12px;">Town:</label>
-        <input type="text" id="assessorSearch" placeholder="type town name..." style="flex:1;" oninput="searchAssessor()">
-      </div>
-      <div id="assessorResults" style="max-height:160px; overflow-y:auto; font-size:12px;"></div>
     </div>
 
     <!-- ===== APPLY BUTTON ===== -->
@@ -714,29 +689,8 @@
         </div>
       </div>
 
-      <!-- Conserved Lands zoom notice (hidden until layer enabled + zoomed out) -->
-      <div id="conserved-zoom-msg" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e8f5e9; border:1px solid #81c784; border-radius:3px; font-size:11px; color:#2e7d32;">
-        Zoom in to see conserved lands (zoom 11+)
-      </div>
-
-      <!-- Wetlands legend (hidden until layer is enabled) -->
-      <div id="wetlands-legend" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e8f6f8; border:1px solid #80cbc4; border-radius:3px;">
-        <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">VT Significant Wetlands</div>
-        <div style="font-size:10px; line-height:1.8;">
-          <span style="display:inline-block; width:16px; height:16px; background:#D6904F; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Class I Wetland<br>
-          <span style="display:inline-block; width:16px; height:16px; background:#F9F774; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Class II Wetland<br>
-          <span style="display:inline-block; width:16px; height:16px; background:#B5F774; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Advisory Wetland<br>
-          <span style="display:inline-block; width:16px; height:16px; background:#F5E6C8; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Wetland Buffer
-        </div>
-      </div>
-
-      <!-- Wetlands zoom notice (hidden until layer enabled + zoomed out) -->
-      <div id="wetlands-zoom-msg" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e0f2f1; border:1px solid #80cbc4; border-radius:3px; font-size:11px; color:#00695c;">
-        Zoom in to see wetlands (zoom 11+)
-      </div>
-
       <!-- County boundaries -->
-      <div style="margin-bottom:6px;">
+      <div>
         <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
         <div style="display:flex; align-items:center; gap:6px;">
           <label style="font-size:11px; min-width:40px;">Color:</label>
@@ -761,40 +715,11 @@
           <input type="checkbox" id="cntyBdyLabels" checked onchange="updateBoundaryStyle('cnty')">
         </div>
       </div>
-
-      <!-- VT Parcels -->
-      <div>
-        <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">VT Parcels</div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <label style="font-size:11px; min-width:40px;">Color:</label>
-          <input type="color" id="parcel-color" value="#FF6600"
-            oninput="updateParcelStyle()"
-            style="width:36px; height:24px; padding:1px; border:1px solid #ccc; cursor:pointer;">
-          <label style="font-size:11px;">Width:</label>
-          <input type="range" id="parcel-width" min="1" max="6" value="1" step="0.5"
-            oninput="updateParcelStyle(); document.getElementById('parcelWidthVal').textContent=this.value"
-            style="flex:1;">
-          <span id="parcelWidthVal" style="font-size:11px; min-width:20px;">1</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
-          <label style="font-size:11px; min-width:40px;">Style:</label>
-          <select id="parcelDash" oninput="updateParcelStyle()"
-            style="font-size:11px; padding:1px 3px; border:1px solid #ccc; border-radius:2px;">
-            <option value="solid">Solid</option>
-            <option value="dashed">Dashed</option>
-            <option value="dotted">Dotted</option>
-          </select>
-        </div>
-      </div>
     </div>
 
-    <!-- ===== FOOTER ===== -->
-    <div style="font-size:11px; color:#aaa; margin-top:8px; border-top:1px solid #ddd; padding-top:6px; line-height:1.6; text-align:center;">
-      Data sourced from Vermont public records. Verify independently before relying on results.
-      <br>
-      <a href="/terms" target="_blank" rel="noopener noreferrer" style="color:#aaa; text-decoration:none;">Terms of Service</a> |
-      <a href="/privacy" target="_blank" rel="noopener noreferrer" style="color:#aaa; text-decoration:none;">Privacy Policy</a> |
-      <a href="/contact" target="_blank" rel="noopener noreferrer" style="color:#aaa; text-decoration:none;">Contact</a>
+    <!-- ===== DISCLAIMER ===== -->
+    <div style="font-size:9px; color:#888; margin-top:8px; border-top:1px solid #ddd; padding-top:6px; line-height:1.5;">
+      <b>Notice.</b> The information in this database is believed to be true and accurate. The user is advised to independently verify search results. The developer is not responsible for third party data obtained through searches and search results.
     </div>
 
   </div><!-- end sidebar -->
@@ -806,7 +731,6 @@
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<script src="https://unpkg.com/esri-leaflet@3/dist/esri-leaflet.js"></script>
 
 <script>
 // ===================================================
@@ -831,7 +755,6 @@ let selectedTownsByCounty = {};
 let townsByCounty         = {};
 let shouldFitBounds       = false;
 let selectedSales         = {};   // { id: fullRecordObj }
-let flaggedSales          = {};   // { id: fullRecordObj } — manually flagged from popup
 let markerRefs            = {};   // { id: { marker, sales, prop } }
 let spanDotLookup         = {};   // { span: { marker, sales, prop } } for approx merging
 
@@ -842,10 +765,9 @@ let nameSearchCache       = null;  // null when no cache; array of records when 
 let CODES = {};
 let TOWN_CENTROIDS = {}; // populated when codes load
 
-// Checkbox group filters: unchecked = no restriction for that group.
-// Any box checked = filter to ONLY those types. No filterApplied flag needed.
-
-// loadData() fires freely — statewide 6-month load on startup is fast enough.
+// filterApplied tracks whether the user has clicked Apply at least once.
+// Checkbox groups are always active (all checked by default on startup).
+let filterApplied = true;  // true from the start so checkboxes apply immediately
 let _ptt172DlMode = false; // false = open inline in browser; true = force download
 
 // ---- Screen capture stream (held open for the session) ----
@@ -970,48 +892,109 @@ map.on("baselayerchange", function(e){
 });
 
 // ============================================================
-// VT PARCELS — Esri Feature Layer from VCGI FeatureServer
-// Uses L.esri.featureLayer for automatic tile-based loading.
-// Only loads at zoom 11+. Click to show Grand List popup.
+// VT PARCELS — GeoJSON canvas renderer using VCGI FeatureServer
+// Fetches parcel polygons for current viewport, renders as canvas outlines.
+// Only loads at zoom 14+. Refreshes on moveend/zoomend.
 // ============================================================
 const PARCEL_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
-const PARCEL_MIN_ZOOM = 11;
+const PARCEL_MIN_ZOOM = 14;
+
+// Create pane so parcel outlines sit below markers but above basemap
+if(!map.getPane('parcelPane')){
+  const pp = map.createPane('parcelPane');
+  pp.style.zIndex = 360;
+  pp.style.pointerEvents = 'none';
+}
 
 const CF_WORKER = 'https://vt-map-proxy.quiet-scene-a739.workers.dev/';
 const PROXY = (url) => CF_WORKER + '?url=' + encodeURIComponent(url);
 
-let parcelsOn = false;
-var parcelLayer = L.esri.featureLayer({
-    url: 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1',
-    minZoom: PARCEL_MIN_ZOOM,
-    style: function() {
-        var colorEl = document.getElementById('parcel-color');
-        var widthEl = document.getElementById('parcel-width');
-        var styleEl = document.getElementById('parcelDash');
-        var color = colorEl ? colorEl.value : '#FF6600';
-        var width = widthEl ? parseInt(widthEl.value) || 1 : 1;
-        var dash = styleEl ? styleEl.value : 'solid';
-        var dashArray = dash === 'dashed' ? '6,4' : dash === 'dotted' ? '2,4' : null;
-        return { color: color, weight: width, opacity: 0.8, fillOpacity: 0, dashArray: dashArray };
-    }
-});
+// parcelGeoLayer: Leaflet GeoJSON layer holding current viewport parcels
+// parcelWmsLayer: L.layerGroup wrapper (used in layer control)
+const parcelWmsLayer = L.layerGroup();
+let   parcelGeoLayer = null;   // current GeoJSON layer inside parcelWmsLayer
+let   parcelsOn      = false;
+let   parcelLayer    = parcelWmsLayer;  // legacy alias
+let   parcelFetchCtrl = null;           // AbortController for in-flight request
 
-// ---- CONSERVED LANDS QUERY URL ----
-const CONSERVED_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_VT_Protected_Lands_Database_WM_v2/FeatureServer/0/query';
+function loadParcels(){
+  if(!parcelsOn) return;
+  if(map.getZoom() < PARCEL_MIN_ZOOM){
+    if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; }
+    return;
+  }
 
-// ---- switchTab for tabbed popups ----
-function switchTab(btn, contentId) {
-  var parent = btn.closest('.dual-popup');
-  parent.querySelectorAll('.popup-tab').forEach(function(t){ t.classList.remove('active'); });
-  btn.classList.add('active');
-  parent.querySelectorAll('.popup-content').forEach(function(c){ c.style.display = 'none'; });
-  parent.querySelector('#' + contentId).style.display = '';
+  // Abort any in-flight request
+  if(parcelFetchCtrl) parcelFetchCtrl.abort();
+  parcelFetchCtrl = new AbortController();
+  const signal = parcelFetchCtrl.signal;
+
+  const b  = map.getBounds();
+  const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+  const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+  const env = `${sw.x},${sw.y},${ne.x},${ne.y}`;
+
+  const params = new URLSearchParams({
+    where:           '1=1',
+    geometry:        env,
+    geometryType:    'esriGeometryEnvelope',
+    inSR:            '102100',
+    spatialRel:      'esriSpatialRelIntersects',
+    outFields:       'SPAN,TNAME,E911ADDR,OWNER1,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,GLYEAR,CAT,MUNGL1PCT,PROPTYPE',
+    returnGeometry:  'true',
+    outSR:           '4326',
+    f:               'geojson',
+    resultRecordCount: '500',
+  });
+
+  fetch(PARCEL_QUERY_URL + '?' + params.toString(), { signal })
+  .then(r => r.json())
+  .then(geojson => {
+    if(signal.aborted) return;
+    // Remove old layer
+    if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; }
+    if(!parcelsOn) return;
+    parcelGeoLayer = L.geoJSON(geojson, {
+      pane:   'parcelPane',
+      style:  { color: '#e65c00', weight: 1, fill: false, opacity: 0.7 },
+      interactive: false,
+    });
+    parcelWmsLayer.addLayer(parcelGeoLayer);
+  })
+  .catch(err => { if(err.name !== 'AbortError') console.warn('Parcel fetch error:', err); });
 }
 
-// ---- Build Grand List popup HTML from parcel attributes ----
-function buildParcelPopupHTML(p) {
+// Click handler — query parcel data at click location
+function onParcelClick(e){
+  if(!parcelsOn) return;
+  if(map.getZoom() < PARCEL_MIN_ZOOM) return;
+  const toMerc = (lng, lat) => [
+    lng * 20037508.34 / 180,
+    Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180
+  ];
+  const pt = toMerc(e.latlng.lng, e.latlng.lat);
+  const d = 5; // small buffer in meters
+  const env = `${pt[0]-d},${pt[1]-d},${pt[0]+d},${pt[1]+d}`;
+  const params = new URLSearchParams({
+    where: '1=1',
+    geometry: env,
+    geometryType: 'esriGeometryEnvelope',
+    inSR: '102100',
+    spatialRel: 'esriSpatialRelIntersects',
+    outFields: 'SPAN,GLIST_SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,HSITEVAL,GLYEAR,YEAR,CAT,MUNGL1PCT,RESCODE,UVREDUC_HS,UVREDUC_NR,MAPID,PARCID,SOURCENAME,SOURCETYPE,EDITDATE,EDITOR,NRES_FLV,VETEXAMT,EXAMT_HS,EXAMT_NR',
+    returnGeometry: 'false',
+    outSR: '4326',
+    f: 'json',
+    resultRecordCount: '1'
+  });
+  fetch(PARCEL_QUERY_URL + '?' + params.toString())
+  .then(r => r.json())
+  .then(data => {
+    const feats = data.features || [];
+    if(!feats.length) return;
+    const p = feats[0].attributes;
     const fmt$ = v => (v != null && v !== '' && v !== 0) ? '$' + Number(v).toLocaleString() : '—';
-    const fmt$0 = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
+    const fmt$0 = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—'; // includes $0
     const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
     const row  = (label, val, bold) => val && val !== '—'
       ? `<tr><td style="color:#555;padding:1px 4px 1px 0;white-space:nowrap">${label}:</td><td${bold?' style="font-weight:bold"':''}>${val}</td></tr>`
@@ -1041,32 +1024,44 @@ function buildParcelPopupHTML(p) {
     const mapid    = p.MAPID   || '';
     const parcid   = p.PARCID  || '';
 
+    // Owner type
     const RESCODE_MAP = {
       'T': 'Town Resident','N': 'Non-Resident','C': 'Commercial/Industrial',
       'X': 'Exempt','F': 'Farm','M': 'Mobile Home','O': 'Other'
     };
     const ownerType = RESCODE_MAP[p.RESCODE] || p.RESCODE || '';
 
+    // Current Use
     const uvHS = Number(p.UVREDUC_HS) || 0;
     const uvNR = Number(p.UVREDUC_NR) || 0;
     const currentUse = (uvHS > 0 || uvNR > 0)
       ? `Enrolled (reduction: ${fmt$0(uvHS + uvNR)})`
       : 'Not Enrolled';
 
+    // GIS source
     const src = [p.SOURCENAME, p.SOURCETYPE].filter(s => s && s !== 'UNKNOWN').join(' / ') || 'Unknown';
+    const editInfo = p.EDITDATE && p.EDITDATE !== 'UNKNOWN'
+      ? `${p.EDITOR || ''} ${p.EDITDATE || ''}`.trim()
+      : '';
 
-    return `
+    const html = `
       <div style="font-size:12px; min-width:240px; max-width:300px;">
         <div style="background:#1a7a1a;color:white;font-weight:bold;padding:4px 8px;
                     border-radius:3px 3px 0 0;margin-bottom:6px;">
           &#x1F4CB; Grand List Data
         </div>
+
+        <!-- Address & Town -->
         <div style="font-weight:bold;font-size:13px;margin-bottom:2px;">${addr}${addr&&town?', ':''}${town}</div>
+
+        <!-- Ownership -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Ownership</div>
           <div style="font-weight:bold;">${owner1}${owner2?'<br>'+owner2:''}</div>
           ${ownerType ? `<div style="font-size:10px;color:#666;margin-top:1px;">Type: ${ownerType}</div>` : ''}
         </div>
+
+        <!-- Valuation -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Valuation (${glyear} Grand List)</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1078,6 +1073,8 @@ function buildParcelPopupHTML(p) {
             ${row('Mun. 1% GL', munGL, false)}
           </table>
         </div>
+
+        <!-- Homestead -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Homestead</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1088,6 +1085,8 @@ function buildParcelPopupHTML(p) {
             ${exNR !== '—' ? row('Exemption (NR)', exNR, false) : ''}
           </table>
         </div>
+
+        <!-- Description & Current Use -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Description</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1097,6 +1096,8 @@ function buildParcelPopupHTML(p) {
             ${row('Current Use', currentUse, false)}
           </table>
         </div>
+
+        <!-- IDs & GIS Info -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Parcel Info</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1108,145 +1109,13 @@ function buildParcelPopupHTML(p) {
           </table>
         </div>
       </div>`;
+    L.popup({ maxWidth: 320, maxHeight: 520 }).setLatLng(e.latlng).setContent(html).openOn(map);
+  })
+  .catch(err => console.warn('Parcel click query error:', err));
 }
+map.on('contextmenu', onParcelClick);  // right-click to show Grand List popup
 
-// ---- Build Conserved Lands popup HTML from feature attributes ----
-function fmtConservedDate(val) {
-  if (val == null || val === '' || val === 'Null') return null;
-  var n = Number(val);
-  if (!isNaN(n) && n > 0) {
-    var d = new Date(n);
-    return d.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
-  }
-  return val;
-}
-
-function buildConservedPopupHTML(p) {
-    const fields = [
-      ['Name', p.NAME],
-      ['Act 59 Category', p.ACT59CAT],
-      ['Aggregate Date', fmtConservedDate(p.AGGDATE)],
-      ['Date Acquired', fmtConservedDate(p.DATEAQRD)],
-      ['Designation', p.DESIGNAT],
-      ['GAP Status', p.GAPSTATUS],
-      ['GIS Acres', p.GISACRES != null ? Number(p.GISACRES).toFixed(2) : null],
-      ['GIS Steward', p.GISSTEWARD],
-      ['Interest Org Type', p.INT_ORGTYP],
-      ['Listed Acres', p.LISTED_AC != null ? Number(p.LISTED_AC).toFixed(2) : null],
-      ['Owner Kind', p.OWNERKIND],
-      ['Primary Agency 1', p.PAGENCY1],
-      ['Primary Agency 2', p.PAGENCY2],
-      ['Polygon ID', p.POLYID],
-      ['Protection Type 1', p.PTYPE1],
-      ['Protection Type 2', p.PTYPE2],
-      ['Public Access', p.PUBACCESS],
-      ['Source Acres', p.SOURCE_ACR != null ? Number(p.SOURCE_ACR).toFixed(2) : null],
-      ['Source Layer', p.SOURCE_LYR],
-      ['Source ID', p.SOURCEID]
-    ];
-    var rows = '';
-    fields.forEach(function(f) {
-      var val = f[1];
-      if (val != null && val !== '' && val !== 'Null' && val !== 'null') {
-        rows += '<b>' + f[0] + ':</b> ' + val + '<br>';
-      }
-    });
-    if (!rows) rows = 'No data at this location';
-    return '<div style="font-size:12px;min-width:240px;max-width:320px;">' +
-      '<div style="background:#007a35;color:white;font-weight:bold;padding:4px 8px;border-radius:3px 3px 0 0;margin-bottom:6px;">&#x1F333; Conservation Data</div>' +
-      rows + '</div>';
-}
-
-// ---- Fetch parcel attributes at a point ----
-function fetchParcelAtPoint(latlng) {
-  const toMerc = (lng, lat) => [
-    lng * 20037508.34 / 180,
-    Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180
-  ];
-  const pt = toMerc(latlng.lng, latlng.lat);
-  const d = 5;
-  const env = `${pt[0]-d},${pt[1]-d},${pt[0]+d},${pt[1]+d}`;
-  const params = new URLSearchParams({
-    where: '1=1',
-    geometry: env,
-    geometryType: 'esriGeometryEnvelope',
-    inSR: '102100',
-    spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'SPAN,GLIST_SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,HSITEVAL,GLYEAR,YEAR,CAT,MUNGL1PCT,RESCODE,UVREDUC_HS,UVREDUC_NR,MAPID,PARCID,SOURCENAME,SOURCETYPE,EDITDATE,EDITOR,NRES_FLV,VETEXAMT,EXAMT_HS,EXAMT_NR',
-    returnGeometry: 'false',
-    outSR: '4326',
-    f: 'json',
-    resultRecordCount: '1'
-  });
-  return fetch(PARCEL_QUERY_URL + '?' + params.toString())
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var feats = data.features || [];
-      return feats.length ? feats[0].attributes : null;
-    });
-}
-
-// ---- Fetch conserved lands attributes at a point ----
-function fetchConservedAtPoint(latlng) {
-  const params = new URLSearchParams({
-    geometry: latlng.lng + ',' + latlng.lat,
-    geometryType: 'esriGeometryPoint',
-    spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'NAME,ACT59CAT,AGGDATE,DATEAQRD,DESIGNAT,GAPSTATUS,GISACRES,GISSTEWARD,INT_ORGTYP,LISTED_AC,OWNERKIND,PAGENCY1,PAGENCY2,POLYID,PTYPE1,PTYPE2,PUBACCESS,SOURCE_ACR,SOURCE_LYR,SOURCEID',
-    f: 'geojson',
-    inSR: '4326'
-  });
-  return fetch(CONSERVED_QUERY_URL + '?' + params.toString())
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var feats = data.features || [];
-      return feats.length ? feats[0].properties : null;
-    });
-}
-
-// ---- Unified right-click handler for parcels + conserved lands ----
-map.on('contextmenu', function(e) {
-  var doParcels = parcelsOn && map.getZoom() >= PARCEL_MIN_ZOOM;
-  var doConserved = conservedOn;
-  if (!doParcels && !doConserved) return;
-
-  var promises = [];
-  // index 0 = parcel, index 1 = conserved
-  promises.push(doParcels ? fetchParcelAtPoint(e.latlng) : Promise.resolve(null));
-  promises.push(doConserved ? fetchConservedAtPoint(e.latlng) : Promise.resolve(null));
-
-  Promise.all(promises).then(function(results) {
-    var parcelAttrs = results[0];
-    var conservedAttrs = results[1];
-    var html = '';
-
-    if (doParcels && doConserved) {
-      // Both layers active — tabbed popup
-      var parcelContent = parcelAttrs ? buildParcelPopupHTML(parcelAttrs) : '<div style="font-size:12px;padding:8px;color:#888;">No data at this location</div>';
-      var conservedContent = conservedAttrs ? buildConservedPopupHTML(conservedAttrs) : '<div style="font-size:12px;padding:8px;color:#888;">No data at this location</div>';
-      html = '<div class="dual-popup" style="min-width:460px">' +
-        '<div class="popup-tabs">' +
-          '<button class="popup-tab active" onclick="switchTab(this,\'grand-list-content\')">Grand List</button>' +
-          '<button class="popup-tab" onclick="switchTab(this,\'conservation-content\')">Conservation</button>' +
-        '</div>' +
-        '<div id="grand-list-content" class="popup-content" style="height:520px">' + parcelContent + '</div>' +
-        '<div id="conservation-content" class="popup-content" style="display:none;height:520px">' + conservedContent + '</div>' +
-      '</div>';
-    } else if (doParcels) {
-      // Only parcels
-      if (!parcelAttrs) return;
-      html = buildParcelPopupHTML(parcelAttrs);
-    } else if (doConserved) {
-      // Only conserved lands
-      if (!conservedAttrs) return;
-      html = buildConservedPopupHTML(conservedAttrs);
-    }
-
-    if (html) {
-      L.popup({ maxWidth: 480, maxHeight: 520 }).setLatLng(e.latlng).setContent(html).openOn(map);
-    }
-  }).catch(function(err){ console.warn('Right-click query error:', err); });
-});
+// loadParcels defined above in VT PARCELS section
 
 // ============================================================
 // E911 ADDRESS NUMBERS — fetches VT statewide address points
@@ -1439,47 +1308,75 @@ function loadRoadLabels(){
 map.on('moveend zoomend', loadRoadLabels);
 
 // ============================================================
-// FEMA FLOOD ZONES — via L.esri.featureLayer + MapServer/20
-// Shows AE, A, Floodway zones only (excludes Zone X to avoid covering whole map)
+// FEMA FLOOD ZONES — via Flask proxy + Esri MapServer export
+// Confirmed working: loads PNG tiles instantly, no CORS issues
+// Only shows AE, A, Floodway (excludes Zone X to avoid covering whole map)
 // ============================================================
 if(!map.getPane('femaPane')){
   const fp = map.createPane('femaPane');
   fp.style.zIndex = 350;
+  fp.style.pointerEvents = 'none';
 }
 
-const FEMA_MIN_ZOOM = 10;
-let femaOn = false;
+// Dynamic image overlay — fetches one image covering the entire viewport.
+// No tile seams, no zoom disappearing. Redraws on every moveend/zoomend.
+function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
+  let overlay = null;
+  let pending = null;
+  let isOn = false;
+  const group = L.layerGroup();
 
-var femaFloodLayer = L.esri.featureLayer({
-  url: 'https://hazards.fema.gov/arcgis/rest/services/FIRMette/NFHLREST_FIRMette/MapServer/20',
-  minZoom: FEMA_MIN_ZOOM,
-  where: "FLD_ZONE = 'AE' OR FLD_ZONE = 'A' OR ZONE_SUBTY = 'FLOODWAY'",
-  pane: 'femaPane',
-  style: function(feature) {
-    var zone = (feature.properties.FLD_ZONE || '').toUpperCase();
-    var subtype = (feature.properties.ZONE_SUBTY || '').toUpperCase();
-    if (subtype.indexOf('FLOODWAY') !== -1) {
-      return { color: '#b03030', weight: 1, fillColor: '#e87878', fillOpacity: 0.4, opacity: 0.6 };
-    }
-    if (zone === 'AE') {
-      return { color: '#5a9ab5', weight: 1, fillColor: '#a8d4e6', fillOpacity: 0.4, opacity: 0.6 };
-    }
-    if (zone === 'A') {
-      return { color: '#c87040', weight: 1, fillColor: '#f0c8a0', fillOpacity: 0.4, opacity: 0.6 };
-    }
-    return { color: '#88b4d0', weight: 1, fillColor: '#c8e0f0', fillOpacity: 0.2, opacity: 0.4 };
-  },
-  onEachFeature: function(feature, layer) {
-    var zone = feature.properties.FLD_ZONE || 'Unknown';
-    var subtype = feature.properties.ZONE_SUBTY || '';
-    var label = subtype.toUpperCase().indexOf('FLOODWAY') !== -1 ? 'Floodway' : 'Zone ' + zone;
-    layer.bindPopup('<b>FEMA Flood Zone: ' + label + '</b>' +
-      (subtype ? '<br>Subtype: ' + subtype : ''));
+  function load(){
+    if(!isOn) return;
+    if(map.getZoom() < (minZoom||8)){ if(overlay){ group.removeLayer(overlay); overlay=null; } return; }
+    // Remove stale overlay immediately so stretched image doesn't show during load
+    if(overlay){ group.removeLayer(overlay); overlay=null; }
+    const b = map.getBounds();
+    const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+    const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+    const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
+    const size = map.getSize();
+    const exportUrl = serviceUrl + '/export?bbox=' + bbox +
+      '&bboxSR=102100&layers=show:' + layerIds +
+      '&size=' + size.x + ',' + size.y +
+      '&imageSR=102100&dpi=96&format=png32&transparent=true&f=image';
+    // Use direct URL for FEMA (CORS allowed), Cloudflare Worker for ANR servers
+    const url = serviceUrl.includes('fema.gov')
+      ? exportUrl
+      : CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
+    pending = null;
+    const img = new Image();
+    pending = img;
+    const snapBounds = b; // capture bounds at request time
+    img.onload = function(){
+      if(img !== pending) return;
+      overlay = L.imageOverlay(url, snapBounds, { opacity: opacity, pane: pane, interactive: false });
+      group.addLayer(overlay);
+    };
+    img.src = url;
   }
-});
+
+  map.on('moveend zoomend', load);
+
+  return {
+    layer: group,
+    enable:  function(){ isOn = true;  load(); },
+    disable: function(){ isOn = false; if(overlay){ group.removeLayer(overlay); overlay=null; } }
+  };
+}
+
+const femaOverlay = makeDynamicOverlay(
+  'https://hazards.fema.gov/arcgis/rest/services/FIRMette/NFHLREST_FIRMette/MapServer',
+  '19,20', 'femaPane', 0.85, 10
+);
+const femaFloodLayer = femaOverlay.layer;
+let femaOn = false;
 function loadFema(){}
 
-// parcelLayer (L.esri.featureLayer) initialized above in the VT PARCELS section
+// Initialize parcel overlay here — after makeDynamicOverlay is defined.
+// Routes through Cloudflare Worker proxy (ANR server requires it).
+// Loads image only on img.onload — prevents blank/stretched overlays.
+// parcelWmsLayer/loadParcels initialized above in the VT PARCELS section
 
 // ============================================================
 // TOWN & COUNTY BOUNDARY LAYERS
@@ -1533,15 +1430,6 @@ function updateBoundaryStyle(which){
   saveBdySettings();
 }
 
-function updateParcelStyle() {
-    var color = document.getElementById('parcel-color').value;
-    var width = document.getElementById('parcel-width').value;
-    var dash  = document.getElementById('parcelDash').value;
-    var dashArray = dash === 'dashed' ? '12,8' : dash === 'dotted' ? '3,6' : null;
-    parcelLayer.setStyle({ color: color, weight: parseInt(width), opacity: 0.8, fillOpacity: 0, dashArray: dashArray });
-    saveBdySettings();
-}
-
 // ---- Persist boundary + parcel style settings in localStorage ----
 function saveBdySettings(){
   const s = {
@@ -1553,9 +1441,6 @@ function saveBdySettings(){
     cntyWidth:  document.getElementById('cntyBdyWidth').value,
     cntyDash:   document.getElementById('cntyBdyDash').value,
     cntyLabels: document.getElementById('cntyBdyLabels').checked,
-    parcelColor: document.getElementById('parcel-color').value,
-    parcelWidth: document.getElementById('parcel-width').value,
-    parcelDash:  document.getElementById('parcelDash').value,
   };
   try{ localStorage.setItem('vtpt_bdy_settings', JSON.stringify(s)); }catch(e){}
 }
@@ -1572,11 +1457,6 @@ function restoreBdySettings(){
   if(s.cntyWidth)  { document.getElementById('cntyBdyWidth').value  = s.cntyWidth;  document.getElementById('cntyBdyWidthVal').textContent = s.cntyWidth; }
   if(s.cntyDash)   { document.getElementById('cntyBdyDash').value   = s.cntyDash; }
   if(s.cntyLabels !== undefined){ document.getElementById('cntyBdyLabels').checked = s.cntyLabels; }
-  if(s.parcelColor){ document.getElementById('parcel-color').value = s.parcelColor; }
-  if(s.parcelWidth){ document.getElementById('parcel-width').value = s.parcelWidth; document.getElementById('parcelWidthVal').textContent = s.parcelWidth; }
-  if(s.parcelDash) { document.getElementById('parcelDash').value   = s.parcelDash; }
-  // Apply restored parcel style to layer
-  updateParcelStyle();
 }
 
 // ---- Fetch and render boundary polygons + labels ----
@@ -1676,95 +1556,6 @@ function _loadBoundaryLayer(which){
 function loadTownBoundaries(){ _loadBoundaryLayer('town'); }
 function loadCntyBoundaries(){ _loadBoundaryLayer('cnty'); }
 
-// ---- CONSERVED LANDS (Esri Feature Layer) ----
-let conservedOn = false;
-var conservedLayer = L.esri.featureLayer({
-    url: 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_VT_Protected_Lands_Database_WM_v2/FeatureServer/0',
-    style: function() {
-        return {
-            color: '#007a35',
-            weight: 1.5,
-            opacity: 0.7,
-            fillColor: '#00b050',
-            fillOpacity: 0.25
-        };
-    },
-    minZoom: 11
-});
-// Left-click popup removed — conserved lands use right-click contextmenu handler
-
-function updateConservedZoomMsg(){
-    var el = document.getElementById('conserved-zoom-msg');
-    if(!el) return;
-    el.style.display = (conservedOn && map.getZoom() < 11) ? '' : 'none';
-}
-
-// ---- VSWI WETLANDS (image export via makeDynamicOverlay) ----
-
-function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
-  let overlay = null;
-  let pending = null;
-  let isOn = false;
-  const group = L.layerGroup();
-
-  function load(){
-    if(!isOn) return;
-    if(map.getZoom() < (minZoom||8)){ if(overlay){ group.removeLayer(overlay); overlay=null; } return; }
-    // Remove stale overlay immediately so stretched image doesn't show during load
-    if(overlay){ group.removeLayer(overlay); overlay=null; }
-    const b = map.getBounds();
-    const sw = L.CRS.EPSG3857.project(b.getSouthWest());
-    const ne = L.CRS.EPSG3857.project(b.getNorthEast());
-    const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
-    const size = map.getSize();
-    const exportUrl = serviceUrl + '/export?bbox=' + bbox +
-      '&bboxSR=102100&layers=show:' + layerIds +
-      '&size=' + size.x + ',' + size.y +
-      '&imageSR=102100&dpi=96&format=png32&transparent=true&f=image';
-    // Use direct URL for FEMA (CORS allowed), Cloudflare Worker for other servers
-    const url = serviceUrl.includes('fema.gov')
-      ? exportUrl
-      : CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
-    pending = null;
-    const img = new Image();
-    pending = img;
-    const snapBounds = b; // capture bounds at request time
-    img.onload = function(){
-      if(img !== pending) return;
-      overlay = L.imageOverlay(url, snapBounds, { opacity: opacity, pane: pane, interactive: false });
-      group.addLayer(overlay);
-    };
-    img.src = url;
-  }
-
-  map.on('moveend zoomend', load);
-
-  return {
-    layer: group,
-    enable:  function(){ isOn = true;  load(); },
-    disable: function(){ isOn = false; if(overlay){ group.removeLayer(overlay); overlay=null; } }
-  };
-}
-
-if(!map.getPane('wetlandsPane')){
-  const wp = map.createPane('wetlandsPane');
-  wp.style.zIndex = 345;
-  wp.style.filter = 'saturate(2) contrast(1.2)';
-}
-
-let wetlandsOn = false;
-const wetlandsOverlay = makeDynamicOverlay(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_WATER_SP_NOCACHE_v2/MapServer',
-  '193,194', 'wetlandsPane', 0.5, 11
-);
-var wetlandsLayer = wetlandsOverlay.layer;
-
-function updateWetlandsZoomMsg(){
-    var el = document.getElementById('wetlands-zoom-msg');
-    if(!el) return;
-    el.style.display = (wetlandsOn && map.getZoom() < 11) ? '' : 'none';
-}
-
 // ---- LAYERS CONTROL ----
 L.control.layers(
   {
@@ -1777,45 +1568,37 @@ L.control.layers(
   },
   {
     // Overlays — toggle independently of the basemap
-    "VT Parcels (zoom 11+)": parcelLayer,
+    "VT Parcels (zoom 14+)": parcelWmsLayer,
     "Street Names (zoom 15+)": roadLabelLayer,
     "House Numbers (zoom 17+)": e911Layer,
     "FEMA Flood Zones":      femaFloodLayer,
     "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
     "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
-    "Conserved Lands (zoom 11+)": conservedLayer,
-    "Wetlands (zoom 11+)":       wetlandsLayer,
   }
 ).addTo(map);
 
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = true; updateParcelStyle(); }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true;  loadParcels(); }
   if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
-  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; document.getElementById('fema-legend').style.display=''; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
-  if(e.name === 'Conserved Lands (zoom 11+)'){ conservedOn = true; updateConservedZoomMsg(); }
-  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = true; wetlandsOverlay.enable(); document.getElementById('wetlands-legend').style.display=''; updateWetlandsZoomMsg(); }
 });
 map.on('overlayremove', function(e){
-  if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = false; }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = false; if(parcelFetchCtrl) parcelFetchCtrl.abort(); if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; } }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On = false; if(e911FetchCtrl) e911FetchCtrl.abort(); if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; } }
-  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; document.getElementById('fema-legend').style.display='none'; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
-  if(e.name === 'Conserved Lands (zoom 11+)'){ conservedOn = false; updateConservedZoomMsg(); }
-  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = false; wetlandsOverlay.disable(); document.getElementById('wetlands-legend').style.display='none'; document.getElementById('wetlands-zoom-msg').style.display='none'; }
 });
 
 let markersLayer = L.layerGroup().addTo(map);
 // Approx markers (town-centroid fallbacks) live in a separate layer.
+// This layer is only refreshed when filters change — never on pan/zoom —
+// so centroid-placed dots stay visible regardless of viewport position.
 let approxLayer  = L.layerGroup().addTo(map);
-let mhLayer      = L.layerGroup().addTo(map); // mobile home collector dots
-// tsLayer declared and added AFTER markersLayer/approxLayer so it renders
-// on top — TS collector dots are not overwritten by black dots.
-let tsLayer      = L.layerGroup().addTo(map);
 // approxCache loaded once at startup via initApproxCache()
 // Address lookup: normalized "ADDRESS|TOWN" -> {lat, lon} for merging approx into black dots
 let addressDotLookup = {};
@@ -1870,11 +1653,7 @@ function loadCodes(){
     buildCheckboxList('buyerUseList',  CODES.use_of_property);
     buildCheckboxList('grandListList', CODES.grand_list_categories);
     buildCheckboxList('pttList',       CODES.ptt_exemptions);
-    // Pre-check startup defaults: Single Family (2) + Fee Simple (1)
-    // All other checkboxes remain unchecked.
-    setCheckedCode('buildingList', '2');  // Single Family Dwelling
-    setCheckedCode('interestList', '1');  // Fee Simple
-    // Now safe to start the map — fires loadData() with defaults applied
+    // Now safe to start the map
     initMapEvents();
   });
 }
@@ -1893,12 +1672,6 @@ function buildCheckboxList(containerId, codesObj){
   });
 }
 
-// Check a single checkbox by its data-code value within a container.
-function setCheckedCode(containerId, code){
-  const el = document.querySelector(`#${containerId} input[data-code="${code}"]`);
-  if(el) el.checked = true;
-}
-
 function checkAllIn(containerId){
   document.querySelectorAll(`#${containerId} input[type=checkbox]`).forEach(cb => cb.checked = true);
 }
@@ -1915,6 +1688,22 @@ function getCheckedCodes(containerId){
   return codes;
 }
 
+// ===================================================
+// SEARCH TIPS TOGGLE
+// ===================================================
+function toggleSearchTips(event){
+  const popup = document.getElementById('searchTipsPopup');
+  popup.style.display = (popup.style.display === 'none' || !popup.style.display) ? 'block' : 'none';
+  event.stopPropagation();
+}
+// Close tips popup when clicking elsewhere
+document.addEventListener('click', function(e){
+  const popup = document.getElementById('searchTipsPopup');
+  const btn   = document.getElementById('searchTipsBtn');
+  if(popup && btn && !popup.contains(e.target) && e.target !== btn){
+    popup.style.display = 'none';
+  }
+});
 
 // ===================================================
 // DROPDOWN TOGGLE
@@ -1922,46 +1711,6 @@ function getCheckedCodes(containerId){
 function toggleDropdown(id){
   const el = document.getElementById(id);
   el.style.display = (el.style.display === "block") ? "none" : "block";
-}
-
-// ===================================================
-// ASSESSOR RECORDS SEARCH
-// ===================================================
-let _assessorTimer = null;
-function searchAssessor() {
-  clearTimeout(_assessorTimer);
-  _assessorTimer = setTimeout(_doAssessorSearch, 250);
-}
-function _doAssessorSearch() {
-  const q = (document.getElementById('assessorSearch').value || '').trim().toUpperCase();
-  const box = document.getElementById('assessorResults');
-  if (!q) { box.innerHTML = ''; return; }
-  const towns = Object.keys(TOWN_CENTROIDS).filter(t => t.indexOf(q) !== -1).slice(0, 20);
-  if (!towns.length) { box.innerHTML = '<div style="padding:4px;color:#888;">No matching towns</div>'; return; }
-  box.innerHTML = towns.map(t =>
-    '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #eee;" id="asr_' + t.replace(/\s/g,'_') + '">' +
-    '<span>' + t.charAt(0) + t.slice(1).toLowerCase() + '</span>' +
-    '<span style="color:#888;">...</span></div>'
-  ).join('');
-  towns.forEach(t => {
-    fetch('/assessor?town=' + encodeURIComponent(t))
-      .then(r => r.json())
-      .then(d => {
-        const row = document.getElementById('asr_' + t.replace(/\s/g,'_'));
-        if (!row) return;
-        const right = row.querySelector('span:last-child');
-        if (d.url) {
-          let links = '<a href="' + d.url + '" target="_blank" style="color:#2d6a4f;font-weight:600;text-decoration:underline;">Link 1</a>';
-          if (d.url2) {
-            links += '&nbsp;&nbsp;<a href="' + d.url2 + '" target="_blank" style="color:#2d6a4f;font-weight:600;text-decoration:underline;">Link 2</a>';
-          }
-          right.innerHTML = links;
-        } else {
-          right.textContent = 'Not Available';
-          right.style.color = '#c0392b';
-        }
-      });
-  });
 }
 
 // ===================================================
@@ -2139,29 +1888,37 @@ function buildFilterParams(){
   if(ll) params.set("land_low", ll);
   if(lh) params.set("land_high", lh);
 
-  // Checkbox groups: any checked = filter to only those types.
-  // Empty group = no restriction (param not sent to backend).
-  const bldg = getCheckedCodes("buildingList");
-  if(bldg.length > 0) params.set("building", bldg.join("|"));
+  // -------------------------------------------------------
+  // Checkbox groups — only send filter params if:
+  //   1. Apply has been clicked at least once (filterApplied), AND
+  //   2. Fewer than all options are checked (partial selection)
+  // On initial load, all checkbox groups are treated as "no restriction".
+  // -------------------------------------------------------
+  if(filterApplied){
+    const bldg = getCheckedCodes("buildingList");
+    if(bldg.length > 0 && bldg.length < Object.keys(CODES.building_types || {}).length)
+      params.set("building", bldg.join("|"));
 
-  const interest = getCheckedCodes("interestList");
-  if(interest.length > 0) params.set("interest", interest.join("|"));
+    const interest = getCheckedCodes("interestList");
+    if(interest.length > 0 && interest.length < Object.keys(CODES.interest_types || {}).length)
+      params.set("interest", interest.join("|"));
 
-  const su = getCheckedCodes("sellerUseList");
-  if(su.length > 0) params.set("seller_use", su.join("|"));
+    const su = getCheckedCodes("sellerUseList");
+    if(su.length > 0 && su.length < Object.keys(CODES.use_of_property || {}).length)
+      params.set("seller_use", su.join("|"));
 
-  const bu = getCheckedCodes("buyerUseList");
-  if(bu.length > 0) params.set("buyer_use", bu.join("|"));
+    const bu = getCheckedCodes("buyerUseList");
+    if(bu.length > 0 && bu.length < Object.keys(CODES.use_of_property || {}).length)
+      params.set("buyer_use", bu.join("|"));
 
-  const gl = getCheckedCodes("grandListList");
-  if(gl.length > 0) params.set("grand_list", gl.join("|"));
+    const gl = getCheckedCodes("grandListList");
+    if(gl.length > 0 && gl.length < Object.keys(CODES.grand_list_categories || {}).length)
+      params.set("grand_list", gl.join("|"));
 
-  const ptt = getCheckedCodes("pttList");
-  if(ptt.length > 0) params.set("ptt_exemption", ptt.join("|"));
-
-  // No Land checkbox — sends landSize=0 exact match
-  const noLand = document.getElementById("noLandCheck");
-  if(noLand && noLand.checked) params.set("no_land", "1");
+    const ptt = getCheckedCodes("pttList");
+    if(ptt.length > 0 && ptt.length < Object.keys(CODES.ptt_exemptions || {}).length)
+      params.set("ptt_exemption", ptt.join("|"));
+  }
 
   // Names / SPAN
   const se = document.getElementById("sellerEntity").value.trim();
@@ -2185,9 +1942,6 @@ function buildFilterParams(){
   const ecu = document.querySelector('input[name="enrolledCurrentUse"]:checked');
   if(ecu && ecu.value) params.set("enrolled_current_use", ecu.value);
 
-  const cuc = document.querySelector('input[name="currentUseContinues"]:checked');
-  if(cuc && cuc.value) params.set("current_use_continues", cuc.value);
-
   const dpc = document.querySelector('input[name="devPrevConv"]:checked');
   if(dpc && dpc.value) params.set("dev_prev_conv", dpc.value);
 
@@ -2196,12 +1950,6 @@ function buildFilterParams(){
 
   const fc = document.querySelector('input[name="foreclosed"]:checked');
   if(fc && fc.value) params.set("foreclosed", fc.value);
-
-  const rb = document.querySelector('input[name="rentedBefore"]:checked');
-  if(rb && rb.value) params.set("rented_before", rb.value);
-
-  const ra = document.querySelector('input[name="rentedAfter"]:checked');
-  if(ra && ra.value) params.set("rented_after", ra.value);
 
   return params;
 }
@@ -2220,16 +1968,6 @@ function hasNameFilter(){
 // APPLY FILTERS
 // ===================================================
 function applyFilters(){
-  // Load approx cache on first Apply only (deferred from startup for speed)
-  if(!approxCacheReady && approxCache === null) initApproxCache();
-
-  // Clear existing dots immediately in ALL paths so stale unfiltered dots
-  // don't linger while the new filtered fetch is in flight.
-  markersLayer.clearLayers();
-  mhLayer.clearLayers();
-  tsLayer.clearLayers();
-  // TS and MH collectors re-fetch from server via loadData() parallel fetches
-
   // Filter results could be anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
     const params = buildFilterParams();
@@ -2242,11 +1980,6 @@ function applyFilters(){
     .then(r => r.json())
     .then(data => {
       nameSearchCache = data.data || [];
-      // Mark all name search results as non-approx so they render as solid dots.
-      // ArcGIS returned these with valid coordinates via resolve_coordinates;
-      // the approx layer is suppressed during name searches so these records
-      // must go through the normal renderData path as solid markers.
-      nameSearchCache.forEach(p => { p.approxLocation = false; });
       let bounds = null;
       nameSearchCache.forEach(p => {
         if(p.lat != null && p.lon != null){
@@ -2271,6 +2004,8 @@ function applyFilters(){
     return;
   }
 
+  // Clear existing dots immediately so old data doesn't linger
+  markersLayer.clearLayers();
   document.getElementById("statusBar").textContent = "Loading...";
 
   // If exactly one county is selected, zoom to it automatically
@@ -2293,21 +2028,17 @@ function applyFilters(){
       }
     });
     if(found){
-      const _townKey = "towns:" + allSelectedTowns.slice().sort().join(",");
-      if (_townKey !== _lastZoomedTo) {
-        _lastZoomedTo = _townKey;
-        const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
-        map.off("moveend", onMoveEnd);
-        map.off("zoomend", onZoomEnd);
-        map.fitBounds(bounds, { padding: [30, 30], animate: true });
-        setTimeout(() => {
-          map.on("moveend", onMoveEnd);
-          map.on("zoomend", onZoomEnd);
-          loadData();
-          loadApproxData();
-        }, 600);
-        return;
-      }
+      const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+      map.off("moveend", onMoveEnd);
+      map.off("zoomend", onZoomEnd);
+      map.fitBounds(bounds, { padding: [30, 30], animate: true });
+      setTimeout(() => {
+        map.on("moveend", onMoveEnd);
+        map.on("zoomend", onZoomEnd);
+        loadData();
+        loadApproxData();
+      }, 600);
+      return;
     }
   }
 
@@ -2343,21 +2074,17 @@ function applyFilters(){
       }
     });
     if(found){
-      const _countyKey = "county:" + checkedCounties.slice().sort().join(",");
-      if (_countyKey !== _lastZoomedTo) {
-        _lastZoomedTo = _countyKey;
-        const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
-        map.off("moveend", onMoveEnd);
-        map.off("zoomend", onZoomEnd);
-        map.fitBounds(bounds, { padding: [30, 30], animate: true });
-        setTimeout(() => {
-          map.on("moveend", onMoveEnd);
-          map.on("zoomend", onZoomEnd);
-          loadData();
-          loadApproxData();
-        }, 600);
-        return;
-      }
+      const bounds = L.latLngBounds([minLat, minLon], [maxLat, maxLon]);
+      map.off("moveend", onMoveEnd);
+      map.off("zoomend", onZoomEnd);
+      map.fitBounds(bounds, { padding: [30, 30], animate: true });
+      setTimeout(() => {
+        map.on("moveend", onMoveEnd);
+        map.on("zoomend", onZoomEnd);
+        loadData();
+        loadApproxData();
+      }, 600);
+      return;
     }
   }
 
@@ -2376,28 +2103,6 @@ function loadData(){
   // If a name search cache is active, just re-render from it (no new fetch)
   if(nameSearchCache !== null){
     renderData(nameSearchCache);
-    return;
-  }
-
-  // Blank map when nothing is selected: if all checkbox groups are empty
-  // AND no county/town/name/SPAN filter is active, show nothing.
-  // User must explicitly check at least one option to see dots.
-  const params0 = buildFilterParams();
-  const hasName     = params0.get('seller_last') || params0.get('buyer_last') ||
-                      params0.get('seller_entity') || params0.get('buyer_entity') ||
-                      params0.get('span') || params0.get('street');
-  const hasCheckbox = params0.get('building') || params0.get('interest') ||
-                      params0.get('seller_use') || params0.get('buyer_use') ||
-                      params0.get('grand_list') || params0.get('ptt_exemption') ||
-                      params0.get('no_land');
-  // Location alone (county/town) is not sufficient — user must also
-  // specify WHAT they want via a checkbox or name/SPAN filter.
-  if(!hasName && !hasCheckbox){
-    // Nothing selected — clear map and return
-    markersLayer.clearLayers();
-    mhLayer.clearLayers();
-    tsLayer.clearLayers();
-    document.getElementById('statusBar').textContent = 'Select filters above and click Apply Filters.';
     return;
   }
 
@@ -2421,33 +2126,10 @@ function loadData(){
 
     const ctrl = new AbortController();
     _dataXhr = ctrl;
-    const p = params.toString();
 
-    // Fetch main data, timeshares, and MH collectors in parallel
-    const fInterest = (params.get('interest') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-    const fBuilding = (params.get('building') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-    const noLandCk  = document.getElementById('noLandCheck')?.checked || false;
-    const activeGL  = (params.get('grand_list') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-    // Only fetch TS when Timeshare interest type is explicitly selected
-    const showTS = fInterest.includes('05') || fInterest.includes('5');
-    // Only fetch MH when Mobile Home building type is selected AND No Land is checked
-    const mhBldgSelected = fBuilding.includes('04') || fBuilding.includes('4');
-    const showMH = noLandCk && mhBldgSelected;
-
-    const fetches = [
-      fetch("/data?" + p, { signal: ctrl.signal }).then(r => r.json()),
-      showTS ? fetch("/data/timeshares?" + p).then(r => r.json()) : Promise.resolve({tsCollectors:[]}),
-      showMH ? fetch("/data/mh?" + p).then(r => r.json())         : Promise.resolve({mhCollectors:[]}),
-    ];
-
-    Promise.all(fetches)
-    .then(([data, tsData, mhData]) => {
-      _dataXhr = null;
-      renderData(data.data || []);
-      // renderTS/MH clear their layers first, so passing [] clears them
-      renderTSCollectors(tsData.tsCollectors || []);
-      renderMHCollectors(mhData.mhCollectors || []);
-    })
+    fetch("/data?" + params.toString(), { signal: ctrl.signal })
+    .then(r => r.json())
+    .then(data => { _dataXhr = null; renderData(data.data || []); })
     .catch(e => { if(e.name !== 'AbortError') console.warn('Data fetch error:', e); });
   }, 150); // 150ms debounce
 }
@@ -2469,13 +2151,6 @@ let approxCache      = null;   // null = not yet loaded
 let approxCacheReady = false;
 
 let approxCacheIds = new Set(); // fast O(1) lookup: is this id in approxCache?
-
-// Diff-based approx layer state.
-// Key = dot key string (coords or addr), Value = { marker, sales, dotRef }
-// Kept in sync by loadApproxData() — dots are added/removed individually,
-// never via clearLayers(). This eliminates all flicker from race conditions.
-let _approxVisible = {}; // currently rendered approx dots
-let _lastZoomedTo = null;
 
 function initApproxCache(){
   fetch('/data/approx/all')
@@ -2502,48 +2177,11 @@ function initApproxCache(){
 
 function loadApproxData(){
   if(!approxCacheReady) return;
-  // Blank map: if nothing selected, suppress approx dots too
-  const _p = buildFilterParams();
-  const _hasAny =
-    _p.get('seller_last') || _p.get('buyer_last') ||
-    _p.get('seller_entity') || _p.get('buyer_entity') ||
-    _p.get('span') || _p.get('street') ||
-    _p.get('building') || _p.get('interest') ||
-    _p.get('seller_use') || _p.get('buyer_use') ||
-    _p.get('grand_list') || _p.get('ptt_exemption') || _p.get('no_land');
-  if(!_hasAny){
-    Object.keys(_approxVisible).forEach(k => {
-      const e = _approxVisible[k];
-      approxLayer.removeLayer(e.marker);
-      if(e.badge) approxLayer.removeLayer(e.badge);
-    });
-    _approxVisible = {};
-    return;
-  }
-  // During a name search, only show records returned by the ArcGIS name
-  // query. Approx cache records don't store seller/buyer names so they
-  // can't be filtered by name — suppress them entirely.
-  if(nameSearchCache !== null){
-    // Clear any existing approx dots and return
-    Object.keys(_approxVisible).forEach(k => {
-      const e = _approxVisible[k];
-      approxLayer.removeLayer(e.marker);
-      if(e.badge) approxLayer.removeLayer(e.badge);
-    });
-    _approxVisible = {};
-    return;
-  }
 
   // Don't render approx dots at statewide zoom — too many records flood the map.
   // At zoom < 9 the dots aren't useful anyway (too zoomed out to identify).
   if(map.getZoom() < 9){
-    // Remove all current approx dots individually (no clearLayers)
-    Object.keys(_approxVisible).forEach(k => {
-      const entry = _approxVisible[k];
-      approxLayer.removeLayer(entry.marker); if(entry.badge) approxLayer.removeLayer(entry.badge);
-      entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
-    });
-    _approxVisible = {};
+    approxLayer.clearLayers();
     return;
   }
 
@@ -2555,35 +2193,16 @@ function loadApproxData(){
   const dateTo   = params.get('date_to')   || '';
   const priceLow  = parseFloat(params.get('price_low'))  || 0;
   const priceHigh = parseFloat(params.get('price_high')) || Infinity;
-  const noLand    = params.get('no_land') === '1';
-  // Checkbox filter sets — zero-padded to match ArcGIS stored values
-  function padCodes(paramKey){
-    const raw = params.get(paramKey) || '';
-    if(!raw) return [];
-    return raw.split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-  }
-  const fInterest  = padCodes('interest');
-  const fBuilding  = padCodes('building');
-  const fSellerUse = padCodes('seller_use');
-  const fBuyerUse  = padCodes('buyer_use');
-  const fPttEx     = padCodes('ptt_exemption');
-  const fGrandList = padCodes('grand_list');
 
-  // --- Step 1: compute which records pass all filters ----------------------
-  const passing = approxCache.filter(p => {
+  const visible = approxCache.filter(p => {
     if(p.lat == null || p.lon == null) return false;
-    // Centroid records use a 0.15-degree buffer so they stay visible
-    // even when the exact centroid point is near the viewport edge.
-    const inView = p.isCentroid
-      ? b.pad(0.15).contains([p.lat, p.lon])
-      : b.contains([p.lat, p.lon]);
-    if(!inView) return false;
-
-    // $0 exclusion
+    if(!b.contains([p.lat, p.lon]))    return false;
+    // Exclude $0 transfers from map display.
+    // Approx cache records have price=null (fetched on click) — don't exclude those.
     if(p.price !== null && (p.price || 0) <= 0) return false;
-
-    // Location filters
     if(counties.length){
+      // If county filter is active, records with no county info are excluded.
+      // This prevents junk-schoolCode records (0, 999) from leaking through.
       if(!p.trustedCountyCode) return false;
       if(!counties.includes(String(p.trustedCountyCode).padStart(2,'0'))) return false;
     }
@@ -2591,90 +2210,48 @@ function loadApproxData(){
       if(!p.trustedTown) return false;
       if(!towns.includes(p.trustedTown.toUpperCase())) return false;
     }
-
-    // Date filter — use real stored date (epoch ms) now that cache has it
     if(dateFrom || dateTo){
       const d = p.date ? new Date(p.date) : null;
-      if(!d) return true; // no date stored — include regardless
-      if(dateFrom && d < new Date(dateFrom)) return false;
-      if(dateTo   && d > new Date(dateTo))   return false;
+      if(!d) return true; // no date in cache — include regardless of date filter
     }
-
-    // Price filter
     if(priceLow > 0 && (p.price || 0) < priceLow)   return false;
     if(priceHigh < Infinity && (p.price || 0) > priceHigh) return false;
-
-    // Land size filters
-    if(noLand){
-      if((p.landSize || 0) !== 0) return false;
-    } else {
-      const ll = parseFloat(params.get('land_low'))  || 0;
-      const lh = parseFloat(params.get('land_high')) || Infinity;
-      if(ll > 0 && (p.landSize || 0) < ll) return false;
-      if(lh < Infinity && (p.landSize || 0) > lh) return false;
-    }
-
-    // Checkbox filters — if a filter is active and the field is null
-    // (not stored in cache), exclude the record. Unknown type should not
-    // pass a type filter — it would show incorrect results.
-    if(fInterest.length){
-      if(p.intPrpType == null) return false;
-      if(!fInterest.includes(String(p.intPrpType).padStart(2,'0'))) return false;
-    }
-    if(fBuilding.length){
-      const bldgCodes = [
-        p.buildingConstruction1, p.buildingConstruction2, p.buildingConstruction3
-      ].filter(Boolean).map(c => String(c).padStart(2,'0'));
-      if(!bldgCodes.length) return false; // null = exclude when filter active
-      if(!fBuilding.some(c => bldgCodes.includes(c))) return false;
-    }
-    if(fSellerUse.length){
-      if(p.sellerUseOfProperty == null) return false;
-      if(!fSellerUse.includes(String(p.sellerUseOfProperty).padStart(2,'0'))) return false;
-    }
-    if(fBuyerUse.length){
-      if(p.buyerUseOfProperty == null) return false;
-      if(!fBuyerUse.includes(String(p.buyerUseOfProperty).padStart(2,'0'))) return false;
-    }
-    if(fPttEx.length){
-      if(p.propertyTaxExemption == null) return false;
-      if(!fPttEx.includes(String(p.propertyTaxExemption).padStart(2,'0'))) return false;
-    }
-    if(fGrandList.length){
-      if(p.TownGrandListCategory == null) return false;
-      if(!fGrandList.includes(String(p.TownGrandListCategory).padStart(2,'0'))) return false;
-    }
-
     return true;
   });
 
-  // --- Step 2: try to merge each passing record into a black dot -----------
-  // Records that merge into a black dot are removed from approxLayer.
-  // Records that don't merge stay in (or are added to) approxLayer.
-  const unmerged = [];
-  passing.forEach(p => {
+  // True centroid fallbacks (isCentroid=true) -> orange circles in approxLayer.
+  // Geocoded records (isCentroid=false) -> orange circles too, but placed precisely.
+  // We keep all in approxLayer so renderData's clearLayers() doesn't wipe them.
+  renderApproxData(visible);
+}
+
+function renderApproxData(records){
+  // Don't clear while a popup is open for an approx dot — it would
+  // delete the dot mid-hover and make it disappear until next pan.
+  if(!_openPopupSpan) approxLayer.clearLayers();
+  if(!records.length) return;
+
+  // Group by coordinates. For centroid records, first check if a black dot
+  // already exists at the same address+town — if so, merge into it.
+  let grouped = {};
+  records.forEach(p => {
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
 
+    // Try to merge into existing black dot via SPAN (most reliable) or address
     let merged = false;
 
-    // 1. SPAN-based merge
+    // 1. SPAN-based merge — most accurate, property-specific
     if(p.span && String(p.span) !== '0'){
-      const existing = spanDotLookup[String(p.span).trim()];
+      const spanKey = String(p.span).trim();
+      const existing = spanDotLookup[spanKey];
+      // Only merge if the marker is still on the map (not cleared by a pan)
       if(existing && existing.marker && markersLayer.hasLayer(existing.marker)){
-        if(!existing.sales.find(s => s.id === p.id)) existing.sales.push(p);
+        existing.sales.push(p);
         markerRefs[p.id] = existing;
         if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
           existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
         merged = true;
-        // Remove from approxLayer if it was there
-        const dotKey = _approxDotKey(p);
-        if(_approxVisible[dotKey]){
-          const entry = _approxVisible[dotKey];
-          if(!_openPopupSpan) approxLayer.removeLayer(entry.marker); if(entry.badge) approxLayer.removeLayer(entry.badge);
-          entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
-          delete _approxVisible[dotKey];
-        }
       }
     }
 
@@ -2682,157 +2259,57 @@ function loadApproxData(){
     if(!merged && p.address){
       const addrKey = (normalizeAddr(p.address) + '|' + (p.trustedCountyCode || ''));
       const existing = addressDotLookup[addrKey];
+      // Only merge if the marker is still on the map (not cleared by a pan)
       if(existing && existing.marker && markersLayer.hasLayer(existing.marker)){
-        if(!existing.sales.find(s => s.id === p.id)) existing.sales.push(p);
+        existing.sales.push(p);
         markerRefs[p.id] = existing;
         if(!_openPopupSpan || _openPopupSpan !== String(existing.sales[0].span))
           existing.marker.setPopupContent(buildPopupHTML(existing.sales[0], existing.sales, null));
         merged = true;
-        const dotKey = _approxDotKey(p);
-        if(_approxVisible[dotKey]){
-          const entry = _approxVisible[dotKey];
-          if(!_openPopupSpan) approxLayer.removeLayer(entry.marker); if(entry.badge) approxLayer.removeLayer(entry.badge);
-          entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
-          delete _approxVisible[dotKey];
-        }
       }
     }
 
-    if(!merged) unmerged.push(p);
-  });
+    if(merged) return;
 
-  // --- Step 3: group unmerged records by dot key ---------------------------
-  // Exclude ALL timeshare approx records (intPrpType=5 or 05) from the
-  // approx layer. They are handled exclusively by the TS collector (tsLayer)
-  // fetched from /data/timeshares. This applies regardless of isCentroid.
-  const grouped = {};
-  unmerged.forEach(p => {
-    const intType = String(p.intPrpType || '').replace(/^0+/,'') || '0';
-    const ls      = p.landSize;
-    const isMHCode = [
-      p.buildingConstruction1, p.buildingConstruction2, p.buildingConstruction3
-    ].some(v => String(v || '').replace(/^0+/,'') === '4');
-    if(intType === '5') return; // ALL timeshares -> tsLayer only
-    if(isMHCode && (ls === 0 || ls === null || ls === undefined)) return; // MH no-land -> mhLayer only
-    const key = _approxDotKey(p);
+    // Group by coordinates OR by normalized address+county
+    // so approx records at same address cluster into one dot
+    let key;
+    if(p.lat != null && p.lon != null){
+      key = (Math.round(p.lat * 10000) / 10000) + "|" + (Math.round(p.lon * 10000) / 10000);
+    } else if(p.address){
+      key = 'addr|' + normalizeAddr(p.address) + '|' + (p.trustedCountyCode || '');
+    } else {
+      key = (p.address || '') + '_' + (p.city || '');
+    }
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(p);
   });
 
-  // --- Step 4: diff — remove dots no longer needed ------------------------
-  const nextKeys = new Set(Object.keys(grouped));
-  Object.keys(_approxVisible).forEach(k => {
-    if(!nextKeys.has(k)){
-      const entry = _approxVisible[k];
-      // Don't remove a dot whose popup is currently open
-      if(_openPopupSpan && entry.sales.some(s => String(s.span) === _openPopupSpan)) return;
-      approxLayer.removeLayer(entry.marker); if(entry.badge) approxLayer.removeLayer(entry.badge);
-      entry.sales.forEach(s => { if(markerRefs[s.id] === entry) delete markerRefs[s.id]; });
-      delete _approxVisible[k];
-    }
-  });
-
-  // --- Step 5: add new dots / update existing ones -------------------------
   Object.keys(grouped).forEach(key => {
     const sales = grouped[key];
     const p     = sales[0];
+    const lat   = (p.lat || 0) + 0.00005;
+    const lon   = (p.lon || 0) + 0.00005;
 
-    if(_approxVisible[key]){
-      // Dot already on map — just refresh its popup if not open
-      const entry = _approxVisible[key];
-      // Merge any new sales into the existing entry
-      sales.forEach(s => {
-        if(!entry.sales.find(es => es.id === s.id)){
-          entry.sales.push(s);
-          markerRefs[s.id] = entry;
-        }
-      });
-      if(!_openPopupSpan || !entry.sales.some(s => String(s.span) === _openPopupSpan))
-        entry.marker.setPopupContent(buildPopupHTML(entry.sales[0], entry.sales, null));
-      return; // already visible — nothing to add
-    }
-
-    // New dot — create and add
-    const lat = (p.lat || 0) + 0.00005;
-    const lon = (p.lon || 0) + 0.00005;
-    const isSelected    = sales.some(s => selectedSales[s.id]);
-    const isCentroid    = sales.some(s => s.isCentroid === true);
-    const isPrecise     = sales.some(s => s.preciselyCoded === true);
-    // Dot style:
-    //   preciselyCoded=true  -> black dot, same as ArcGIS PTT records
-    //   isCentroid=true      -> green circle, genuine unknown location
-    //   neither              -> orange dashed circle, road-level approximate
-    const baseColor   = (activeBase === 'satellite') ? 'red' : '#1a1a1a';
-    const markerColor = isSelected ? '#0066ff'
-                      : isPrecise  ? baseColor
-                      : isCentroid ? '#2e7d32'
-                      : '#e65c00';
+    const isSelected  = sales.some(s => selectedSales[s.id]);
+    // Two distinct approx marker styles:
+    // isCentroid=true  -> GREEN circle: parked at town center, no specific location known
+    // isCentroid=false -> ORANGE circle: geocoded to specific address (SPAN/Nominatim)
+    const isCentroid  = sales.some(s => s.isCentroid === true);
+    const markerColor = isSelected ? '#0066ff' : isCentroid ? '#2e7d32' : '#e65c00';
 
     const marker = L.circleMarker([lat, lon], {
-      radius:      isPrecise ? 5 : 6,
+      radius:      6,
       color:       markerColor,
       fillColor:   markerColor,
       fillOpacity: isSelected ? 1 : 0,
-      weight:      isPrecise ? 2 : 2.5,
-      dashArray:   (isCentroid || isPrecise) ? null : '4 3',
+      dashArray:   isCentroid ? null : '4 3',  // dashed for geocoded, solid for centroid
     });
 
-    // Approx badge visibility uses same active filter sets as markersLayer
-    const _abldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
-    const _noLand   = document.getElementById('noLandCheck')?.checked || false;
-    const _condoSel = _abldg.has('05');
-    const _mhSel    = _noLand && (_abldg.has('04') || _abldg.has('4'));
-
-    // Condo badge for approx layer dots — exclude timeshares, only when condo selected
-    const approxIsCondo = _condoSel && sales.some(s =>
-      String(s.buildingConstruction1 || '').replace(/^0+/,'') === '5' &&
-      String(s.intPrpType || '').replace(/^0+/,'') !== '5'
-    );
-    const approxIsCondoGroup = approxIsCondo && sales.length > 1;
-    let approxBadge = null;
-    if(approxIsCondoGroup){
-      approxBadge = L.marker([lat, lon], {
-        icon: L.divIcon({
-          className: '',
-          html: '<div style="background:#7B00D4;color:#fff;border-radius:50%;' +
-                'width:14px;height:14px;font-size:9px;font-weight:bold;' +
-                'display:flex;align-items:center;justify-content:center;' +
-                'border:1px solid #fff;pointer-events:none;">' +
-                sales.length + '</div>',
-          iconSize: [14,14], iconAnchor: [7,7],
-        }),
-        interactive: false, pane: 'markerPane'
-      });
-      approxLayer.addLayer(approxBadge);
-    }
-
-    // Mobile home badge for approx layer dots — only when MH filter active
-    const approxIsMH = _mhSel && sales.some(s => {
-      const ls = s.landSize;
-      const hasMH = [s.buildingConstruction1, s.buildingConstruction2, s.buildingConstruction3]
-        .some(v => String(v || '').replace(/^0+/,'') === '4');
-      return hasMH && (ls === 0 || ls === null || ls === undefined);
+    const dotRef = { marker, sales, prop: p, fromApproxLayer: true };
+    sales.forEach(s => {
+      markerRefs[s.id] = dotRef;
     });
-    if(approxIsMH){
-      approxBadge = L.marker([lat, lon], {
-        icon: L.divIcon({
-          className: '',
-          html: '<div style="background:#00897B;color:#fff;border-radius:50%;' +
-                'width:14px;height:14px;font-size:9px;font-weight:bold;' +
-                'display:flex;align-items:center;justify-content:center;' +
-                'border:1px solid #fff;pointer-events:none;margin-left:8px;margin-top:-8px;">M' +
-                (sales.length > 1 ? sales.length : '') + '</div>',
-          iconSize: [14,14], iconAnchor: [-2,14],
-        }),
-        interactive: false, pane: 'markerPane'
-      });
-      approxLayer.addLayer(approxBadge);
-    }
-
-    // Store badge in entry so it gets removed when the dot is removed
-    const entry = { marker, badge: approxBadge, sales: [...sales], prop: p, fromApproxLayer: true };
-    sales.forEach(s => { markerRefs[s.id] = entry; });
-    _approxVisible[key] = entry;
 
     marker.bindPopup(buildPopupHTML(p, sales, null), {
       maxWidth:   600,
@@ -2840,30 +2317,21 @@ function loadApproxData(){
       autoPan:    false,
       keepInView: false
     });
+
     marker.on('mouseover', function(){
       if(!hoverEnabled) return;
-      hoverTimer = setTimeout(() => openPopupWithHistory(marker, p, entry.sales), 700);
+      hoverTimer = setTimeout(() => openPopupWithHistory(marker, p, sales), 700);
     });
     marker.on('mouseout', function(){
       if(hoverTimer) clearTimeout(hoverTimer);
     });
     marker.on('click', function(){
       if(hoverTimer) clearTimeout(hoverTimer);
-      openPopupWithHistory(marker, p, entry.sales);
+      openPopupWithHistory(marker, p, sales);
     });
 
     approxLayer.addLayer(marker);
   });
-}
-
-// Helper: compute the grouping key for an approx record.
-// Records that share a key are rendered as a single dot.
-function _approxDotKey(p){
-  if(p.lat != null && p.lon != null)
-    return (Math.round(p.lat * 10000) / 10000) + '|' + (Math.round(p.lon * 10000) / 10000);
-  if(p.address)
-    return 'addr|' + normalizeAddr(p.address) + '|' + (p.trustedCountyCode || '');
-  return (p.address || '') + '_' + (p.city || '');
 }
 
 // ===================================================
@@ -2941,36 +2409,18 @@ function enrichApproxSale(approxRecord, dotRef){
 // ===================================================
 function renderData(records){
   markersLayer.clearLayers();
-  mhLayer.clearLayers();  // clear mobile home collector dots on each render
-  // NOTE: tsLayer is NOT cleared here — TS collectors come from the approx
-  // cache (/data/approx/all), not from /data. Clearing here would wipe them
-  // every time black dots reload. They are only cleared in renderTSCollectors().
   markerRefs = {};
   addressDotLookup = {};  // reset address->coords lookup on each render
   spanDotLookup    = {};  // reset SPAN->marker lookup on each render
-  // Reset diff state so loadApproxData() re-evaluates every approx dot
-  // against the new spanDotLookup/addressDotLookup built below.
-  // Dots are physically removed here so the layer stays clean.
-  Object.keys(_approxVisible).forEach(k => {
-    approxLayer.removeLayer(_approxVisible[k].marker); if(_approxVisible[k].badge) approxLayer.removeLayer(_approxVisible[k].badge);
-  });
-  _approxVisible = {};
 
   let grouped = {};
-  const isNameSearch = (nameSearchCache !== null);
   records.forEach(p => {
-    // During a name search, show ALL returned records as solid dots.
-    // ArcGIS already returned them with valid coordinates via resolve_coordinates,
-    // and the approx layer is suppressed during name searches — so skipping
-    // approx/cached records here would make them vanish entirely.
-    if(!isNameSearch){
-      // Approx records are handled by approxLayer — skip them here so they
-      // don’t get cleared/redrawn on every pan/zoom.
-      if(p.approxLocation) return;
-      // Skip records already in approx cache — cache serves them with correct coords.
-      // approxCacheIds is a Set for O(1) lookup instead of O(n) .some() scan.
-      if(approxCacheReady && approxCacheIds.has(p.id)) return;
-    }
+    // Approx records are handled by approxLayer — skip them here so they
+    // don’t get cleared/redrawn on every pan/zoom.
+    if(p.approxLocation) return;
+    // Skip records already in approx cache — cache serves them with correct coords.
+    // approxCacheIds is a Set for O(1) lookup instead of O(n) .some() scan.
+    if(approxCacheReady && approxCacheIds.has(p.id)) return;
 
     if(p.trustedTown && p.trustedCountyCode)
       addKnownTown(p.trustedTown, p.trustedCountyCode);
@@ -3010,32 +2460,11 @@ function renderData(records){
                       : isApprox   ? "#e65c00"
                       : baseColor;
 
-    // Active filter sets — used for badge visibility
-    const activeBldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
-    const activeInterest = new Set(getCheckedCodes('interestList').map(c => c.padStart(2,'0')));
-    const activeGL      = new Set(getCheckedCodes('grandListList').map(c => c.padStart(2,'0')));
-    const noLandActive  = document.getElementById('noLandCheck')?.checked || false;
-    const condoSelected = activeBldg.has('05');
-    const tsSelected    = activeInterest.has('05');
-    const mhSelected    = noLandActive && (activeBldg.has('04') || activeBldg.has('4'));
-
-    // Detect condo group: multiple sales with blCn1='5' AND not timeshare
-    // AND condo is in the active building type filter.
-    const isCondo = condoSelected && sales.some(s =>
-      String(s.buildingConstruction1 || s.blCn1 || '').replace(/^0+/, '') === '5' &&
-      String(s.intPrpType || '').replace(/^0+/, '') !== '5'
+    // Detect condo group: multiple sales with blCn1 = '5' or '05'
+    const isCondo = sales.some(s =>
+      String(s.buildingConstruction1 || s.blCn1 || '').replace(/^0+/, '') === '5'
     );
     const isCondoGroup = isCondo && sales.length > 1;
-
-    // Mobile home without land badge — only when MH filter active.
-    // Uses blCn1/2/3=4 (Mobile Home building type) AND no land.
-    const isMobileHome = mhSelected && sales.some(s => {
-      const ls = s.landSize;
-      const hasMHCode = [
-        s.buildingConstruction1, s.buildingConstruction2, s.buildingConstruction3
-      ].some(v => String(v || '').replace(/^0+/,'') === '4');
-      return hasMHCode && (ls === 0 || ls === null || ls === undefined);
-    });
 
     const marker = L.circleMarker([lat, lon], {
       radius:      isApprox ? 6 : 5,
@@ -3046,7 +2475,7 @@ function renderData(records){
       dashArray:   isApprox ? "4 3" : null
     });
 
-    // Badge marker for condo groups — purple overlaid number showing unit count
+    // Badge marker for condo groups — overlaid number showing unit count
     let badgeMarker = null;
     if(isCondoGroup){
       badgeMarker = L.marker([lat, lon], {
@@ -3059,27 +2488,6 @@ function renderData(records){
                 sales.length + '</div>',
           iconSize:   [14, 14],
           iconAnchor: [7, 7],
-        }),
-        interactive: false,
-        pane: 'markerPane'
-      });
-      markersLayer.addLayer(badgeMarker);
-    }
-
-    // Badge marker for mobile home (no land) — teal, always shown even for single sale
-    // so user knows this is a mobile home park sale without land transfer.
-    if(isMobileHome){
-      badgeMarker = L.marker([lat, lon], {
-        icon: L.divIcon({
-          className: '',
-          html: '<div style="background:#00897B;color:#fff;border-radius:50%;' +
-                'width:14px;height:14px;font-size:9px;font-weight:bold;' +
-                'display:flex;align-items:center;justify-content:center;' +
-                'border:1px solid #fff;pointer-events:none;' +
-                'margin-left:8px;margin-top:-8px;">M' +
-                (sales.length > 1 ? sales.length : '') + '</div>',
-          iconSize:   [14, 14],
-          iconAnchor: [-2, 14],
         }),
         interactive: false,
         pane: 'markerPane'
@@ -3136,128 +2544,13 @@ function renderData(records){
   reapplyDrawnShapes();
 
   // After renderData populates spanDotLookup and addressDotLookup,
-  // re-render the approx layer so merges use fresh lookups.
-  // Called here (not from onMoveEnd) so loadApproxData always sees complete
-  // spanDotLookup / addressDotLookup — eliminates the pan race condition.
-  loadApproxData();
-}
+  // run a merge pass on already-rendered approx records.
+  // This handles the case where approx cache loaded before black dots.
+  if(approxCacheReady) mergeApproxIntoBlackDots();
 
-// ===================================================
-// MOBILE HOME COLLECTOR DOTS
-// ===================================================
-
-// ===================================================
-// SHARED COLLECTOR DOT RENDERER
-// Used by MH, TS (and future vacant land) collector dots.
-// c = collector entry from server: { town, lat, lon, count, sales[] }
-// layer = Leaflet layer group to add to
-// color = hex color for dot + badge
-// label = badge letter (M, T, V...)
-// typeLabel = display name for popup header
-// ===================================================
-function _renderCollectorDot(c, layer, color, label, typeLabel){
-  const lat   = c.lat;
-  const lon   = c.lon;
-  const sales = c.sales || c.mhSales || c.tsSales || [];
-  const count = c.count || sales.length;
-  const town  = c.town || '';
-
-  if(!lat || !lon || !count) return;
-
-  // Dot
-  const marker = L.circleMarker([lat, lon], {
-    radius: 5, color: color, fillColor: color, fillOpacity: 0, weight: 2,
-  });
-
-  // Badge
-  const badge = L.marker([lat, lon], {
-    icon: L.divIcon({
-      className: '',
-      html: '<div style="background:' + color + ';color:#fff;border-radius:50%;' +
-            'width:16px;height:16px;font-size:9px;font-weight:bold;' +
-            'display:flex;align-items:center;justify-content:center;' +
-            'border:1.5px solid #fff;pointer-events:none;">' +
-            label + (count > 1 ? count : '') + '</div>',
-      iconSize: [16,16], iconAnchor: [-2, 16],
-    }),
-    interactive: false, pane: 'markerPane'
-  });
-
-  // Popup — group by base address, sorted newest first, with PTT-172 buttons
-  function baseAddr(addr){
-    if(!addr) return 'Unknown';
-    return addr.replace(/,?\s*(UNIT|APT|WEEK|WEEKS|TYPE|WEE|LOT|#|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN)\b.*/i,'').trim();
-  }
-  const sorted = [...sales].sort((a,b) => (b.date||0) - (a.date||0));
-  const groups = {};
-  sorted.forEach(s => {
-    const base = baseAddr(s.address || '');
-    if(!groups[base]) groups[base] = [];
-    groups[base].push(s);
-  });
-
-  let html = '<div style="font-size:12px;font-weight:bold;margin-bottom:3px;">' +
-    typeLabel + ' — ' + town + '</div>';
-  html += '<div style="font-size:10px;color:#555;margin-bottom:5px;">' +
-    count + ' sale' + (count!==1?'s':'') + ' within current filters</div>';
-  html += '<div style="max-height:340px;overflow-y:auto;">';
-  Object.keys(groups).sort().forEach(base => {
-    const grp = groups[base];
-    html += '<div style="background:#f0f4f0;padding:2px 5px;margin:3px 0 1px;' +
-      'font-size:10px;font-weight:bold;border-left:3px solid ' + color + ';">' +
-      base + ' (' + grp.length + ')</div>';
-    grp.forEach(s => {
-      const price = s.price ? '$' + Number(s.price).toLocaleString() : 'N/A';
-      const date  = s.date  ? new Date(s.date).toISOString().split('T')[0] : 'N/A';
-      const seller= [s.sellerLastName,s.sellerFirstName].filter(Boolean).join(', ')||s.sellerEntityName||'';
-      const buyer = [s.buyerLastName, s.buyerFirstName ].filter(Boolean).join(', ')||s.buyerEntityName ||'';
-      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;' +
-              'border-bottom:1px solid #eee;padding:3px 0 3px 5px;font-size:11px;">' +
-        '<div><b>' + price + '</b> &nbsp; ' + date + '<br>' +
-        (seller ? '<span style="color:#555">Seller: '+seller+'</span><br>' : '') +
-        (buyer  ? '<span style="color:#555">Buyer: ' +buyer +'</span>'    : '') +
-        '</div>' +
-        (s.id ? '<div style="display:inline-block;text-align:center;flex-shrink:0;margin-left:4px;align-self:center;">' +
-          '<a href="/ptt172/preview?id=' + s.id + '" target="_blank" rel="noopener noreferrer" ' +
-          'style="font-size:10px;padding:1px 5px;background:#1F4E79;color:#fff;' +
-          'border:none;border-radius:2px;white-space:nowrap;cursor:pointer;' +
-          'text-decoration:none;display:inline-block;">PTT-172</a><br>' +
-          '<span style="font-size:10px;color:#999;">Right-click</span></div>' : '') +
-        '</div>';
-    });
-  });
-  html += '</div>';
-
-  marker.bindPopup(html, { maxWidth:460, maxHeight:500, autoPan:false, keepInView:false });
-
-  marker.on('mouseover', function(){
-    if(!hoverEnabled) return;
-    hoverTimer = setTimeout(() => marker.openPopup(), 700);
-  });
-  marker.on('mouseout',  function(){ if(hoverTimer) clearTimeout(hoverTimer); });
-  marker.on('click',     function(){
-    if(hoverTimer) clearTimeout(hoverTimer);
-    marker.openPopup();
-  });
-
-  layer.addLayer(marker);
-  layer.addLayer(badge);
-}
-
-function renderMHCollectors(collectors){
-  mhLayer.clearLayers();
-  if(!collectors || !collectors.length) return;
-  collectors.forEach(c => _renderCollectorDot(c, mhLayer, '#00897B', 'M', 'Mobile Home (no land)'));
-}
-
-// ===================================================
-// TIMESHARE COLLECTOR DOTS
-// ===================================================
-
-function renderTSCollectors(collectors){
-  tsLayer.clearLayers();
-  if(!collectors || !collectors.length) return;
-  collectors.forEach(c => _renderCollectorDot(c, tsLayer, '#B8860B', 'T', 'Timeshare Sales'));
+  // Note: do NOT call loadApproxData() here — it causes flickering because
+  // moveend fires loadData() -> renderData() -> loadApproxData() repeatedly.
+  // The approxLayer is managed independently via pan/zoom events.
 }
 
 // ===================================================
@@ -3304,16 +2597,12 @@ function buildSaleRow(s, dimmed){
       <div>
         <b>${price}</b> &nbsp; ${dateStr}
       </div>
-      <div style="display:inline-block; text-align:center; flex-shrink:0;">
-        <a href="${_ptt172DlMode ? '/ptt172/PTT-172.pdf?id=' + s.id + '&download=1' : '/ptt172/preview?id=' + s.id}"
-           target="_blank" rel="noopener noreferrer"
-           style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
-                  border:none; border-radius:2px; white-space:nowrap; cursor:pointer;
-                  text-decoration:none; display:inline-block;">
-          PTT-172
-        </a><br>
-        <span style="font-size:10px; color:#999;">Right-click</span>
-      </div>
+      <a id="ptt172-link-${s.id}" href="/ptt172/preview?id=${s.id}" target="_blank"
+         onclick="event.stopPropagation(); this.href=_ptt172DlMode?'/ptt172/PTT-172.pdf?id=${s.id}&download=1':'/ptt172/preview?id=${s.id}';"
+         style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
+                border-radius:2px; text-decoration:none; white-space:nowrap; flex-shrink:0;">
+        PTT-172
+      </a>
     </div>
     <span style="font-size:11px;word-break:break-word;">${addr}</span><br>
     <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
@@ -3329,25 +2618,22 @@ function buildPopupHTML(p, sales, historySales){
   const headerTown = p.trustedTown || p.city || '';
   if(headerTown)
     header += `<i>${headerTown}, ${p.trustedCountyName || ''}</i><br>`;
-  // Show approximate location warning only when the PRIMARY sale record
-  // (the one whose coordinates placed the dot) has approxLocation=true.
-  // Do NOT show the warning just because a merged approx sale is in the
-  // history array — that would wrongly label precise ArcGIS dots as approximate.
-  const primarySale  = sales[0];
-  const hasCentroid  = primarySale && primarySale.isCentroid === true;
-  const hasGeocoded  = primarySale && primarySale.approxLocation && !primarySale.isCentroid
-                       && primarySale.preciselyCoded === false;
+  // Show appropriate warning based on location accuracy
+  const hasCentroid  = sales.some(s => s.isCentroid === true);
+  const hasGeocoded  = sales.some(s => s.approxLocation && s.isCentroid === false);
   if(hasCentroid)
     header += `<span style="font-size:10px;color:#2e7d32;">&#9888; Approximate location (town center) &mdash; could not determine specific address.</span><br>`;
   else if(hasGeocoded)
     header += `<span style="font-size:10px;color:#e65c00;">&#9888; Approximate location &mdash; source coordinates were invalid, address geocoded.</span><br>`;
 
   // Google Maps / Street View button — always uses exact lat/lon coordinates.
+  // Opens Google Maps centered on the property at zoom 18 (street level).
+  // User can then click the yellow Street View pegman to see ground-level view.
   const lat = p.lat || (sales[0] && sales[0].lat);
   const lon = p.lon || (sales[0] && sales[0].lon);
   if(lat && lon){
-    // User can then click the yellow Street View pegman to see ground-level view.
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+    // @lat,lon,18z — drops directly to street-level zoom at exact coordinates
+    const mapsUrl = `https://www.google.com/maps/@${lat},${lon},18z`;
     header += `<a href="${mapsUrl}" target="_blank" rel="noopener"
       style="display:inline-block; margin-bottom:4px; padding:2px 8px;
              background:#4285F4; color:white; font-size:10px; font-weight:bold;
@@ -3395,27 +2681,11 @@ function buildPopupHTML(p, sales, historySales){
     ? `<div style="font-size:10px;color:#888;text-align:center;padding:2px 0;">&#9651; scroll to see all ${totalSales} sales &#9651;</div>`
     : '';
 
-  // Flag for Export button — uses first sale ID as ref to find the dot
-  const refId = sales[0] && sales[0].id;
-  const isFlagged = sales.some(s => flaggedSales[s.id]);
-  const flagBtn = refId
-    ? `<div style="text-align:center;margin-top:4px;">
-        <button onclick="toggleFlagDot('${refId}')"
-          style="padding:2px 10px;font-size:11px;font-weight:bold;cursor:pointer;
-                 border:1px solid ${isFlagged ? '#0066ff' : '#999'};border-radius:3px;
-                 background:${isFlagged ? '#0066ff' : '#fff'};
-                 color:${isFlagged ? '#fff' : '#333'};">
-          ${isFlagged ? '&#10003; Flagged' : '&#9873; Flag for Spreadsheet Export'}
-        </button>
-      </div>`
-    : '';
-
   return `${header}
     ${scrollNote}
     <div style="max-height:400px; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;">
       ${rows}
-    </div>
-    ${flagBtn}`;
+    </div>`;
 }
 
 
@@ -3431,17 +2701,10 @@ function openPopupWithHistory(marker, p, sales){
   )];
   if(!spans.length) return;
 
-  // Determine if this is a timeshare popup.
-  // intPrpType is now served in both /data (slim) and /data/approx/all.
-  const isTimeshare = sales.some(s =>
-    String(s.intPrpType || '').replace(/^0+/,'') === '5'
-  );
-  const tsParam = isTimeshare ? '&is_timeshare=1' : '';
-
   // Fetch /history for each unique SPAN, then merge all results
   Promise.all(
     spans.map(span =>
-      fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')) + tsParam)
+      fetch('/history?span=' + encodeURIComponent(String(span).replace(/-/g,'')))
       .then(r => r.json())
       .then(d => d.data || [])
       .catch(() => [])
@@ -3516,42 +2779,6 @@ function updateSelCount(){
 }
 
 // ===================================================
-// FLAG FOR EXPORT (popup button)
-// ===================================================
-function toggleFlagDot(refSaleId){
-  const ref = markerRefs[refSaleId];
-  if(!ref) return;
-
-  // Check if ANY sale in this dot is already flagged
-  const alreadyFlagged = ref.sales.some(s => flaggedSales[s.id]);
-
-  if(alreadyFlagged){
-    // Unflag all sales in this dot
-    const ll = ref.marker.getLatLng();
-    const inShape = firstShapeContaining(ll.lat, ll.lng);
-    ref.sales.forEach(s => {
-      delete flaggedSales[s.id];
-      // Only remove from selectedSales if not inside a drawn shape
-      if(!inShape) delete selectedSales[s.id];
-    });
-  } else {
-    // Flag all sales in this dot
-    ref.sales.forEach(s => {
-      flaggedSales[s.id] = s;
-      selectedSales[s.id] = s;
-    });
-  }
-
-  updateMarkerStyle(ref);
-  updateSelCount();
-
-  // Refresh the open popup so the button label updates
-  const newHTML = buildPopupHTML(ref.prop, ref.sales, null);
-  ref.marker.setPopupContent(newHTML);
-  ref.marker.openPopup();
-}
-
-// ===================================================
 // POPUP TIMING
 // ===================================================
 // Popup opens on marker mouseover (700ms delay).
@@ -3563,7 +2790,7 @@ document.addEventListener('mousemove', function(e){ _mouseX = e.clientX; _mouseY
 
 function startProximityWatch(){
   if(_proximityTimer) clearInterval(_proximityTimer);
-  const THRESHOLD = 40; // ~0.1 inch at 96dpi — closes when cursor moves slightly away
+  const THRESHOLD = 120;
   const started = Date.now();
   _proximityTimer = setInterval(function(){
     // Grace period: don't close for first 600ms after opening
@@ -3633,16 +2860,12 @@ function _simpleDownloadExport(selectedOnly){
 // CLEAR SELECTED PROPERTIES
 // ===================================================
 function clearSelectedSales(){
-  // Capture keys before clearing so we know which markers to restyle
-  const ids = Object.keys(selectedSales);
-  selectedSales = {};
-  flaggedSales  = {};
-  // Now restyle markers — updateMarkerStyle will see them as unselected
-  const seen = new Set();
-  ids.forEach(id => {
+  // Deselect all sales and reset all markers to their unselected style
+  Object.keys(selectedSales).forEach(id => {
     const ref = markerRefs[id];
-    if(ref && !seen.has(ref.marker)){ seen.add(ref.marker); updateMarkerStyle(ref); }
+    if(ref) updateMarkerStyle(ref);
   });
+  selectedSales = {};
   updateSelCount();
   // Close any open popup so stale checkboxes don't remain visible
   map.closePopup();
@@ -3659,91 +2882,45 @@ function selectAllCheckboxes(){
 }
 
 function clearAllCheckboxes(){
-  // ---- Step 0: clear flagged/selected dots ----
-  clearSelectedSales();
-
-  // ---- Step 1: clear everything ----
+  // Uncheck all filter checkbox groups
   ['buildingList','interestList','sellerUseList','buyerUseList','grandListList','pttList'].forEach(id => {
     uncheckAllIn(id);
   });
+  // Clear county and town selections
   clearAllCounties();
   clearAllTowns();
-  document.getElementById('dateFrom').value  = '';
-  document.getElementById('dateTo').value    = '';
+  // Clear date range
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value   = '';
+  // Clear price range
   document.getElementById('priceLow').value  = '';
   document.getElementById('priceHigh').value = '';
-  document.getElementById('landLow').value   = '';
-  document.getElementById('landHigh').value  = '';
-  const noLandEl = document.getElementById('noLandCheck');
-  if(noLandEl) noLandEl.checked = false;
+  // Clear land size range
+  document.getElementById('landLow').value  = '';
+  document.getElementById('landHigh').value = '';
+  // Clear all name and SPAN fields
   ['sellerEntity','sellerLast','sellerFirst',
    'buyerEntity','buyerLast','buyerFirst',
    'streetAddr','spanInput'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  ['enrolledCurrentUse','currentUseContinues','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
+  // Reset Other Flags radios to 'Any' (empty value)
+  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed'].forEach(name => {
     const radio = document.querySelector(`input[name="${name}"][value=""]`);
     if(radio) radio.checked = true;
   });
+  // Invalidate any name search cache since fields are now cleared
   nameSearchCache = null;
-  _lastZoomedTo = null;
-
-  // ---- Step 2: restore startup defaults ----
-  setCheckedCode('buildingList', '2');  // Single Family Dwelling
-  setCheckedCode('interestList', '1');  // Fee Simple
-  const today = new Date();
-  const sixMonthsAgo = new Date(today);
-  sixMonthsAgo.setMonth(today.getMonth() - 6);
-  document.getElementById('dateFrom').value = sixMonthsAgo.toISOString().split('T')[0];
-
-  // ---- Step 3: zoom back to statewide VT view and reload ----
-  map.off('moveend', onMoveEnd);
-  map.off('zoomend', onZoomEnd);
-  map.setView([44.0, -72.7], 8);
-  setTimeout(function(){
-    map.on('moveend', onMoveEnd);
-    map.on('zoomend', onZoomEnd);
-    applyFilters();
-  }, 400);
-}
-
-// ===================================================
-// CLEAR ALL FILTERS FOR NAME/SPAN SEARCH
-// Silently clears every filter so the user can do a clean name/SPAN search.
-// Does NOT call applyFilters() — the user enters their search and clicks Apply.
-// ===================================================
-function clearAllForNameSearch(){
-  ['buildingList','interestList','sellerUseList','buyerUseList','grandListList','pttList'].forEach(id => {
-    uncheckAllIn(id);
-  });
-  clearAllCounties();
-  clearAllTowns();
-  document.getElementById('dateFrom').value  = '';
-  document.getElementById('dateTo').value    = '';
-  document.getElementById('priceLow').value  = '';
-  document.getElementById('priceHigh').value = '';
-  document.getElementById('landLow').value   = '';
-  document.getElementById('landHigh').value  = '';
-  const noLandEl = document.getElementById('noLandCheck');
-  if(noLandEl) noLandEl.checked = false;
-  ['sellerEntity','sellerLast','sellerFirst',
-   'buyerEntity','buyerLast','buyerFirst',
-   'streetAddr','spanInput'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  ['enrolledCurrentUse','currentUseContinues','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
-    const radio = document.querySelector('input[name="' + name + '"][value=""]');
-    if(radio) radio.checked = true;
-  });
-  nameSearchCache = null;
+  // Re-filter approx cache with no active filters
+  loadApproxData();
 }
 
 // ===================================================
 // MAP EVENTS & INIT — attached AFTER codes load
 // Named handlers so they can be temporarily detached during fitBounds.
 // ===================================================
-function onMoveEnd(){ loadData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
-function onZoomEnd(){ loadApproxData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); updateConservedZoomMsg(); updateWetlandsZoomMsg(); } // loadData handled by moveend which always follows zoomend
+function onMoveEnd(){ loadData(); loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
+function onZoomEnd(){ loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); } // loadData handled by moveend which always follows zoomend
 
 function initMapEvents(){
   restoreBdySettings();
@@ -3757,19 +2934,32 @@ function initMapEvents(){
     // Only set if both fields are currently empty (don't override a saved state)
     if(!df.value && !dt.value){
       const today = new Date();
-      const sixMonthsAgo = new Date(today);
-      sixMonthsAgo.setMonth(today.getMonth() - 6);
-      df.value = sixMonthsAgo.toISOString().split('T')[0];
+      const oneYearAgo = new Date(today);
+      oneYearAgo.setFullYear(today.getFullYear() - 1);
+      df.value = oneYearAgo.toISOString().split('T')[0];
       // Leave dateTo blank so it defaults to "now" with no upper bound
     }
   })();
 
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
-  // Fire statewide 6-month load immediately on startup
-  loadData();
-  // Approx cache is deferred to first Apply click to keep startup fast.
-  // initApproxCache() is called from applyFilters() on first use.
+  // Fire initial load immediately (no debounce)
+  if(_loadDataTimer) clearTimeout(_loadDataTimer);
+  const b = map.getBounds();
+  const params = buildFilterParams();
+  const latPad = (b.getNorth() - b.getSouth()) * 0.10;
+  const lonPad = (b.getEast()  - b.getWest())  * 0.10;
+  params.set("xmin", b.getWest()  - lonPad);
+  params.set("ymin", b.getSouth() - latPad);
+  params.set("xmax", b.getEast()  + lonPad);
+  params.set("ymax", b.getNorth() + latPad);
+  document.getElementById("statusBar").textContent = "Loading...";
+  fetch("/data?" + params.toString())
+  .then(r => r.json())
+  .then(data => { renderData(data.data || []); });
+
+  // Fetch pre-geocoded approx records once — fast static file, filters client-side
+  initApproxCache();
 }
 
 loadCodes();
@@ -4297,7 +3487,7 @@ function updateStatsPopup(s){ showStatsPanel(s); }
 
 // ---- Reapply all shapes after renderData ----
 function reapplyDrawnShapes(){
-  if(drawnShapes.length === 0 && Object.keys(flaggedSales).length === 0) return;
+  if(drawnShapes.length === 0) return;
 
   selectedSales = {};
   const seen = new Set();
@@ -4309,11 +3499,6 @@ function reapplyDrawnShapes(){
     if(s){
       const sale = ref.sales.find(r => String(r.id) === String(id));
       if(sale) selectedSales[id] = sale;
-    }
-    // Re-add flagged sales (use current sale data from markerRefs)
-    if(flaggedSales[id]){
-      const sale = ref.sales.find(r => String(r.id) === String(id));
-      if(sale){ flaggedSales[id] = sale; selectedSales[id] = sale; }
     }
     if(!seen.has(ref.marker)){
       seen.add(ref.marker);
@@ -4349,8 +3534,6 @@ function deleteShape(id){
   reapplyDrawnShapes();
   if(drawnShapes.length === 0){
     selectedSales = {};
-    // Preserve flagged sales
-    Object.keys(flaggedSales).forEach(id2 => { selectedSales[id2] = flaggedSales[id2]; });
     const seen = new Set();
     Object.keys(markerRefs).forEach(id2 => {
       const ref = markerRefs[id2];
@@ -4448,33 +3631,16 @@ function downloadExport(selectedOnly){
       stats: computeShapeStats(s.id)
     }));
 
-  // Track flagged IDs not captured by any shape
-  const flaggedNotInShape = new Set(Object.keys(flaggedSales));
-
   Object.keys(markerRefs).forEach(id => {
     const ref  = markerRefs[id];
     const ll   = ref.marker.getLatLng();
     const s    = firstShapeContaining(ll.lat, ll.lng);
-    if(s){
-      const idx  = drawnShapes.findIndex(ds => ds.id === s.id);
-      if(idx >= 0){
-        const sale = ref.sales.find(r => String(r.id) === String(id));
-        if(sale) groups[idx].ids.push(id);
-      }
-      flaggedNotInShape.delete(id);
-    } else if(!flaggedSales[id]){
-      // Not in shape and not flagged — skip
-    }
+    if(!s) return;
+    const idx  = drawnShapes.findIndex(ds => ds.id === s.id);
+    if(idx < 0) return;
+    const sale = ref.sales.find(r => String(r.id) === String(id));
+    if(sale) groups[idx].ids.push(id);
   });
-
-  // Add a "Flagged" group for manually flagged sales outside any shape
-  if(flaggedNotInShape.size > 0){
-    groups.push({
-      label: 'Flagged',
-      ids:   [...flaggedNotInShape],
-      stats: null
-    });
-  }
 
   // Remove empty groups
   const populated = groups.filter(g => g.ids.length > 0);
@@ -5014,7 +4180,7 @@ function placeSubjectPinBySpan(){
     f:              'json',
     resultRecordCount: '1'
   });
-  fetch(PARCEL_QUERY_URL + '?' + params.toString())
+  fetch(PARCEL_URL + '?' + params.toString())
   .then(r => r.json())
   .then(data => {
     const feats = data.features || [];
@@ -5301,6 +4467,33 @@ function submitContactForm() {
   })
   .catch(() => {
     status.style.color = '#c0392b';
+    status.textContent = 'Network error. Please try again.';
+  });
+}
+</script>
+
+</body>
+</html>
+
+ => {
+    status.style.color = '#c0392b';
+    status.textContent = 'Network error. Please try again.';
+  });
+}
+</script>
+
+</body>
+</html>
+
+in.';
+  });
+}
+</script>
+
+</body>
+</html>
+
+e.color = '#c0392b';
     status.textContent = 'Network error. Please try again.';
   });
 }

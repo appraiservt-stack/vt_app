@@ -211,20 +211,6 @@
             pointer-events: auto;
             cursor: default;
         }
-        /* Tabbed popup styles */
-        .dual-popup .popup-tabs {
-            display: flex; border-bottom: 2px solid #ddd; margin-bottom: 6px;
-            width: 100%; overflow: hidden; box-sizing: border-box;
-        }
-        .dual-popup .popup-tab {
-            flex: 1; padding: 4px 6px; border: none; background: #f0f0f0;
-            cursor: pointer; font-size: 11px; font-weight: bold; color: #555;
-            border-radius: 4px 4px 0 0;
-        }
-        .dual-popup .popup-tab.active {
-            background: #1a7a1a; color: white;
-        }
-        .dual-popup .popup-tab:hover:not(.active) { background: #e0e0e0; }
     </style>
 </head>
 <body>
@@ -239,7 +225,7 @@
                 margin-bottom:4px; font-size:11px;">
       <span>{{ user_email }}</span>
       <span style="display:flex; gap:10px;">
-        <a href="/account" target="_blank" rel="noopener noreferrer" style="color:#90caf9; text-decoration:none;">Account</a>
+        <a href="/account" style="color:#90caf9; text-decoration:none;">Account</a>
         <a href="#" onclick="openContactForm(); return false;" style="color:#ffd700; text-decoration:none; font-weight:700;">Contact Us</a>
         <a href="/logout" style="color:#90caf9; text-decoration:none;">Sign Out</a>
       </span>
@@ -252,19 +238,45 @@
       <span style="color:#856404; font-weight:700;">
         &#9200; Free trial: <strong>{{ trial_days }} day{{ 's' if trial_days != 1 else '' }} remaining</strong>
       </span>
-      <a href="/account" target="_blank" rel="noopener noreferrer" style="background:#1a3a5c; color:#fff; padding:3px 10px;
+      <a href="/account" style="background:#1a3a5c; color:#fff; padding:3px 10px;
                                border-radius:4px; text-decoration:none; font-size:11px;
                                font-weight:700; white-space:nowrap;">Subscribe Now</a>
     </div>
     {% endif %}
     <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
       <h3 style="margin:0;">VT Property Transfer Tool</h3>
-      <a href="/static/docs/Search-Instructions.pdf" target="_blank"
+      <button id="searchTipsBtn" onclick="toggleSearchTips(event)"
         style="padding:3px 8px; font-size:11px; font-weight:bold; background:#add8e6; color:#1a3a5c;
-               border:1px solid #7ab8d4; border-radius:3px; cursor:pointer; white-space:nowrap;
-               text-decoration:none; display:inline-block;">
+               border:1px solid #7ab8d4; border-radius:3px; cursor:pointer; white-space:nowrap;">
         Search Tips
-      </a>
+      </button>
+    </div>
+    <!-- Search Tips popup -->
+    <div id="searchTipsPopup" style="display:none; position:absolute; left:330px; top:8px;
+         width:340px; background:white; border:1px solid #aaa; border-radius:5px;
+         box-shadow:2px 4px 12px rgba(0,0,0,0.25); padding:10px 12px; z-index:9999;
+         font-size:11px; line-height:1.6; max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <b style="font-size:12px;">Search Tips</b>
+        <span onclick="document.getElementById('searchTipsPopup').style.display='none'"
+          style="cursor:pointer; font-size:14px; color:#666;">&times;</span>
+      </div>
+      <ol style="margin:0; padding-left:16px;">
+        <li>The sales database starts on January 1, 2019 through present date. On startup transfers are loaded into the map window.</li>
+        <li>The map displays up to 2,000 records. As the map is zoomed in more records populate in the window area.</li>
+        <li>If the user hovers over a property a popup window will show the sale history.</li>
+        <li>The user can select whichever search criteria they desire by selecting or unselecting checkboxes.</li>
+        <li>The default setting includes $0 sales, such as family transfers, corrective deeds, etc. Setting $1 in the Sale Price eliminates them.</li>
+        <li>The user can download all filtered sales or sales selected from the map selections using the two download buttons.</li>
+        <li>Clicking on a search heading opens the search box. Clicking it again closes the search box.</li>
+        <li>Filtering by County(s) and/or Town(s) is recommended to be enabled before other refinement filters are set.</li>
+        <li>Immediately above the Location heading the display shows X sales at X properties. The second number is how many sales are in the current window. If the first number is more than the second number this indicates some of the properties have more than one transaction during the date range. This will identify sale/resale properties.</li>
+        <li>The default startup for the map loads all sales and checks all possible property selection options.</li>
+        <li>As selection options are enabled or disabled the Apply Filters button can be clicked at any time to update the search criteria.</li>
+        <li style="background:#fffde7; border-left:3px solid #f9a825; margin-top:6px; padding:4px 6px; list-style-position:inside;">
+          <b>NEIGHBORHOOD COMPARISON:</b> The polygon, circle, or box can be used to highlight different neighborhoods on the same map at the same time. The map will calculate the High, Low, Average, Median, and count of sales in each selection. $0 are not included in the calculations. Filtering applies to the entire map, not individual polygons, boxes, or circles. If you select Single Family Homes, for example, all highlighted areas will contain only Single Family Homes.
+        </li>
+      </ol>
     </div>
 
     <!-- STATUS -->
@@ -444,7 +456,6 @@
       &#9660; Names &amp; SPAN
     </div>
     <div id="namesDropdown" class="dropdown-content">
-      <button type="button" onclick="clearAllForNameSearch()" style="width:100%; padding:6px; background:#e6a817; color:#333; border:none; border-radius:3px; font-size:12px; font-weight:bold; cursor:pointer; margin-bottom:8px;">&#9888; Clear All Filters Before Searching</button>
       <div class="filter-label">Seller</div>
       <div class="filter-row">
         <label>Entity:</label>
@@ -480,7 +491,6 @@
         <label>SPAN:</label>
         <input type="text" id="spanInput" placeholder="e.g. 441-139-10408">
       </div>
-      <button type="button" onclick="applyFilters()" style="width:100%; padding:6px; background:#1F4E79; color:white; border:none; border-radius:3px; font-size:13px; font-weight:bold; cursor:pointer; margin-top:6px;">Apply Name/SPAN Search</button>
     </div>
 
     <!-- ===== OTHER FLAGS ===== -->
@@ -489,20 +499,12 @@
     </div>
     <div id="flagsDropdown" class="dropdown-content">
       <div class="filter-row" style="gap:8px;">
-        <label style="min-width:auto; font-size:12px;">Enrolled in Current Use Prior to Sale:</label>
+        <label style="min-width:auto; font-size:12px;">Enrolled in Current Use:</label>
       </div>
       <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
         <label><input type="radio" name="enrolledCurrentUse" value="" checked> Any</label>
         <label><input type="radio" name="enrolledCurrentUse" value="true"> Yes</label>
         <label><input type="radio" name="enrolledCurrentUse" value="false"> No</label>
-      </div>
-      <div class="filter-row" style="gap:8px;">
-        <label style="min-width:auto; font-size:12px;">Current Use Continues After Sale:</label>
-      </div>
-      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
-        <label><input type="radio" name="currentUseContinues" value="" checked> Any</label>
-        <label><input type="radio" name="currentUseContinues" value="true"> Yes</label>
-        <label><input type="radio" name="currentUseContinues" value="false"> No</label>
       </div>
       <div class="filter-row" style="gap:8px;">
         <label style="min-width:auto; font-size:12px;">Development Rights Previously Conveyed:</label>
@@ -521,20 +523,12 @@
         <label><input type="radio" name="buyerAdjoining" value="false"> No</label>
       </div>
       <div class="filter-row" style="gap:8px;">
-        <label style="min-width:auto; font-size:12px;">Rented Before Sale:</label>
-      </div>
-      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
-        <label><input type="radio" name="rentedBefore" value="" checked> Any</label>
-        <label><input type="radio" name="rentedBefore" value="true"> Yes</label>
-        <label><input type="radio" name="rentedBefore" value="false"> No</label>
-      </div>
-      <div class="filter-row" style="gap:8px;">
-        <label style="min-width:auto; font-size:12px;">Rented After Sale:</label>
+        <label style="min-width:auto; font-size:12px;">Foreclosed Property:</label>
       </div>
       <div style="display:flex; gap:10px; margin-left:4px;">
-        <label><input type="radio" name="rentedAfter" value="" checked> Any</label>
-        <label><input type="radio" name="rentedAfter" value="true"> Yes</label>
-        <label><input type="radio" name="rentedAfter" value="false"> No</label>
+        <label><input type="radio" name="foreclosed" value="" checked> Any</label>
+        <label><input type="radio" name="foreclosed" value="true"> Yes</label>
+        <label><input type="radio" name="foreclosed" value="false"> No</label>
       </div>
     </div>
 
@@ -714,29 +708,8 @@
         </div>
       </div>
 
-      <!-- Conserved Lands zoom notice (hidden until layer enabled + zoomed out) -->
-      <div id="conserved-zoom-msg" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e8f5e9; border:1px solid #81c784; border-radius:3px; font-size:11px; color:#2e7d32;">
-        Zoom in to see conserved lands (zoom 11+)
-      </div>
-
-      <!-- Wetlands legend (hidden until layer is enabled) -->
-      <div id="wetlands-legend" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e8f6f8; border:1px solid #80cbc4; border-radius:3px;">
-        <div style="font-size:11px; font-weight:bold; margin-bottom:4px;">VT Significant Wetlands</div>
-        <div style="font-size:10px; line-height:1.8;">
-          <span style="display:inline-block; width:16px; height:16px; background:#D6904F; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Class I Wetland<br>
-          <span style="display:inline-block; width:16px; height:16px; background:#F9F774; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Class II Wetland<br>
-          <span style="display:inline-block; width:16px; height:16px; background:#B5F774; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Advisory Wetland<br>
-          <span style="display:inline-block; width:16px; height:16px; background:#F5E6C8; border:1px solid #5a9a5a; margin-right:4px; vertical-align:middle;"></span>Wetland Buffer
-        </div>
-      </div>
-
-      <!-- Wetlands zoom notice (hidden until layer enabled + zoomed out) -->
-      <div id="wetlands-zoom-msg" style="display:none; margin-bottom:6px; padding:5px 6px; background:#e0f2f1; border:1px solid #80cbc4; border-radius:3px; font-size:11px; color:#00695c;">
-        Zoom in to see wetlands (zoom 11+)
-      </div>
-
       <!-- County boundaries -->
-      <div style="margin-bottom:6px;">
+      <div>
         <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">County Boundaries</div>
         <div style="display:flex; align-items:center; gap:6px;">
           <label style="font-size:11px; min-width:40px;">Color:</label>
@@ -761,40 +734,15 @@
           <input type="checkbox" id="cntyBdyLabels" checked onchange="updateBoundaryStyle('cnty')">
         </div>
       </div>
-
-      <!-- VT Parcels -->
-      <div>
-        <div style="font-size:11px; font-weight:bold; margin-bottom:3px;">VT Parcels</div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <label style="font-size:11px; min-width:40px;">Color:</label>
-          <input type="color" id="parcel-color" value="#FF6600"
-            oninput="updateParcelStyle()"
-            style="width:36px; height:24px; padding:1px; border:1px solid #ccc; cursor:pointer;">
-          <label style="font-size:11px;">Width:</label>
-          <input type="range" id="parcel-width" min="1" max="6" value="1" step="0.5"
-            oninput="updateParcelStyle(); document.getElementById('parcelWidthVal').textContent=this.value"
-            style="flex:1;">
-          <span id="parcelWidthVal" style="font-size:11px; min-width:20px;">1</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:6px; margin-top:3px;">
-          <label style="font-size:11px; min-width:40px;">Style:</label>
-          <select id="parcelDash" oninput="updateParcelStyle()"
-            style="font-size:11px; padding:1px 3px; border:1px solid #ccc; border-radius:2px;">
-            <option value="solid">Solid</option>
-            <option value="dashed">Dashed</option>
-            <option value="dotted">Dotted</option>
-          </select>
-        </div>
-      </div>
     </div>
 
     <!-- ===== FOOTER ===== -->
     <div style="font-size:11px; color:#aaa; margin-top:8px; border-top:1px solid #ddd; padding-top:6px; line-height:1.6; text-align:center;">
       Data sourced from Vermont public records. Verify independently before relying on results.
       <br>
-      <a href="/terms" target="_blank" rel="noopener noreferrer" style="color:#aaa; text-decoration:none;">Terms of Service</a> |
-      <a href="/privacy" target="_blank" rel="noopener noreferrer" style="color:#aaa; text-decoration:none;">Privacy Policy</a> |
-      <a href="/contact" target="_blank" rel="noopener noreferrer" style="color:#aaa; text-decoration:none;">Contact</a>
+      <a href="/terms" style="color:#aaa; text-decoration:none;">Terms of Service</a> |
+      <a href="/privacy" style="color:#aaa; text-decoration:none;">Privacy Policy</a> |
+      <a href="/contact" style="color:#aaa; text-decoration:none;">Contact</a>
     </div>
 
   </div><!-- end sidebar -->
@@ -806,7 +754,6 @@
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-<script src="https://unpkg.com/esri-leaflet@3/dist/esri-leaflet.js"></script>
 
 <script>
 // ===================================================
@@ -970,48 +917,109 @@ map.on("baselayerchange", function(e){
 });
 
 // ============================================================
-// VT PARCELS — Esri Feature Layer from VCGI FeatureServer
-// Uses L.esri.featureLayer for automatic tile-based loading.
-// Only loads at zoom 11+. Click to show Grand List popup.
+// VT PARCELS — GeoJSON canvas renderer using VCGI FeatureServer
+// Fetches parcel polygons for current viewport, renders as canvas outlines.
+// Only loads at zoom 14+. Refreshes on moveend/zoomend.
 // ============================================================
 const PARCEL_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1/query';
-const PARCEL_MIN_ZOOM = 11;
+const PARCEL_MIN_ZOOM = 14;
+
+// Create pane so parcel outlines sit below markers but above basemap
+if(!map.getPane('parcelPane')){
+  const pp = map.createPane('parcelPane');
+  pp.style.zIndex = 360;
+  pp.style.pointerEvents = 'none';
+}
 
 const CF_WORKER = 'https://vt-map-proxy.quiet-scene-a739.workers.dev/';
 const PROXY = (url) => CF_WORKER + '?url=' + encodeURIComponent(url);
 
-let parcelsOn = false;
-var parcelLayer = L.esri.featureLayer({
-    url: 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/ArcGIS/rest/services/FS_VCGI_VTPARCELS_WM_NOCACHE_v2/FeatureServer/1',
-    minZoom: PARCEL_MIN_ZOOM,
-    style: function() {
-        var colorEl = document.getElementById('parcel-color');
-        var widthEl = document.getElementById('parcel-width');
-        var styleEl = document.getElementById('parcelDash');
-        var color = colorEl ? colorEl.value : '#FF6600';
-        var width = widthEl ? parseInt(widthEl.value) || 1 : 1;
-        var dash = styleEl ? styleEl.value : 'solid';
-        var dashArray = dash === 'dashed' ? '6,4' : dash === 'dotted' ? '2,4' : null;
-        return { color: color, weight: width, opacity: 0.8, fillOpacity: 0, dashArray: dashArray };
-    }
-});
+// parcelGeoLayer: Leaflet GeoJSON layer holding current viewport parcels
+// parcelWmsLayer: L.layerGroup wrapper (used in layer control)
+const parcelWmsLayer = L.layerGroup();
+let   parcelGeoLayer = null;   // current GeoJSON layer inside parcelWmsLayer
+let   parcelsOn      = false;
+let   parcelLayer    = parcelWmsLayer;  // legacy alias
+let   parcelFetchCtrl = null;           // AbortController for in-flight request
 
-// ---- CONSERVED LANDS QUERY URL ----
-const CONSERVED_QUERY_URL = 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_VT_Protected_Lands_Database_WM_v2/FeatureServer/0/query';
+function loadParcels(){
+  if(!parcelsOn) return;
+  if(map.getZoom() < PARCEL_MIN_ZOOM){
+    if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; }
+    return;
+  }
 
-// ---- switchTab for tabbed popups ----
-function switchTab(btn, contentId) {
-  var parent = btn.closest('.dual-popup');
-  parent.querySelectorAll('.popup-tab').forEach(function(t){ t.classList.remove('active'); });
-  btn.classList.add('active');
-  parent.querySelectorAll('.popup-content').forEach(function(c){ c.style.display = 'none'; });
-  parent.querySelector('#' + contentId).style.display = '';
+  // Abort any in-flight request
+  if(parcelFetchCtrl) parcelFetchCtrl.abort();
+  parcelFetchCtrl = new AbortController();
+  const signal = parcelFetchCtrl.signal;
+
+  const b  = map.getBounds();
+  const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+  const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+  const env = `${sw.x},${sw.y},${ne.x},${ne.y}`;
+
+  const params = new URLSearchParams({
+    where:           '1=1',
+    geometry:        env,
+    geometryType:    'esriGeometryEnvelope',
+    inSR:            '102100',
+    spatialRel:      'esriSpatialRelIntersects',
+    outFields:       'SPAN,TNAME,E911ADDR,OWNER1,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,GLYEAR,CAT,MUNGL1PCT,PROPTYPE',
+    returnGeometry:  'true',
+    outSR:           '4326',
+    f:               'geojson',
+    resultRecordCount: '500',
+  });
+
+  fetch(PARCEL_QUERY_URL + '?' + params.toString(), { signal })
+  .then(r => r.json())
+  .then(geojson => {
+    if(signal.aborted) return;
+    // Remove old layer
+    if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; }
+    if(!parcelsOn) return;
+    parcelGeoLayer = L.geoJSON(geojson, {
+      pane:   'parcelPane',
+      style:  { color: '#e65c00', weight: 1, fill: false, opacity: 0.7 },
+      interactive: false,
+    });
+    parcelWmsLayer.addLayer(parcelGeoLayer);
+  })
+  .catch(err => { if(err.name !== 'AbortError') console.warn('Parcel fetch error:', err); });
 }
 
-// ---- Build Grand List popup HTML from parcel attributes ----
-function buildParcelPopupHTML(p) {
+// Click handler — query parcel data at click location
+function onParcelClick(e){
+  if(!parcelsOn) return;
+  if(map.getZoom() < PARCEL_MIN_ZOOM) return;
+  const toMerc = (lng, lat) => [
+    lng * 20037508.34 / 180,
+    Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180
+  ];
+  const pt = toMerc(e.latlng.lng, e.latlng.lat);
+  const d = 5; // small buffer in meters
+  const env = `${pt[0]-d},${pt[1]-d},${pt[0]+d},${pt[1]+d}`;
+  const params = new URLSearchParams({
+    where: '1=1',
+    geometry: env,
+    geometryType: 'esriGeometryEnvelope',
+    inSR: '102100',
+    spatialRel: 'esriSpatialRelIntersects',
+    outFields: 'SPAN,GLIST_SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,HSITEVAL,GLYEAR,YEAR,CAT,MUNGL1PCT,RESCODE,UVREDUC_HS,UVREDUC_NR,MAPID,PARCID,SOURCENAME,SOURCETYPE,EDITDATE,EDITOR,NRES_FLV,VETEXAMT,EXAMT_HS,EXAMT_NR',
+    returnGeometry: 'false',
+    outSR: '4326',
+    f: 'json',
+    resultRecordCount: '1'
+  });
+  fetch(PARCEL_QUERY_URL + '?' + params.toString())
+  .then(r => r.json())
+  .then(data => {
+    const feats = data.features || [];
+    if(!feats.length) return;
+    const p = feats[0].attributes;
     const fmt$ = v => (v != null && v !== '' && v !== 0) ? '$' + Number(v).toLocaleString() : '—';
-    const fmt$0 = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—';
+    const fmt$0 = v => (v != null && v !== '') ? '$' + Number(v).toLocaleString() : '—'; // includes $0
     const fmtA = v => (v != null && v !== '') ? Number(v).toFixed(2) + ' ac' : '—';
     const row  = (label, val, bold) => val && val !== '—'
       ? `<tr><td style="color:#555;padding:1px 4px 1px 0;white-space:nowrap">${label}:</td><td${bold?' style="font-weight:bold"':''}>${val}</td></tr>`
@@ -1041,32 +1049,44 @@ function buildParcelPopupHTML(p) {
     const mapid    = p.MAPID   || '';
     const parcid   = p.PARCID  || '';
 
+    // Owner type
     const RESCODE_MAP = {
       'T': 'Town Resident','N': 'Non-Resident','C': 'Commercial/Industrial',
       'X': 'Exempt','F': 'Farm','M': 'Mobile Home','O': 'Other'
     };
     const ownerType = RESCODE_MAP[p.RESCODE] || p.RESCODE || '';
 
+    // Current Use
     const uvHS = Number(p.UVREDUC_HS) || 0;
     const uvNR = Number(p.UVREDUC_NR) || 0;
     const currentUse = (uvHS > 0 || uvNR > 0)
       ? `Enrolled (reduction: ${fmt$0(uvHS + uvNR)})`
       : 'Not Enrolled';
 
+    // GIS source
     const src = [p.SOURCENAME, p.SOURCETYPE].filter(s => s && s !== 'UNKNOWN').join(' / ') || 'Unknown';
+    const editInfo = p.EDITDATE && p.EDITDATE !== 'UNKNOWN'
+      ? `${p.EDITOR || ''} ${p.EDITDATE || ''}`.trim()
+      : '';
 
-    return `
+    const html = `
       <div style="font-size:12px; min-width:240px; max-width:300px;">
         <div style="background:#1a7a1a;color:white;font-weight:bold;padding:4px 8px;
                     border-radius:3px 3px 0 0;margin-bottom:6px;">
           &#x1F4CB; Grand List Data
         </div>
+
+        <!-- Address & Town -->
         <div style="font-weight:bold;font-size:13px;margin-bottom:2px;">${addr}${addr&&town?', ':''}${town}</div>
+
+        <!-- Ownership -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Ownership</div>
           <div style="font-weight:bold;">${owner1}${owner2?'<br>'+owner2:''}</div>
           ${ownerType ? `<div style="font-size:10px;color:#666;margin-top:1px;">Type: ${ownerType}</div>` : ''}
         </div>
+
+        <!-- Valuation -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Valuation (${glyear} Grand List)</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1078,6 +1098,8 @@ function buildParcelPopupHTML(p) {
             ${row('Mun. 1% GL', munGL, false)}
           </table>
         </div>
+
+        <!-- Homestead -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Homestead</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1088,6 +1110,8 @@ function buildParcelPopupHTML(p) {
             ${exNR !== '—' ? row('Exemption (NR)', exNR, false) : ''}
           </table>
         </div>
+
+        <!-- Description & Current Use -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;margin-bottom:5px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Description</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1097,6 +1121,8 @@ function buildParcelPopupHTML(p) {
             ${row('Current Use', currentUse, false)}
           </table>
         </div>
+
+        <!-- IDs & GIS Info -->
         <div style="background:#f5f5f5;border-radius:3px;padding:5px 7px;">
           <div style="color:#555;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;">Parcel Info</div>
           <table style="font-size:11px;border-collapse:collapse;width:100%;">
@@ -1108,145 +1134,13 @@ function buildParcelPopupHTML(p) {
           </table>
         </div>
       </div>`;
+    L.popup({ maxWidth: 320, maxHeight: 520 }).setLatLng(e.latlng).setContent(html).openOn(map);
+  })
+  .catch(err => console.warn('Parcel click query error:', err));
 }
+map.on('contextmenu', onParcelClick);  // right-click to show Grand List popup
 
-// ---- Build Conserved Lands popup HTML from feature attributes ----
-function fmtConservedDate(val) {
-  if (val == null || val === '' || val === 'Null') return null;
-  var n = Number(val);
-  if (!isNaN(n) && n > 0) {
-    var d = new Date(n);
-    return d.toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'});
-  }
-  return val;
-}
-
-function buildConservedPopupHTML(p) {
-    const fields = [
-      ['Name', p.NAME],
-      ['Act 59 Category', p.ACT59CAT],
-      ['Aggregate Date', fmtConservedDate(p.AGGDATE)],
-      ['Date Acquired', fmtConservedDate(p.DATEAQRD)],
-      ['Designation', p.DESIGNAT],
-      ['GAP Status', p.GAPSTATUS],
-      ['GIS Acres', p.GISACRES != null ? Number(p.GISACRES).toFixed(2) : null],
-      ['GIS Steward', p.GISSTEWARD],
-      ['Interest Org Type', p.INT_ORGTYP],
-      ['Listed Acres', p.LISTED_AC != null ? Number(p.LISTED_AC).toFixed(2) : null],
-      ['Owner Kind', p.OWNERKIND],
-      ['Primary Agency 1', p.PAGENCY1],
-      ['Primary Agency 2', p.PAGENCY2],
-      ['Polygon ID', p.POLYID],
-      ['Protection Type 1', p.PTYPE1],
-      ['Protection Type 2', p.PTYPE2],
-      ['Public Access', p.PUBACCESS],
-      ['Source Acres', p.SOURCE_ACR != null ? Number(p.SOURCE_ACR).toFixed(2) : null],
-      ['Source Layer', p.SOURCE_LYR],
-      ['Source ID', p.SOURCEID]
-    ];
-    var rows = '';
-    fields.forEach(function(f) {
-      var val = f[1];
-      if (val != null && val !== '' && val !== 'Null' && val !== 'null') {
-        rows += '<b>' + f[0] + ':</b> ' + val + '<br>';
-      }
-    });
-    if (!rows) rows = 'No data at this location';
-    return '<div style="font-size:12px;min-width:240px;max-width:320px;">' +
-      '<div style="background:#007a35;color:white;font-weight:bold;padding:4px 8px;border-radius:3px 3px 0 0;margin-bottom:6px;">&#x1F333; Conservation Data</div>' +
-      rows + '</div>';
-}
-
-// ---- Fetch parcel attributes at a point ----
-function fetchParcelAtPoint(latlng) {
-  const toMerc = (lng, lat) => [
-    lng * 20037508.34 / 180,
-    Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180) * 20037508.34 / 180
-  ];
-  const pt = toMerc(latlng.lng, latlng.lat);
-  const d = 5;
-  const env = `${pt[0]-d},${pt[1]-d},${pt[0]+d},${pt[1]+d}`;
-  const params = new URLSearchParams({
-    where: '1=1',
-    geometry: env,
-    geometryType: 'esriGeometryEnvelope',
-    inSR: '102100',
-    spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'SPAN,GLIST_SPAN,TNAME,PROPTYPE,E911ADDR,OWNER1,OWNER2,ACRESGL,REAL_FLV,LAND_LV,IMPRV_LV,HSTED_FLV,HSDECL,HSITEVAL,GLYEAR,YEAR,CAT,MUNGL1PCT,RESCODE,UVREDUC_HS,UVREDUC_NR,MAPID,PARCID,SOURCENAME,SOURCETYPE,EDITDATE,EDITOR,NRES_FLV,VETEXAMT,EXAMT_HS,EXAMT_NR',
-    returnGeometry: 'false',
-    outSR: '4326',
-    f: 'json',
-    resultRecordCount: '1'
-  });
-  return fetch(PARCEL_QUERY_URL + '?' + params.toString())
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var feats = data.features || [];
-      return feats.length ? feats[0].attributes : null;
-    });
-}
-
-// ---- Fetch conserved lands attributes at a point ----
-function fetchConservedAtPoint(latlng) {
-  const params = new URLSearchParams({
-    geometry: latlng.lng + ',' + latlng.lat,
-    geometryType: 'esriGeometryPoint',
-    spatialRel: 'esriSpatialRelIntersects',
-    outFields: 'NAME,ACT59CAT,AGGDATE,DATEAQRD,DESIGNAT,GAPSTATUS,GISACRES,GISSTEWARD,INT_ORGTYP,LISTED_AC,OWNERKIND,PAGENCY1,PAGENCY2,POLYID,PTYPE1,PTYPE2,PUBACCESS,SOURCE_ACR,SOURCE_LYR,SOURCEID',
-    f: 'geojson',
-    inSR: '4326'
-  });
-  return fetch(CONSERVED_QUERY_URL + '?' + params.toString())
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var feats = data.features || [];
-      return feats.length ? feats[0].properties : null;
-    });
-}
-
-// ---- Unified right-click handler for parcels + conserved lands ----
-map.on('contextmenu', function(e) {
-  var doParcels = parcelsOn && map.getZoom() >= PARCEL_MIN_ZOOM;
-  var doConserved = conservedOn;
-  if (!doParcels && !doConserved) return;
-
-  var promises = [];
-  // index 0 = parcel, index 1 = conserved
-  promises.push(doParcels ? fetchParcelAtPoint(e.latlng) : Promise.resolve(null));
-  promises.push(doConserved ? fetchConservedAtPoint(e.latlng) : Promise.resolve(null));
-
-  Promise.all(promises).then(function(results) {
-    var parcelAttrs = results[0];
-    var conservedAttrs = results[1];
-    var html = '';
-
-    if (doParcels && doConserved) {
-      // Both layers active — tabbed popup
-      var parcelContent = parcelAttrs ? buildParcelPopupHTML(parcelAttrs) : '<div style="font-size:12px;padding:8px;color:#888;">No data at this location</div>';
-      var conservedContent = conservedAttrs ? buildConservedPopupHTML(conservedAttrs) : '<div style="font-size:12px;padding:8px;color:#888;">No data at this location</div>';
-      html = '<div class="dual-popup" style="min-width:460px">' +
-        '<div class="popup-tabs">' +
-          '<button class="popup-tab active" onclick="switchTab(this,\'grand-list-content\')">Grand List</button>' +
-          '<button class="popup-tab" onclick="switchTab(this,\'conservation-content\')">Conservation</button>' +
-        '</div>' +
-        '<div id="grand-list-content" class="popup-content" style="height:520px">' + parcelContent + '</div>' +
-        '<div id="conservation-content" class="popup-content" style="display:none;height:520px">' + conservedContent + '</div>' +
-      '</div>';
-    } else if (doParcels) {
-      // Only parcels
-      if (!parcelAttrs) return;
-      html = buildParcelPopupHTML(parcelAttrs);
-    } else if (doConserved) {
-      // Only conserved lands
-      if (!conservedAttrs) return;
-      html = buildConservedPopupHTML(conservedAttrs);
-    }
-
-    if (html) {
-      L.popup({ maxWidth: 480, maxHeight: 520 }).setLatLng(e.latlng).setContent(html).openOn(map);
-    }
-  }).catch(function(err){ console.warn('Right-click query error:', err); });
-});
+// loadParcels defined above in VT PARCELS section
 
 // ============================================================
 // E911 ADDRESS NUMBERS — fetches VT statewide address points
@@ -1439,47 +1333,75 @@ function loadRoadLabels(){
 map.on('moveend zoomend', loadRoadLabels);
 
 // ============================================================
-// FEMA FLOOD ZONES — via L.esri.featureLayer + MapServer/20
-// Shows AE, A, Floodway zones only (excludes Zone X to avoid covering whole map)
+// FEMA FLOOD ZONES — via Flask proxy + Esri MapServer export
+// Confirmed working: loads PNG tiles instantly, no CORS issues
+// Only shows AE, A, Floodway (excludes Zone X to avoid covering whole map)
 // ============================================================
 if(!map.getPane('femaPane')){
   const fp = map.createPane('femaPane');
   fp.style.zIndex = 350;
+  fp.style.pointerEvents = 'none';
 }
 
-const FEMA_MIN_ZOOM = 10;
-let femaOn = false;
+// Dynamic image overlay — fetches one image covering the entire viewport.
+// No tile seams, no zoom disappearing. Redraws on every moveend/zoomend.
+function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
+  let overlay = null;
+  let pending = null;
+  let isOn = false;
+  const group = L.layerGroup();
 
-var femaFloodLayer = L.esri.featureLayer({
-  url: 'https://hazards.fema.gov/arcgis/rest/services/FIRMette/NFHLREST_FIRMette/MapServer/20',
-  minZoom: FEMA_MIN_ZOOM,
-  where: "FLD_ZONE = 'AE' OR FLD_ZONE = 'A' OR ZONE_SUBTY = 'FLOODWAY'",
-  pane: 'femaPane',
-  style: function(feature) {
-    var zone = (feature.properties.FLD_ZONE || '').toUpperCase();
-    var subtype = (feature.properties.ZONE_SUBTY || '').toUpperCase();
-    if (subtype.indexOf('FLOODWAY') !== -1) {
-      return { color: '#b03030', weight: 1, fillColor: '#e87878', fillOpacity: 0.4, opacity: 0.6 };
-    }
-    if (zone === 'AE') {
-      return { color: '#5a9ab5', weight: 1, fillColor: '#a8d4e6', fillOpacity: 0.4, opacity: 0.6 };
-    }
-    if (zone === 'A') {
-      return { color: '#c87040', weight: 1, fillColor: '#f0c8a0', fillOpacity: 0.4, opacity: 0.6 };
-    }
-    return { color: '#88b4d0', weight: 1, fillColor: '#c8e0f0', fillOpacity: 0.2, opacity: 0.4 };
-  },
-  onEachFeature: function(feature, layer) {
-    var zone = feature.properties.FLD_ZONE || 'Unknown';
-    var subtype = feature.properties.ZONE_SUBTY || '';
-    var label = subtype.toUpperCase().indexOf('FLOODWAY') !== -1 ? 'Floodway' : 'Zone ' + zone;
-    layer.bindPopup('<b>FEMA Flood Zone: ' + label + '</b>' +
-      (subtype ? '<br>Subtype: ' + subtype : ''));
+  function load(){
+    if(!isOn) return;
+    if(map.getZoom() < (minZoom||8)){ if(overlay){ group.removeLayer(overlay); overlay=null; } return; }
+    // Remove stale overlay immediately so stretched image doesn't show during load
+    if(overlay){ group.removeLayer(overlay); overlay=null; }
+    const b = map.getBounds();
+    const sw = L.CRS.EPSG3857.project(b.getSouthWest());
+    const ne = L.CRS.EPSG3857.project(b.getNorthEast());
+    const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
+    const size = map.getSize();
+    const exportUrl = serviceUrl + '/export?bbox=' + bbox +
+      '&bboxSR=102100&layers=show:' + layerIds +
+      '&size=' + size.x + ',' + size.y +
+      '&imageSR=102100&dpi=96&format=png32&transparent=true&f=image';
+    // Use direct URL for FEMA (CORS allowed), Cloudflare Worker for ANR servers
+    const url = serviceUrl.includes('fema.gov')
+      ? exportUrl
+      : CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
+    pending = null;
+    const img = new Image();
+    pending = img;
+    const snapBounds = b; // capture bounds at request time
+    img.onload = function(){
+      if(img !== pending) return;
+      overlay = L.imageOverlay(url, snapBounds, { opacity: opacity, pane: pane, interactive: false });
+      group.addLayer(overlay);
+    };
+    img.src = url;
   }
-});
+
+  map.on('moveend zoomend', load);
+
+  return {
+    layer: group,
+    enable:  function(){ isOn = true;  load(); },
+    disable: function(){ isOn = false; if(overlay){ group.removeLayer(overlay); overlay=null; } }
+  };
+}
+
+const femaOverlay = makeDynamicOverlay(
+  'https://hazards.fema.gov/arcgis/rest/services/FIRMette/NFHLREST_FIRMette/MapServer',
+  '19,20', 'femaPane', 0.85, 10
+);
+const femaFloodLayer = femaOverlay.layer;
+let femaOn = false;
 function loadFema(){}
 
-// parcelLayer (L.esri.featureLayer) initialized above in the VT PARCELS section
+// Initialize parcel overlay here — after makeDynamicOverlay is defined.
+// Routes through Cloudflare Worker proxy (ANR server requires it).
+// Loads image only on img.onload — prevents blank/stretched overlays.
+// parcelWmsLayer/loadParcels initialized above in the VT PARCELS section
 
 // ============================================================
 // TOWN & COUNTY BOUNDARY LAYERS
@@ -1533,15 +1455,6 @@ function updateBoundaryStyle(which){
   saveBdySettings();
 }
 
-function updateParcelStyle() {
-    var color = document.getElementById('parcel-color').value;
-    var width = document.getElementById('parcel-width').value;
-    var dash  = document.getElementById('parcelDash').value;
-    var dashArray = dash === 'dashed' ? '12,8' : dash === 'dotted' ? '3,6' : null;
-    parcelLayer.setStyle({ color: color, weight: parseInt(width), opacity: 0.8, fillOpacity: 0, dashArray: dashArray });
-    saveBdySettings();
-}
-
 // ---- Persist boundary + parcel style settings in localStorage ----
 function saveBdySettings(){
   const s = {
@@ -1553,9 +1466,6 @@ function saveBdySettings(){
     cntyWidth:  document.getElementById('cntyBdyWidth').value,
     cntyDash:   document.getElementById('cntyBdyDash').value,
     cntyLabels: document.getElementById('cntyBdyLabels').checked,
-    parcelColor: document.getElementById('parcel-color').value,
-    parcelWidth: document.getElementById('parcel-width').value,
-    parcelDash:  document.getElementById('parcelDash').value,
   };
   try{ localStorage.setItem('vtpt_bdy_settings', JSON.stringify(s)); }catch(e){}
 }
@@ -1572,11 +1482,6 @@ function restoreBdySettings(){
   if(s.cntyWidth)  { document.getElementById('cntyBdyWidth').value  = s.cntyWidth;  document.getElementById('cntyBdyWidthVal').textContent = s.cntyWidth; }
   if(s.cntyDash)   { document.getElementById('cntyBdyDash').value   = s.cntyDash; }
   if(s.cntyLabels !== undefined){ document.getElementById('cntyBdyLabels').checked = s.cntyLabels; }
-  if(s.parcelColor){ document.getElementById('parcel-color').value = s.parcelColor; }
-  if(s.parcelWidth){ document.getElementById('parcel-width').value = s.parcelWidth; document.getElementById('parcelWidthVal').textContent = s.parcelWidth; }
-  if(s.parcelDash) { document.getElementById('parcelDash').value   = s.parcelDash; }
-  // Apply restored parcel style to layer
-  updateParcelStyle();
 }
 
 // ---- Fetch and render boundary polygons + labels ----
@@ -1676,95 +1581,6 @@ function _loadBoundaryLayer(which){
 function loadTownBoundaries(){ _loadBoundaryLayer('town'); }
 function loadCntyBoundaries(){ _loadBoundaryLayer('cnty'); }
 
-// ---- CONSERVED LANDS (Esri Feature Layer) ----
-let conservedOn = false;
-var conservedLayer = L.esri.featureLayer({
-    url: 'https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_VT_Protected_Lands_Database_WM_v2/FeatureServer/0',
-    style: function() {
-        return {
-            color: '#007a35',
-            weight: 1.5,
-            opacity: 0.7,
-            fillColor: '#00b050',
-            fillOpacity: 0.25
-        };
-    },
-    minZoom: 11
-});
-// Left-click popup removed — conserved lands use right-click contextmenu handler
-
-function updateConservedZoomMsg(){
-    var el = document.getElementById('conserved-zoom-msg');
-    if(!el) return;
-    el.style.display = (conservedOn && map.getZoom() < 11) ? '' : 'none';
-}
-
-// ---- VSWI WETLANDS (image export via makeDynamicOverlay) ----
-
-function makeDynamicOverlay(serviceUrl, layerIds, pane, opacity, minZoom){
-  let overlay = null;
-  let pending = null;
-  let isOn = false;
-  const group = L.layerGroup();
-
-  function load(){
-    if(!isOn) return;
-    if(map.getZoom() < (minZoom||8)){ if(overlay){ group.removeLayer(overlay); overlay=null; } return; }
-    // Remove stale overlay immediately so stretched image doesn't show during load
-    if(overlay){ group.removeLayer(overlay); overlay=null; }
-    const b = map.getBounds();
-    const sw = L.CRS.EPSG3857.project(b.getSouthWest());
-    const ne = L.CRS.EPSG3857.project(b.getNorthEast());
-    const bbox = sw.x+','+sw.y+','+ne.x+','+ne.y;
-    const size = map.getSize();
-    const exportUrl = serviceUrl + '/export?bbox=' + bbox +
-      '&bboxSR=102100&layers=show:' + layerIds +
-      '&size=' + size.x + ',' + size.y +
-      '&imageSR=102100&dpi=96&format=png32&transparent=true&f=image';
-    // Use direct URL for FEMA (CORS allowed), Cloudflare Worker for other servers
-    const url = serviceUrl.includes('fema.gov')
-      ? exportUrl
-      : CF_WORKER + '?url=' + encodeURIComponent(exportUrl);
-    pending = null;
-    const img = new Image();
-    pending = img;
-    const snapBounds = b; // capture bounds at request time
-    img.onload = function(){
-      if(img !== pending) return;
-      overlay = L.imageOverlay(url, snapBounds, { opacity: opacity, pane: pane, interactive: false });
-      group.addLayer(overlay);
-    };
-    img.src = url;
-  }
-
-  map.on('moveend zoomend', load);
-
-  return {
-    layer: group,
-    enable:  function(){ isOn = true;  load(); },
-    disable: function(){ isOn = false; if(overlay){ group.removeLayer(overlay); overlay=null; } }
-  };
-}
-
-if(!map.getPane('wetlandsPane')){
-  const wp = map.createPane('wetlandsPane');
-  wp.style.zIndex = 345;
-  wp.style.filter = 'saturate(2) contrast(1.2)';
-}
-
-let wetlandsOn = false;
-const wetlandsOverlay = makeDynamicOverlay(
-  'https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_WATER_SP_NOCACHE_v2/MapServer',
-  '193,194', 'wetlandsPane', 0.5, 11
-);
-var wetlandsLayer = wetlandsOverlay.layer;
-
-function updateWetlandsZoomMsg(){
-    var el = document.getElementById('wetlands-zoom-msg');
-    if(!el) return;
-    el.style.display = (wetlandsOn && map.getZoom() < 11) ? '' : 'none';
-}
-
 // ---- LAYERS CONTROL ----
 L.control.layers(
   {
@@ -1777,36 +1593,30 @@ L.control.layers(
   },
   {
     // Overlays — toggle independently of the basemap
-    "VT Parcels (zoom 11+)": parcelLayer,
+    "VT Parcels (zoom 14+)": parcelWmsLayer,
     "Street Names (zoom 15+)": roadLabelLayer,
     "House Numbers (zoom 17+)": e911Layer,
     "FEMA Flood Zones":      femaFloodLayer,
     "Town Boundaries":       L.layerGroup([townBdyLayer, townLblLayer]),
     "County Boundaries":     L.layerGroup([cntyBdyLayer, cntyLblLayer]),
-    "Conserved Lands (zoom 11+)": conservedLayer,
-    "Wetlands (zoom 11+)":       wetlandsLayer,
   }
 ).addTo(map);
 
 // Listen for overlay add/remove
 map.on('overlayadd', function(e){
-  if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = true; updateParcelStyle(); }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = true;  loadParcels(); }
   if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
-  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; document.getElementById('fema-legend').style.display=''; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; femaOverlay.enable(); document.getElementById('fema-legend').style.display=''; }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
-  if(e.name === 'Conserved Lands (zoom 11+)'){ conservedOn = true; updateConservedZoomMsg(); }
-  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = true; wetlandsOverlay.enable(); document.getElementById('wetlands-legend').style.display=''; updateWetlandsZoomMsg(); }
 });
 map.on('overlayremove', function(e){
-  if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = false; }
+  if(e.name === 'VT Parcels (zoom 14+)')  { parcelsOn = false; if(parcelFetchCtrl) parcelFetchCtrl.abort(); if(parcelGeoLayer){ parcelWmsLayer.removeLayer(parcelGeoLayer); parcelGeoLayer = null; } }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On = false; if(e911FetchCtrl) e911FetchCtrl.abort(); if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; } }
-  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; document.getElementById('fema-legend').style.display='none'; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; femaOverlay.disable(); document.getElementById('fema-legend').style.display='none'; }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
-  if(e.name === 'Conserved Lands (zoom 11+)'){ conservedOn = false; updateConservedZoomMsg(); }
-  if(e.name === 'Wetlands (zoom 11+)'){ wetlandsOn = false; wetlandsOverlay.disable(); document.getElementById('wetlands-legend').style.display='none'; document.getElementById('wetlands-zoom-msg').style.display='none'; }
 });
 
 let markersLayer = L.layerGroup().addTo(map);
@@ -1915,6 +1725,22 @@ function getCheckedCodes(containerId){
   return codes;
 }
 
+// ===================================================
+// SEARCH TIPS TOGGLE
+// ===================================================
+function toggleSearchTips(event){
+  const popup = document.getElementById('searchTipsPopup');
+  popup.style.display = (popup.style.display === 'none' || !popup.style.display) ? 'block' : 'none';
+  event.stopPropagation();
+}
+// Close tips popup when clicking elsewhere
+document.addEventListener('click', function(e){
+  const popup = document.getElementById('searchTipsPopup');
+  const btn   = document.getElementById('searchTipsBtn');
+  if(popup && btn && !popup.contains(e.target) && e.target !== btn){
+    popup.style.display = 'none';
+  }
+});
 
 // ===================================================
 // DROPDOWN TOGGLE
@@ -2185,9 +2011,6 @@ function buildFilterParams(){
   const ecu = document.querySelector('input[name="enrolledCurrentUse"]:checked');
   if(ecu && ecu.value) params.set("enrolled_current_use", ecu.value);
 
-  const cuc = document.querySelector('input[name="currentUseContinues"]:checked');
-  if(cuc && cuc.value) params.set("current_use_continues", cuc.value);
-
   const dpc = document.querySelector('input[name="devPrevConv"]:checked');
   if(dpc && dpc.value) params.set("dev_prev_conv", dpc.value);
 
@@ -2196,12 +2019,6 @@ function buildFilterParams(){
 
   const fc = document.querySelector('input[name="foreclosed"]:checked');
   if(fc && fc.value) params.set("foreclosed", fc.value);
-
-  const rb = document.querySelector('input[name="rentedBefore"]:checked');
-  if(rb && rb.value) params.set("rented_before", rb.value);
-
-  const ra = document.querySelector('input[name="rentedAfter"]:checked');
-  if(ra && ra.value) params.set("rented_after", ra.value);
 
   return params;
 }
@@ -3217,12 +3034,10 @@ function _renderCollectorDot(c, layer, color, label, typeLabel){
         (seller ? '<span style="color:#555">Seller: '+seller+'</span><br>' : '') +
         (buyer  ? '<span style="color:#555">Buyer: ' +buyer +'</span>'    : '') +
         '</div>' +
-        (s.id ? '<div style="display:inline-block;text-align:center;flex-shrink:0;margin-left:4px;align-self:center;">' +
-          '<a href="/ptt172/preview?id=' + s.id + '" target="_blank" rel="noopener noreferrer" ' +
+        (s.id ? '<a href="/ptt172/preview?id=' + s.id + '" target="_blank" rel="noopener noreferrer" ' +
           'style="font-size:10px;padding:1px 5px;background:#1F4E79;color:#fff;' +
           'border:none;border-radius:2px;white-space:nowrap;cursor:pointer;' +
-          'text-decoration:none;display:inline-block;">PTT-172</a><br>' +
-          '<span style="font-size:10px;color:#999;">Right-click</span></div>' : '') +
+          'flex-shrink:0;margin-left:4px;align-self:center;text-decoration:none;display:inline-block;">PTT-172</a>' : '') +
         '</div>';
     });
   });
@@ -3304,16 +3119,13 @@ function buildSaleRow(s, dimmed){
       <div>
         <b>${price}</b> &nbsp; ${dateStr}
       </div>
-      <div style="display:inline-block; text-align:center; flex-shrink:0;">
-        <a href="${_ptt172DlMode ? '/ptt172/PTT-172.pdf?id=' + s.id + '&download=1' : '/ptt172/preview?id=' + s.id}"
-           target="_blank" rel="noopener noreferrer"
-           style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
-                  border:none; border-radius:2px; white-space:nowrap; cursor:pointer;
-                  text-decoration:none; display:inline-block;">
-          PTT-172
-        </a><br>
-        <span style="font-size:10px; color:#999;">Right-click</span>
-      </div>
+      <a href="${_ptt172DlMode ? '/ptt172/PTT-172.pdf?id=' + s.id + '&download=1' : '/ptt172/preview?id=' + s.id}"
+         target="_blank" rel="noopener noreferrer"
+         style="font-size:10px; padding:1px 5px; background:#1F4E79; color:white;
+                border:none; border-radius:2px; white-space:nowrap; flex-shrink:0; cursor:pointer;
+                text-decoration:none; display:inline-block;">
+        PTT-172
+      </a>
     </div>
     <span style="font-size:11px;word-break:break-word;">${addr}</span><br>
     <span style="font-size:11px; color:#555;">${bldg}${bldg && itype ? ' · ' : ''}${itype}</span>
@@ -3681,7 +3493,7 @@ function clearAllCheckboxes(){
    'streetAddr','spanInput'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  ['enrolledCurrentUse','currentUseContinues','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
+  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed'].forEach(name => {
     const radio = document.querySelector(`input[name="${name}"][value=""]`);
     if(radio) radio.checked = true;
   });
@@ -3708,42 +3520,11 @@ function clearAllCheckboxes(){
 }
 
 // ===================================================
-// CLEAR ALL FILTERS FOR NAME/SPAN SEARCH
-// Silently clears every filter so the user can do a clean name/SPAN search.
-// Does NOT call applyFilters() — the user enters their search and clicks Apply.
-// ===================================================
-function clearAllForNameSearch(){
-  ['buildingList','interestList','sellerUseList','buyerUseList','grandListList','pttList'].forEach(id => {
-    uncheckAllIn(id);
-  });
-  clearAllCounties();
-  clearAllTowns();
-  document.getElementById('dateFrom').value  = '';
-  document.getElementById('dateTo').value    = '';
-  document.getElementById('priceLow').value  = '';
-  document.getElementById('priceHigh').value = '';
-  document.getElementById('landLow').value   = '';
-  document.getElementById('landHigh').value  = '';
-  const noLandEl = document.getElementById('noLandCheck');
-  if(noLandEl) noLandEl.checked = false;
-  ['sellerEntity','sellerLast','sellerFirst',
-   'buyerEntity','buyerLast','buyerFirst',
-   'streetAddr','spanInput'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  ['enrolledCurrentUse','currentUseContinues','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
-    const radio = document.querySelector('input[name="' + name + '"][value=""]');
-    if(radio) radio.checked = true;
-  });
-  nameSearchCache = null;
-}
-
-// ===================================================
 // MAP EVENTS & INIT — attached AFTER codes load
 // Named handlers so they can be temporarily detached during fitBounds.
 // ===================================================
-function onMoveEnd(){ loadData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
-function onZoomEnd(){ loadApproxData(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); updateConservedZoomMsg(); updateWetlandsZoomMsg(); } // loadData handled by moveend which always follows zoomend
+function onMoveEnd(){ loadData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); }
+function onZoomEnd(){ loadApproxData(); loadParcels(); loadFema(); loadTownBoundaries(); loadCntyBoundaries(); } // loadData handled by moveend which always follows zoomend
 
 function initMapEvents(){
   restoreBdySettings();
@@ -5014,7 +4795,7 @@ function placeSubjectPinBySpan(){
     f:              'json',
     resultRecordCount: '1'
   });
-  fetch(PARCEL_QUERY_URL + '?' + params.toString())
+  fetch(PARCEL_URL + '?' + params.toString())
   .then(r => r.json())
   .then(data => {
     const feats = data.features || [];

@@ -184,8 +184,8 @@
           {% endfor %}
           <div class="code-row">
             <span class="code-line">F4</span>
-            <span class="code-desc {% if rec.tenantPurchase == True %}check-yes{% else %}check-no{% endif %}">
-              Tenant prior: {{ 'Yes' if rec.tenantPurchase == True else 'No' }}
+            <span class="code-desc {% if rec.tenantPurchase in [True, 'True', 'TRUE', 'true', '1', 1] %}check-yes{% else %}check-no{% endif %}">
+              Tenant prior: {{ 'Yes' if rec.tenantPurchase in [True, 'True', 'TRUE', 'true', '1', 1] else 'No' }}
             </span>
           </div>
           <div class="code-row">
@@ -203,14 +203,14 @@
         <div class="acc-content">
           <div class="code-row">
             <span class="code-line">G1</span>
-            <span class="code-desc {% if rec.enrolledCurrentUse == True %}check-yes{% else %}check-no{% endif %}">
-              Enrolled: {{ 'Yes' if rec.enrolledCurrentUse == True else 'No' }}
+            <span class="code-desc {% if rec.enrolledCurrentUse in [True, 'True', 'TRUE', 'true', '1', 1] %}check-yes{% else %}check-no{% endif %}">
+              Enrolled: {{ 'Yes' if rec.enrolledCurrentUse in [True, 'True', 'TRUE', 'true', '1', 1] else 'No' }}
             </span>
           </div>
           <div class="code-row">
             <span class="code-line">G2</span>
-            <span class="code-desc {% if rec.currentUseEnrollmentContinue == True %}check-yes{% else %}check-no{% endif %}">
-              Continue enrollment: {{ 'Yes' if rec.currentUseEnrollmentContinue == True else 'No' }}
+            <span class="code-desc {% if rec.currentUseEnrollmentContinue in [True, 'True', 'TRUE', 'true', '1', 1] %}check-yes{% else %}check-no{% endif %}">
+              Continue enrollment: {{ 'Yes' if rec.currentUseEnrollmentContinue in [True, 'True', 'TRUE', 'true', '1', 1] else 'No' }}
             </span>
           </div>
         </div>
@@ -246,14 +246,14 @@
           </div>
           <div class="code-row">
             <span class="code-line">H5</span>
-            <span class="code-desc {% if rec.developmentPrevConv == True %}check-yes{% else %}check-no{% endif %}">
-              Dev. rights conveyed separately: {{ 'Yes' if rec.developmentPrevConv == True else 'No' }}
+            <span class="code-desc {% if rec.developmentPrevConv in [True, 'True', 'TRUE', 'true', '1', 1] %}check-yes{% else %}check-no{% endif %}">
+              Dev. rights conveyed separately: {{ 'Yes' if rec.developmentPrevConv in [True, 'True', 'TRUE', 'true', '1', 1] else 'No' }}
             </span>
           </div>
           <div class="code-row">
             <span class="code-line">H6</span>
-            <span class="code-desc {% if rec.buyerAdjoiningProperty == True %}check-yes{% else %}check-no{% endif %}">
-              Buyer holds adjoining property: {{ 'Yes' if rec.buyerAdjoiningProperty == True else 'No' }}
+            <span class="code-desc {% if rec.buyerAdjoiningProperty in [True, 'True', 'TRUE', 'true', '1', 1] %}check-yes{% else %}check-no{% endif %}">
+              Buyer holds adjoining property: {{ 'Yes' if rec.buyerAdjoiningProperty in [True, 'True', 'TRUE', 'true', '1', 1] else 'No' }}
             </span>
           </div>
         </div>
