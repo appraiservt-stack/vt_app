@@ -133,6 +133,23 @@
     </div>
     <div class="ref-body">
 
+      <!-- Sections A/B — Party Information -->
+      <div class="acc-section">
+        <button class="acc-toggle open" onclick="toggleAcc(this)">
+          Sections A/B &mdash; Party Information <span class="arrow">&#9660;</span>
+        </button>
+        <div class="acc-content open">
+          <div class="code-row">
+            <span class="code-line">A</span>
+            <span class="code-desc">Seller: {{ [rec.sellerStreet, rec.sellerCity, rec.sellerState, rec.sellerZip]|select|join(', ') or '&mdash;' }}</span>
+          </div>
+          <div class="code-row">
+            <span class="code-line">B</span>
+            <span class="code-desc">Buyer: {{ [rec.buyerStreet, rec.buyerCity, rec.buyerState, rec.buyerZip]|select|join(', ') or '&mdash;' }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Section E -->
       <div class="acc-section">
         <button class="acc-toggle open" onclick="toggleAcc(this)">

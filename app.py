@@ -2930,6 +2930,10 @@ def ptt172(filename=None):  # noqa: C901
         "A-EntityName":      rec.get("sellerEntityName") or "",
         "A-LastName":        rec.get("sellerLastName")   or "",
         "A-FirstName":       rec.get("sellerFirstName")  or "",
+        "A-MailingAddress":  rec.get("sellerStreet")     or "",
+        "A-City":            rec.get("sellerCity")       or "",
+        "A-State":           rec.get("sellerState")      or "",
+        "A-ZIP":             rec.get("sellerZip")        or "",
         # B — Buyer
         "B-EntityName":      rec.get("buyerEntityName")  or "",
         "B-EntityName-COPY": rec.get("buyerEntityName")  or "",
@@ -2937,6 +2941,10 @@ def ptt172(filename=None):  # noqa: C901
         "B-LastName-COPY":   rec.get("buyerLastName")    or "",
         "B-FirstName":       rec.get("buyerFirstName")   or "",
         "B-FirstName-COPY":  rec.get("buyerFirstName")   or "",
+        "B-MailingAddress":  rec.get("buyerStreet")      or "",
+        "B-City":            rec.get("buyerCity")        or "",
+        "B-State":           rec.get("buyerState")       or "",
+        "B-ZIP":             rec.get("buyerZip")         or "",
         # C — Property
         "C-PropertyAddress":      rec.get("propertyLocationStreet") or "",
         "C-PropertyAddress-COPY": rec.get("propertyLocationStreet") or "",
