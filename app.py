@@ -3623,5 +3623,264 @@ def geocoding_history():
     return jsonify(rows)
 
 
+# ── Charts data endpoint ──────────────────────────────────────────────────
+@app.route("/charts/data")
+@login_required
+def charts_data():
+    """Return aggregated sales data for the charts panel.
+
+    Query params:
+      county      – comma-separated county codes (zero-padded)
+      town        – comma-separated town names
+      building_type – comma-separated building type keys
+      date_from   – ISO date YYYY-MM-DD
+      date_to     – ISO date YYYY-MM-DD
+      grouping    – month | quarter | year (default year)
+    """
+    county_param = request.args.get("county", "").strip()
+    town_param   = request.args.get("town", "").strip()
+    bt_param     = request.args.get("building_type", "").strip()
+    date_from    = request.args.get("date_from", "").strip()
+    date_to      = request.args.get("date_to", "").strip()
+    grouping     = request.args.get("grouping", "year").strip().lower()
+    if grouping not in ("month", "quarter", "year"):
+        grouping = "year"
+
+    # Build WHERE clause pieces
+    clauses = ["ValPdOrTrn > 0"]
+
+    # County filter
+    if county_param:
+        codes = county_param.split(",")
+        all_codes = set()
+        for c in codes:
+            c = c.strip()
+            if c:
+                all_codes.add(c)
+                try:
+                    all_codes.add(str(int(c)))
+                except ValueError:
+                    pass
+        if all_codes:
+            codes_sql = ",".join(f"'{c}'" for c in sorted(all_codes))
+            clauses.append(f"countyCode IN ({codes_sql})")
+
+    # Town filter via schoolCode
+    requested_towns = []
+    if town_param:
+        requested_towns = [t.strip() for t in town_param.split(",") if t.strip()]
+        school_codes = []
+        for town in requested_towns:
+            for code, mapped_town in SCHOOL_TO_TOWN.items():
+                if mapped_town.upper() == town.upper():
+                    school_codes.append(str(code))
+        if school_codes:
+            codes_sql = ",".join(f"'{c}'" for c in school_codes)
+            clauses.append(f"schoolCode IN ({codes_sql})")
+        else:
+            clauses.append("1=0")
+
+    # Building type filter
+    if bt_param:
+        bt_keys = [b.strip() for b in bt_param.split(",") if b.strip()]
+        bt_clauses = []
+        for bk in bt_keys:
+            bk_lower = bk.lower()
+            if bk_lower in ("vacant_land", "vacant land"):
+                bt_clauses.append("(blCn1 IN ('01','1') OR blCn1 IS NULL)")
+            elif bk_lower in ("single_family", "single family"):
+                bt_clauses.append("blCn1 IN ('02','2')")
+            elif bk_lower in ("mobile_home", "mobile home"):
+                bt_clauses.append("blCn1 IN ('04','4')")
+            elif bk_lower in ("condo",):
+                bt_clauses.append("blCn1 IN ('06','6')")
+            elif bk_lower in ("multi_family", "multi family", "multi-family"):
+                bt_clauses.append("blCn1 IN ('03','3')")
+            elif bk_lower in ("commercial",):
+                bt_clauses.append("blCn1 IN ('05','5')")
+            elif bk_lower in ("other",):
+                bt_clauses.append("blCn1 NOT IN ('01','1','02','2','03','3','04','4','05','5','06','6')")
+        if bt_clauses:
+            clauses.append("(" + " OR ".join(bt_clauses) + ")")
+
+    # Date range
+    if date_from:
+        try:
+            datetime.strptime(date_from, "%Y-%m-%d")
+            clauses.append(f"closeDate >= DATE '{date_from}'")
+        except Exception:
+            pass
+    if date_to:
+        try:
+            datetime.strptime(date_to, "%Y-%m-%d")
+            clauses.append(f"closeDate <= DATE '{date_to}'")
+        except Exception:
+            pass
+
+    where = " AND ".join(clauses)
+    fields = "OBJECTID,ValPdOrTrn,closeDate,schoolCode,blCn1,propLocCty"
+    features = fetch_all_features(where, fields=fields)
+
+    # Build per-town aggregation
+    # Determine if we have specific town selections
+    town_set = set(t.upper() for t in requested_towns) if requested_towns else set()
+
+    # Group records by town and period
+    from collections import defaultdict
+    town_periods = defaultdict(lambda: defaultdict(list))
+
+    for feat in features:
+        attr = feat.get("attributes", {})
+        price = attr.get("ValPdOrTrn")
+        close_date = attr.get("closeDate")
+        if price is None or price <= 0 or close_date is None:
+            continue
+
+        # Resolve town name
+        sc = attr.get("schoolCode")
+        town_name = None
+        if sc is not None:
+            try:
+                sc_int = int(float(str(sc)))
+                town_name = SCHOOL_TO_TOWN.get(sc_int)
+            except (TypeError, ValueError):
+                pass
+        if not town_name:
+            plc = attr.get("propLocCty") or ""
+            town_name = plc.strip().title() if plc.strip() else "Unknown"
+
+        # If specific towns selected, skip records not in those towns
+        if town_set and town_name.upper() not in town_set:
+            continue
+
+        # Parse date
+        try:
+            dt = datetime.fromtimestamp(int(close_date) / 1000, tz=timezone.utc)
+        except Exception:
+            continue
+
+        if grouping == "month":
+            period = dt.strftime("%Y-%m")
+        elif grouping == "quarter":
+            q = (dt.month - 1) // 3 + 1
+            period = f"{dt.year}-Q{q}"
+        else:
+            period = str(dt.year)
+
+        town_periods[town_name][period].append(price)
+
+    # Determine series mode
+    if len(town_set) >= 2:
+        series_towns = sorted(town_set)
+    elif len(town_set) == 1:
+        series_towns = list(town_set)
+    else:
+        series_towns = None  # statewide
+
+    # Build unified period labels
+    all_periods = set()
+    for tp in town_periods.values():
+        all_periods.update(tp.keys())
+    sorted_periods = sorted(all_periods)
+
+    def median(lst):
+        if not lst:
+            return None
+        s = sorted(lst)
+        n = len(s)
+        if n % 2 == 1:
+            return s[n // 2]
+        return (s[n // 2 - 1] + s[n // 2]) / 2
+
+    series = []
+    if series_towns:
+        for town_key in series_towns:
+            town_title = town_key.title() if town_key == town_key.upper() else town_key
+            data_map = town_periods.get(town_title, {})
+            if not data_map:
+                # Try uppercase key
+                for k, v in town_periods.items():
+                    if k.upper() == town_key.upper():
+                        data_map = v
+                        town_title = k
+                        break
+            counts = []
+            medians = []
+            averages = []
+            for p in sorted_periods:
+                prices = data_map.get(p, [])
+                counts.append(len(prices))
+                medians.append(median(prices))
+                averages.append(round(sum(prices) / len(prices), 2) if prices else None)
+            series.append({
+                "label": town_title,
+                "periods": sorted_periods,
+                "counts": counts,
+                "medians": medians,
+                "averages": averages,
+            })
+    else:
+        # Statewide: merge all towns
+        merged = defaultdict(list)
+        for tp in town_periods.values():
+            for p, prices in tp.items():
+                merged[p].extend(prices)
+        counts = []
+        medians_list = []
+        averages_list = []
+        for p in sorted_periods:
+            prices = merged.get(p, [])
+            counts.append(len(prices))
+            medians_list.append(median(prices))
+            averages_list.append(round(sum(prices) / len(prices), 2) if prices else None)
+        series.append({
+            "label": "Statewide",
+            "periods": sorted_periods,
+            "counts": counts,
+            "medians": medians_list,
+            "averages": averages_list,
+        })
+
+    # Heatmap: per-town totals
+    heatmap = []
+    for town_name, periods_data in town_periods.items():
+        all_prices = []
+        total_count = 0
+        for prices in periods_data.values():
+            total_count += len(prices)
+            all_prices.extend(prices)
+        heatmap.append({
+            "town": town_name,
+            "count": total_count,
+            "median": median(all_prices),
+        })
+    heatmap.sort(key=lambda x: x["town"])
+
+    # Price distribution buckets
+    price_ranges = [
+        ("$0-50k", 0, 50000),
+        ("$50-100k", 50000, 100000),
+        ("$100-200k", 100000, 200000),
+        ("$200-300k", 200000, 300000),
+        ("$300-500k", 300000, 500000),
+        ("$500k-$1M", 500000, 1000000),
+        ("$1M+", 1000000, float("inf")),
+    ]
+    price_dist = []
+    all_prices_flat = []
+    for tp in town_periods.values():
+        for prices in tp.values():
+            all_prices_flat.extend(prices)
+    for label, lo, hi in price_ranges:
+        cnt = sum(1 for p in all_prices_flat if lo <= p < hi)
+        price_dist.append({"range": label, "count": cnt})
+
+    return jsonify({
+        "series": series,
+        "heatmap": heatmap,
+        "price_distribution": price_dist,
+    })
+
+
 if __name__ == "__main__":
     app.run(debug=True)
