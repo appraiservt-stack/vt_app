@@ -607,6 +607,8 @@ def parse_filters(args):
     f["buyer_adjoining"]       = args.get("buyer_adjoining", "")
     f["enrolled_current_use"]  = args.get("enrolled_current_use", "")  # "true"/"false"/""
     f["foreclosed"]            = args.get("foreclosed", "")            # "true"/"false"/""
+    f["rented_before"]         = args.get("rented_before", "")         # "true"/"false"/""
+    f["rented_after"]          = args.get("rented_after", "")          # "true"/"false"/""
 
     return f
 
@@ -840,6 +842,8 @@ def build_where_clause(filters):
         ("dev_prev_conv",       "devPrevCnv"),
         ("buyer_adjoining",     "buyrAdjPrp"),
         ("enrolled_current_use", "enrCrntUse"),
+        ("rented_before",       "rntdBefore"),
+        ("rented_after",        "rntdAfter"),
     ]:
         clause = bool_clause(field, filters.get(flt_key, ""))
         if clause:
@@ -1854,6 +1858,7 @@ def data_approx_enrich():
         "street": "", "span": "",
         "enrolled_current_use": "", "dev_prev_conv": "",
         "buyer_adjoining": "", "foreclosed": "",
+        "rented_before": "", "rented_after": "",
     }
     rec = feature_to_record(features[0], empty_filters)
     if not rec:
@@ -2654,6 +2659,7 @@ def history():
         "buyer_use", "ptt_exemption", "grand_list", "seller_entity", "seller_last",
         "seller_first", "buyer_entity", "buyer_last", "buyer_first", "span",
         "dev_prev_conv", "buyer_adjoining", "enrolled_current_use", "foreclosed",
+        "rented_before", "rented_after",
     ]}
 
     results = []

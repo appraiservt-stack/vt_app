@@ -515,10 +515,26 @@
       <div class="filter-row" style="gap:8px;">
         <label style="min-width:auto; font-size:12px;">Foreclosed Property:</label>
       </div>
-      <div style="display:flex; gap:10px; margin-left:4px;">
+      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
         <label><input type="radio" name="foreclosed" value="" checked> Any</label>
         <label><input type="radio" name="foreclosed" value="true"> Yes</label>
         <label><input type="radio" name="foreclosed" value="false"> No</label>
+      </div>
+      <div class="filter-row" style="gap:8px;">
+        <label style="min-width:auto; font-size:12px;">Rented Before Sale:</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
+        <label><input type="radio" name="rentedBefore" value="" checked> Any</label>
+        <label><input type="radio" name="rentedBefore" value="true"> Yes</label>
+        <label><input type="radio" name="rentedBefore" value="false"> No</label>
+      </div>
+      <div class="filter-row" style="gap:8px;">
+        <label style="min-width:auto; font-size:12px;">Rented After Sale:</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-left:4px;">
+        <label><input type="radio" name="rentedAfter" value="" checked> Any</label>
+        <label><input type="radio" name="rentedAfter" value="true"> Yes</label>
+        <label><input type="radio" name="rentedAfter" value="false"> No</label>
       </div>
     </div>
 
@@ -2178,6 +2194,12 @@ function buildFilterParams(){
   const fc = document.querySelector('input[name="foreclosed"]:checked');
   if(fc && fc.value) params.set("foreclosed", fc.value);
 
+  const rb = document.querySelector('input[name="rentedBefore"]:checked');
+  if(rb && rb.value) params.set("rented_before", rb.value);
+
+  const ra = document.querySelector('input[name="rentedAfter"]:checked');
+  if(ra && ra.value) params.set("rented_after", ra.value);
+
   return params;
 }
 
@@ -3656,7 +3678,7 @@ function clearAllCheckboxes(){
    'streetAddr','spanInput'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed'].forEach(name => {
+  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
     const radio = document.querySelector(`input[name="${name}"][value=""]`);
     if(radio) radio.checked = true;
   });
@@ -3706,7 +3728,7 @@ function clearAllForNameSearch(){
    'streetAddr','spanInput'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed'].forEach(name => {
+  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
     const radio = document.querySelector('input[name="' + name + '"][value=""]');
     if(radio) radio.checked = true;
   });
