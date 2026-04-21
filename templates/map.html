@@ -497,6 +497,14 @@
         <label><input type="radio" name="enrolledCurrentUse" value="false"> No</label>
       </div>
       <div class="filter-row" style="gap:8px;">
+        <label style="min-width:auto; font-size:12px;">Current Use Continues After Sale:</label>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
+        <label><input type="radio" name="currentUseContinues" value="" checked> Any</label>
+        <label><input type="radio" name="currentUseContinues" value="true"> Yes</label>
+        <label><input type="radio" name="currentUseContinues" value="false"> No</label>
+      </div>
+      <div class="filter-row" style="gap:8px;">
         <label style="min-width:auto; font-size:12px;">Development Rights Previously Conveyed:</label>
       </div>
       <div style="display:flex; gap:10px; margin-bottom:6px; margin-left:4px;">
@@ -2185,6 +2193,9 @@ function buildFilterParams(){
   const ecu = document.querySelector('input[name="enrolledCurrentUse"]:checked');
   if(ecu && ecu.value) params.set("enrolled_current_use", ecu.value);
 
+  const cuc = document.querySelector('input[name="currentUseContinues"]:checked');
+  if(cuc && cuc.value) params.set("current_use_continues", cuc.value);
+
   const dpc = document.querySelector('input[name="devPrevConv"]:checked');
   if(dpc && dpc.value) params.set("dev_prev_conv", dpc.value);
 
@@ -3678,7 +3689,7 @@ function clearAllCheckboxes(){
    'streetAddr','spanInput'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
+  ['enrolledCurrentUse','currentUseContinues','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
     const radio = document.querySelector(`input[name="${name}"][value=""]`);
     if(radio) radio.checked = true;
   });
@@ -3728,7 +3739,7 @@ function clearAllForNameSearch(){
    'streetAddr','spanInput'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  ['enrolledCurrentUse','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
+  ['enrolledCurrentUse','currentUseContinues','devPrevConv','buyerAdjoining','foreclosed','rentedBefore','rentedAfter'].forEach(name => {
     const radio = document.querySelector('input[name="' + name + '"][value=""]');
     if(radio) radio.checked = true;
   });
