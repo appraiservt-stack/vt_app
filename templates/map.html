@@ -2440,22 +2440,48 @@ function applyFilters(){
 
   // Filter results could be anywhere in VT. Zoom to results so the user can find them.
   if(hasNameFilter()){
+    const spanVal = document.getElementById("spanInput").value.trim();
     const params = buildFilterParams();
     params.set("xmin", "-73.5");
     params.set("ymin", "42.7");
     params.set("xmax", "-71.4");
     params.set("ymax", "45.1");
     document.getElementById("statusBar").textContent = "Searching...";
-    fetch("/data?" + params.toString())
-    .then(r => r.json())
-    .then(data => {
+
+    // If a SPAN is entered, query the VT Parcels layer first so we can always
+    // locate the parcel even when there are no PTT transfer records.
+    const parcelPromise = spanVal ? lookupSpanParcel(spanVal) : Promise.resolve(null);
+    const pttPromise = fetch("/data?" + params.toString()).then(r => r.json());
+
+    Promise.all([parcelPromise, pttPromise]).then(function(results){
+      const parcel = results[0];
+      const data   = results[1];
       nameSearchCache = data.data || [];
-      // Mark all name search results as non-approx so they render as solid dots.
-      // ArcGIS returned these with valid coordinates via resolve_coordinates;
-      // the approx layer is suppressed during name searches so these records
-      // must go through the normal renderData path as solid markers.
       nameSearchCache.forEach(p => { p.approxLocation = false; });
+
+      // If SPAN was entered but no PTT records AND no parcel found
+      if(spanVal && nameSearchCache.length === 0 && !parcel){
+        document.getElementById("statusBar").textContent = "SPAN not found.";
+        return;
+      }
+
+      // If SPAN was entered, parcel found, but no PTT records
+      if(spanVal && nameSearchCache.length === 0 && parcel){
+        const addrText = [parcel.address, parcel.town].filter(Boolean).join(', ');
+        document.getElementById("statusBar").textContent =
+          "No transfer records found for this SPAN. Parcel located at " + (addrText || parcel.span) + ".";
+        const label = `${parcel.address} ${parcel.town} — SPAN ${parcel.span}`.trim();
+        _dropPin(parcel.lat, parcel.lng, label);
+        map.setView([parcel.lat, parcel.lng], Math.max(map.getZoom(), 16));
+        return;
+      }
+
+      // If parcel found, include its location in the bounds so we zoom there
       let bounds = null;
+      if(parcel){
+        const parcelPt = L.latLng(parcel.lat, parcel.lng);
+        bounds = L.latLngBounds(parcelPt, parcelPt);
+      }
       nameSearchCache.forEach(p => {
         if(p.lat != null && p.lon != null){
           const pt = L.latLng(p.lat, p.lon);
@@ -5199,21 +5225,12 @@ function _tryNominatimVariants(variants, idx){
   });
 }
 
-// ---- Method 2: SPAN lookup via VT Parcel FeatureServer ----
-function placeSubjectPinBySpan(){
-  const raw = document.getElementById('subjectSpanInput').value.trim();
-  if(!raw){ document.getElementById('subjectPinStatus').textContent = 'Please enter a SPAN.'; return; }
-
-  // Normalise: strip non-digits then reformat as NNN-NNN-NNNNN
-  const digits = raw.replace(/\D/g, '');
-  if(digits.length < 11){
-    document.getElementById('subjectPinStatus').textContent = 'SPAN must be at least 11 digits.';
-    return;
-  }
-  // Try both with and without hyphens in the query
-  const spanFmt  = `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
-  document.getElementById('subjectPinStatus').textContent = 'Looking up SPAN...';
-
+// ---- Shared SPAN → parcel lookup via VT Parcel FeatureServer ----
+// Returns a Promise resolving to {lat, lng, address, town, span} or null.
+function lookupSpanParcel(rawSpan){
+  const digits = rawSpan.replace(/\D/g, '');
+  if(digits.length < 11) return Promise.resolve(null);
+  const spanFmt = `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6)}`;
   const params = new URLSearchParams({
     where:          `SPAN = '${spanFmt}'`,
     outFields:      'SPAN,TNAME,E911ADDR,OWNER1',
@@ -5222,35 +5239,54 @@ function placeSubjectPinBySpan(){
     f:              'json',
     resultRecordCount: '1'
   });
-  fetch(PARCEL_QUERY_URL + '?' + params.toString())
-  .then(r => r.json())
-  .then(data => {
-    const feats = data.features || [];
-    if(!feats.length){
+  return fetch(PARCEL_QUERY_URL + '?' + params.toString())
+    .then(r => r.json())
+    .then(data => {
+      const feats = data.features || [];
+      if(!feats.length) return null;
+      const feat = feats[0];
+      const attr = feat.attributes || {};
+      let lat, lng;
+      if(feat.geometry && feat.geometry.rings && feat.geometry.rings[0]){
+        const ring = feat.geometry.rings[0];
+        lng = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+        lat = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+      } else if(feat.geometry && feat.geometry.x != null){
+        lng = feat.geometry.x; lat = feat.geometry.y;
+      } else {
+        return null;
+      }
+      return {
+        lat: lat, lng: lng,
+        address: attr.E911ADDR || '',
+        town: attr.TNAME || '',
+        span: attr.SPAN || spanFmt
+      };
+    })
+    .catch(function(){ return null; });
+}
+
+// ---- Method 2: SPAN lookup via VT Parcel FeatureServer ----
+function placeSubjectPinBySpan(){
+  const raw = document.getElementById('subjectSpanInput').value.trim();
+  if(!raw){ document.getElementById('subjectPinStatus').textContent = 'Please enter a SPAN.'; return; }
+
+  const digits = raw.replace(/\D/g, '');
+  if(digits.length < 11){
+    document.getElementById('subjectPinStatus').textContent = 'SPAN must be at least 11 digits.';
+    return;
+  }
+  document.getElementById('subjectPinStatus').textContent = 'Looking up SPAN...';
+
+  lookupSpanParcel(raw).then(function(parcel){
+    if(!parcel){
       document.getElementById('subjectPinStatus').textContent =
         'SPAN not found. Check the number and try again.';
       return;
     }
-    const feat = feats[0];
-    const attr = feat.attributes || {};
-    // Geometry is a polygon — compute centroid from first ring
-    let lat, lng;
-    if(feat.geometry && feat.geometry.rings && feat.geometry.rings[0]){
-      const ring = feat.geometry.rings[0];
-      lng = ring.reduce((s, p) => s + p[0], 0) / ring.length;
-      lat = ring.reduce((s, p) => s + p[1], 0) / ring.length;
-    } else if(feat.geometry && feat.geometry.x != null){
-      lng = feat.geometry.x; lat = feat.geometry.y;
-    } else {
-      document.getElementById('subjectPinStatus').textContent = 'Parcel found but has no geometry.';
-      return;
-    }
-    const label = `${attr.E911ADDR || ''} ${attr.TNAME || ''} — SPAN ${attr.SPAN || spanFmt}`.trim();
-    _dropPin(lat, lng, label);
-    map.setView([lat, lng], Math.max(map.getZoom(), 16));
-  })
-  .catch(function(){
-    document.getElementById('subjectPinStatus').textContent = 'Lookup error. Check your connection.';
+    const label = `${parcel.address} ${parcel.town} — SPAN ${parcel.span}`.trim();
+    _dropPin(parcel.lat, parcel.lng, label);
+    map.setView([parcel.lat, parcel.lng], Math.max(map.getZoom(), 16));
   });
 }
 
