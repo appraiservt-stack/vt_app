@@ -818,9 +818,12 @@ def build_where_clause(filters):
             # SCHOOL_TO_TOWN maps code->town; we need town->code(s)
             for code, mapped_town in SCHOOL_TO_TOWN.items():
                 if mapped_town.upper() == town:
+                    # ArcGIS stores schoolCode as 3-digit zero-padded string ('011')
+                    # Include both padded and unpadded forms
+                    school_codes.append(str(code).zfill(3))
                     school_codes.append(str(code))
         if school_codes:
-            codes_sql = ",".join([f"'{c}'" for c in school_codes])
+            codes_sql = ",".join([f"'{c}'" for c in sorted(set(school_codes))])
             clauses.append(f"schoolCode IN ({codes_sql})")
         else:
             # No matching school codes found — force zero results rather
