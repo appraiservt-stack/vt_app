@@ -3646,6 +3646,11 @@ def charts_data():
       building_type – comma-separated building type keys
       date_from   – ISO date YYYY-MM-DD
       date_to     – ISO date YYYY-MM-DD
+      price_min   – minimum sale price (ValPdOrTrn >= value, if > 0)
+      price_max   – maximum sale price (ValPdOrTrn <= value, if > 0)
+      land_min    – minimum land size (landSize >= value, if > 0)
+      land_max    – maximum land size (landSize <= value, if > 0)
+      grand_list  – comma-separated grand list category codes (TownGlCat)
       grouping    – month | quarter | year (default year)
     """
     county_param = request.args.get("county", "").strip()
@@ -3653,6 +3658,11 @@ def charts_data():
     bt_param     = request.args.get("building_type", "").strip()
     date_from    = request.args.get("date_from", "").strip()
     date_to      = request.args.get("date_to", "").strip()
+    price_min    = request.args.get("price_min", "").strip()
+    price_max    = request.args.get("price_max", "").strip()
+    land_min     = request.args.get("land_min", "").strip()
+    land_max     = request.args.get("land_max", "").strip()
+    grand_list   = request.args.get("grand_list", "").strip()
     grouping     = request.args.get("grouping", "year").strip().lower()
     if grouping not in ("month", "quarter", "year"):
         grouping = "year"
@@ -3727,6 +3737,53 @@ def charts_data():
             clauses.append(f"closeDate <= DATE '{date_to}'")
         except Exception:
             pass
+
+    # Price range
+    if price_min:
+        try:
+            val = float(price_min)
+            if val > 0:
+                clauses.append(f"ValPdOrTrn >= {val}")
+        except (ValueError, TypeError):
+            pass
+    if price_max:
+        try:
+            val = float(price_max)
+            if val > 0:
+                clauses.append(f"ValPdOrTrn <= {val}")
+        except (ValueError, TypeError):
+            pass
+
+    # Land size range
+    if land_min:
+        try:
+            val = float(land_min)
+            if val > 0:
+                clauses.append(f"landSize >= {val}")
+        except (ValueError, TypeError):
+            pass
+    if land_max:
+        try:
+            val = float(land_max)
+            if val > 0:
+                clauses.append(f"landSize <= {val}")
+        except (ValueError, TypeError):
+            pass
+
+    # Grand list category filter
+    if grand_list:
+        gl_codes = [g.strip() for g in grand_list.split(",") if g.strip()]
+        all_gl = set()
+        for g in gl_codes:
+            all_gl.add(g)
+            try:
+                all_gl.add(str(int(g)))
+            except ValueError:
+                pass
+            all_gl.add(g.zfill(2))
+        if all_gl:
+            gl_sql = ",".join(f"'{g}'" for g in sorted(all_gl))
+            clauses.append(f"TownGlCat IN ({gl_sql})")
 
     where = " AND ".join(clauses)
     fields = "OBJECTID,ValPdOrTrn,closeDate,schoolCode,blCn1,propLocCty"
