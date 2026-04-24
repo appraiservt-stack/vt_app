@@ -245,31 +245,14 @@
         }
         #chartsWindow .cw-titlebar button:hover { opacity:0.7; }
         #chartsWindow .cw-body {
-            display:flex; height:calc(100% - 34px); overflow:hidden;
+            display:flex; flex-direction:column; height:calc(100% - 34px); overflow:hidden;
         }
-        /* Left filter panel */
-        .cw-left-panel {
-            width:280px; min-width:280px; max-width:280px;
-            overflow-y:auto; padding:8px; border-right:1px solid #ddd;
-            background:#f9f9f9; font-size:11px;
+        /* Top control bar */
+        .cw-top-bar {
+            padding:8px 10px; border-bottom:1px solid #ddd; background:#f9f9f9;
+            font-size:11px; flex-shrink:0;
         }
-        .cw-left-panel .cw-section {
-            margin-bottom:6px; border:1px solid #e0e0e0; border-radius:4px;
-            background:#fff;
-        }
-        .cw-left-panel .cw-section-header {
-            display:flex; align-items:center; justify-content:space-between;
-            padding:5px 8px; cursor:pointer; font-weight:bold; font-size:11px;
-            background:#f0f0f0; border-radius:3px 3px 0 0; user-select:none;
-        }
-        .cw-left-panel .cw-section-header:hover { background:#e8e8e8; }
-        .cw-left-panel .cw-section-header .cw-chevron {
-            font-size:10px; transition:transform 0.15s;
-        }
-        .cw-left-panel .cw-section-header .cw-chevron.collapsed { transform:rotate(-90deg); }
-        .cw-left-panel .cw-section-body { padding:6px 8px; }
-        .cw-left-panel .cw-section-body.collapsed { display:none; }
-        /* Right charts panel */
+        /* Charts panel */
         .cw-right-panel {
             flex:1; overflow-y:auto; padding:10px;
         }
@@ -284,19 +267,6 @@
         .cw-resize-handle.cw-nw { top:-3px; left:-3px; width:10px; height:10px; cursor:nw-resize; }
         .cw-resize-handle.cw-se { bottom:-3px; right:-3px; width:10px; height:10px; cursor:se-resize; }
         .cw-resize-handle.cw-sw { bottom:-3px; left:-3px; width:10px; height:10px; cursor:sw-resize; }
-        .cw-filter-section { margin-bottom:8px; }
-        .cw-filter-section label { font-size:11px; }
-        .cw-checkbox-scroll {
-            max-height:100px; overflow-y:auto; border:1px solid #ddd;
-            padding:3px; border-radius:2px; background:#fafafa;
-        }
-        .cw-checkbox-scroll label { display:block; font-size:11px; padding:1px 0; cursor:pointer; }
-        .cw-quick-row { display:flex; gap:3px; flex-wrap:wrap; margin-bottom:4px; }
-        .cw-quick-row button {
-            font-size:10px; padding:2px 5px; cursor:pointer;
-            border:1px solid #aaa; border-radius:2px; background:#f0f0f0;
-        }
-        .cw-quick-row button:hover { background:#ddd; }
         .cw-toggle-row { display:flex; gap:2px; margin-bottom:6px; }
         .cw-toggle-row button {
             padding:4px 10px; font-size:11px; font-weight:bold;
@@ -328,12 +298,7 @@
             z-index:9999; pointer-events:none;
         }
         .cw-annotation { font-size:11px; color:#555; margin-top:4px; font-style:italic; }
-        .cw-section-divider {
-            text-align:center; font-weight:bold; font-size:11px; color:#666;
-            border-top:1px solid #ccc; border-bottom:1px solid #ccc;
-            padding:4px 0; margin:6px 0; background:#f5f5f5;
-        }
-        .cw-analysis-checks label { display:block; font-size:11px; padding:2px 0; cursor:pointer; }
+        .cw-analysis-checks label { font-size:11px; cursor:pointer; }
     </style>
 </head>
 <body>
@@ -934,118 +899,32 @@
     </span>
   </div>
   <div class="cw-body" id="cwBody">
-    <!-- ===== LEFT FILTER PANEL ===== -->
-    <div class="cw-left-panel">
-
-      <!-- Location -->
-      <div class="cw-section">
-        <div class="cw-section-header" onclick="cwToggleSection(this)">
-          <span>Location</span><span class="cw-chevron">&#9660;</span>
+    <!-- ===== TOP CONTROL BAR ===== -->
+    <div class="cw-top-bar">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <button onclick="cwSyncFromMap()"
+          style="padding:4px 10px; font-size:12px; font-weight:bold; background:#1565c0; color:#fff;
+                 border:none; border-radius:4px; cursor:pointer; white-space:nowrap;">&#128260; Sync from Map</button>
+        <span id="cwStatus" style="font-size:11px; color:#555;">No data synced yet</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px;">
+        <div class="cw-toggle-row" style="margin-bottom:0;">
+          <button id="cwGrpMonth" onclick="cwSetGrouping('month')">Monthly</button>
+          <button id="cwGrpQuarter" onclick="cwSetGrouping('quarter')">Quarterly</button>
+          <button id="cwGrpYear" class="active" onclick="cwSetGrouping('year')">Yearly</button>
         </div>
-        <div class="cw-section-body">
-          <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">County
-            <a href="#" onclick="cwSelectAll('cwCountyList'); return false" style="font-size:10px;">All</a> |
-            <a href="#" onclick="cwClearAll('cwCountyList'); return false" style="font-size:10px;">Clear</a>
-          </div>
-          <div class="cw-checkbox-scroll" id="cwCountyList"></div>
-          <div style="font-weight:bold; font-size:11px; margin:6px 0 2px;">Town
-            <a href="#" onclick="cwSelectAll('cwTownList'); return false" style="font-size:10px;">All</a> |
-            <a href="#" onclick="cwClearAll('cwTownList'); return false" style="font-size:10px;">Clear</a>
-          </div>
-          <div class="cw-checkbox-scroll" id="cwTownList" style="max-height:120px;"></div>
+        <div class="cw-analysis-checks" style="display:flex; gap:8px; flex-wrap:wrap;">
+          <label><input type="checkbox" id="cwAnaVolume" checked onchange="cwSyncFromMap()"> Sales Volume</label>
+          <label><input type="checkbox" id="cwAnaPriceTrend" checked onchange="cwSyncFromMap()"> Price Trends</label>
+          <label><input type="checkbox" id="cwAnaPriceDist" onchange="cwSyncFromMap()"> Price Distribution</label>
+          <label><input type="checkbox" id="cwAnaHeatMap" onchange="cwSyncFromMap()"> Heat Map by Town</label>
         </div>
       </div>
-
-      <!-- Closing Date Range -->
-      <div class="cw-section">
-        <div class="cw-section-header" onclick="cwToggleSection(this)">
-          <span>Closing Date Range</span><span class="cw-chevron">&#9660;</span>
-        </div>
-        <div class="cw-section-body">
-          <div class="cw-quick-row">
-            <button onclick="cwQuickDate(3)">3M</button>
-            <button onclick="cwQuickDate(6)">6M</button>
-            <button onclick="cwQuickDate(12)">12M</button>
-            <button onclick="cwQuickDate(24)">24M</button>
-            <button onclick="cwQuickDate(36)">36M</button>
-            <button onclick="cwClearDates()">Clear</button>
-          </div>
-          <div style="display:flex; gap:6px; align-items:center; font-size:11px;">
-            <label>From: <input type="date" id="cwDateFrom" style="font-size:11px; width:110px;"></label>
-            <label>To: <input type="date" id="cwDateTo" style="font-size:11px; width:110px;"></label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sale Price Range -->
-      <div class="cw-section">
-        <div class="cw-section-header" onclick="cwToggleSection(this)">
-          <span>Sale Price Range</span><span class="cw-chevron">&#9660;</span>
-        </div>
-        <div class="cw-section-body">
-          <div style="display:flex; gap:6px; align-items:center; font-size:11px;">
-            <label>Min $: <input type="number" id="cwPriceMin" min="0" style="font-size:11px; width:90px;"></label>
-            <label>Max $: <input type="number" id="cwPriceMax" min="0" style="font-size:11px; width:90px;"></label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Land Size -->
-      <div class="cw-section">
-        <div class="cw-section-header" onclick="cwToggleSection(this)">
-          <span>Land Size (acres)</span><span class="cw-chevron">&#9660;</span>
-        </div>
-        <div class="cw-section-body">
-          <div style="display:flex; gap:6px; align-items:center; font-size:11px;">
-            <label>Min: <input type="number" id="cwLandMin" min="0" step="0.1" style="font-size:11px; width:80px;"></label>
-            <label>Max: <input type="number" id="cwLandMax" min="0" step="0.1" style="font-size:11px; width:80px;"></label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Building Type -->
-      <div class="cw-section">
-        <div class="cw-section-header" onclick="cwToggleSection(this)">
-          <span>Building Type</span><span class="cw-chevron">&#9660;</span>
-        </div>
-        <div class="cw-section-body">
-          <div id="cwBuildingTypes" style="font-size:11px;"></div>
-        </div>
-      </div>
-
-      <!-- Grand List Category -->
-      <div class="cw-section">
-        <div class="cw-section-header" onclick="cwToggleSection(this)">
-          <span>Grand List Category</span><span class="cw-chevron">&#9660;</span>
-        </div>
-        <div class="cw-section-body">
-          <div id="cwGrandListTypes" style="font-size:11px;"></div>
-        </div>
-      </div>
-
-      <!-- Analysis Type -->
-      <div class="cw-section-divider">&#9472;&#9472; Analysis Type &#9472;&#9472;</div>
-      <div class="cw-analysis-checks" style="margin-bottom:8px;">
-        <label><input type="checkbox" id="cwAnaVolume" checked> Sales Volume</label>
-        <label><input type="checkbox" id="cwAnaPriceTrend" checked> Price Trends</label>
-        <label><input type="checkbox" id="cwAnaPriceDist"> Price Distribution</label>
-        <label><input type="checkbox" id="cwAnaHeatMap"> Heat Map by Town</label>
-      </div>
-
-      <!-- Apply button -->
-      <button onclick="cwApply()"
-        style="width:100%; padding:6px; font-size:12px; font-weight:bold; background:#1565c0; color:#fff;
-               border:none; border-radius:4px; cursor:pointer;">Apply</button>
     </div>
 
-    <!-- ===== RIGHT CHARTS PANEL ===== -->
+    <!-- ===== CHARTS PANEL ===== -->
     <div class="cw-right-panel">
-      <div class="cw-toggle-row" style="margin-bottom:8px;">
-        <button id="cwGrpMonth" onclick="cwSetGrouping('month')">Monthly</button>
-        <button id="cwGrpQuarter" onclick="cwSetGrouping('quarter')">Quarterly</button>
-        <button id="cwGrpYear" class="active" onclick="cwSetGrouping('year')">Yearly</button>
-      </div>
-      <div id="cwLoading" style="display:none; text-align:center; padding:20px; color:#555;">Loading chart data...</div>
+      <div id="cwLoading" style="display:none; text-align:center; padding:20px; color:#555;">Processing...</div>
 
       <!-- SALES VOLUME CHART -->
       <div class="cw-chart-wrap" id="cwVolumeWrap" style="display:none;">
@@ -5665,146 +5544,193 @@ function submitContactForm() {
 }
 
 // ===================================================
-// CHARTS PANEL
+// CHARTS PANEL — map-driven, no duplicate filters
 // ===================================================
 (function(){
   const cw = document.getElementById('chartsWindow');
-  let cwData = null;          // last fetched response
+  let cwData = null;          // aggregated data from map
   let cwGrouping = 'year';
   let cwVolView = 'date';
   let cwHeatMode = 'volume';
   let cwMaximized = false;
-  let cwPreMax = null;        // stored position before maximize
+  let cwPreMax = null;
   let cwVolumeChart = null;
   let cwPriceChart = null;
   let cwDistChart = null;
 
-  // --- palette ---
   const PALETTE = ['#1565c0','#e65100','#2e7d32','#6a1b9a','#c62828','#00838f','#ff8f00','#4e342e','#37474f','#ad1457','#00695c','#283593'];
 
-  // --- collapsible section toggle ---
-  window.cwToggleSection = function(header){
-    var body = header.nextElementSibling;
-    var chevron = header.querySelector('.cw-chevron');
-    if(body.classList.contains('collapsed')){
-      body.classList.remove('collapsed');
-      chevron.classList.remove('collapsed');
-    } else {
-      body.classList.add('collapsed');
-      chevron.classList.add('collapsed');
+  // --- helpers ---
+  function median(arr){
+    if(!arr.length) return null;
+    const s = arr.slice().sort((a,b)=>a-b);
+    const mid = Math.floor(s.length/2);
+    return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2;
+  }
+
+  function periodKey(ts){
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const m = d.getMonth()+1;
+    if(cwGrouping === 'year') return ''+y;
+    if(cwGrouping === 'quarter') return y+'-Q'+Math.ceil(m/3);
+    return y+'-'+(m<10?'0':'')+m;
+  }
+
+  function linReg(ys){
+    const n = ys.length;
+    if(n < 2) return [];
+    let sx=0,sy=0,sxx=0,sxy=0;
+    for(let i=0;i<n;i++){
+      const y = ys[i]===null?0:ys[i];
+      sx+=i; sy+=y; sxx+=i*i; sxy+=i*y;
     }
-  };
-
-  // --- populate county list from countyMap ---
-  function cwBuildCountyList(){
-    const el = document.getElementById('cwCountyList');
-    el.innerHTML = '';
-    Object.keys(countyMap).sort((a,b)=>countyMap[a].localeCompare(countyMap[b])).forEach(code => {
-      const lbl = document.createElement('label');
-      lbl.innerHTML = '<input type="checkbox" value="'+code+'" onchange="cwCountyChanged()"> '+countyMap[code];
-      el.appendChild(lbl);
-    });
+    const m2=(n*sxy-sx*sy)/(n*sxx-sx*sx);
+    const b=(sy-m2*sx)/n;
+    return ys.map((_,i)=>Math.round((m2*i+b)*100)/100);
   }
 
-  // --- populate building types from CODES ---
-  function cwBuildBuildingTypes(){
-    const el = document.getElementById('cwBuildingTypes');
-    el.innerHTML = '';
-    if(!CODES.building_types) return;
-    Object.entries(CODES.building_types).forEach(([code, desc]) => {
-      const div = document.createElement('div');
-      div.innerHTML = '<label><input type="checkbox" data-code="'+code+'"> '+desc+'</label>';
-      el.appendChild(div);
-      // Insert No Land sub-checkbox after Mobile Home (code '4' or '04')
-      if(code === '4' || code === '04'){
-        var wrapper = document.createElement('div');
-        wrapper.style.cssText = 'display:flex; align-items:center; padding:1px 0; padding-left:4px;';
-        var connector = document.createElement('div');
-        connector.style.cssText = 'width:10px; height:14px; border-left:1px solid #999; border-bottom:1px solid #999; margin-right:4px; flex-shrink:0; margin-top:-7px;';
-        var lbl = document.createElement('label');
-        lbl.style.cssText = 'font-size:11px; display:flex; align-items:center; gap:4px; cursor:pointer;';
-        var cb = document.createElement('input');
-        cb.type = 'checkbox'; cb.id = 'cwMhNoLand';
-        lbl.appendChild(cb);
-        lbl.appendChild(document.createTextNode(' No Land'));
-        wrapper.appendChild(connector);
-        wrapper.appendChild(lbl);
-        el.appendChild(wrapper);
+  function trendPctText(label, ys, groupLabel){
+    const valid = ys.filter(v=>v!==null&&v>0);
+    if(valid.length<2) return '';
+    const first=valid[0], last=valid[valid.length-1];
+    const totalPct=((last-first)/first)*100;
+    const perPeriod=totalPct/(valid.length-1);
+    const sign=perPeriod>=0?'+':'';
+    return 'The '+label+' '+groupLabel+' change is '+sign+perPeriod.toFixed(1)+'%';
+  }
+
+  // --- collect sales from map data ---
+  function cwCollectSales(){
+    // If draw-tool selections exist, use only those; otherwise all loaded dots
+    const selKeys = Object.keys(selectedSales);
+    const records = [];
+    const seen = new Set();
+    if(selKeys.length){
+      selKeys.forEach(id => {
+        if(seen.has(id)) return; seen.add(id);
+        const ref = markerRefs[id];
+        if(!ref) return;
+        const sale = ref.sales.find(s => s.id === id);
+        if(sale) records.push({ sale:sale, prop:ref.prop || ref.sales[0] });
+      });
+    } else {
+      Object.keys(markerRefs).forEach(id => {
+        if(seen.has(id)) return; seen.add(id);
+        const ref = markerRefs[id];
+        if(!ref) return;
+        const sale = ref.sales.find(s => s.id === id);
+        if(sale) records.push({ sale:sale, prop:ref.prop || ref.sales[0] });
+      });
+    }
+    return records;
+  }
+
+  // --- aggregate records into cwData ---
+  function cwAggregate(records){
+    // Group by period, compute counts/medians/averages per period (single "All" series)
+    // Also group by town for heatmap and by-town volume
+    const byPeriod = {};
+    const byTown = {};
+    const allPrices = []; // for distribution
+
+    records.forEach(r => {
+      const s = r.sale;
+      const p = r.prop;
+      const ts = s.date;
+      if(!ts) return;
+      const pk = periodKey(ts);
+      const price = Number(s.price);
+      const town = (p.trustedTown || p.city || 'Unknown').toUpperCase()
+        .replace(/\w\S*/g, t=>t.charAt(0)+t.slice(1).toLowerCase());
+
+      if(!byPeriod[pk]) byPeriod[pk] = { count:0, prices:[] };
+      byPeriod[pk].count++;
+      if(price > 0) byPeriod[pk].prices.push(price);
+
+      if(!byTown[town]) byTown[town] = { count:0, prices:[] };
+      byTown[town].count++;
+      if(price > 0){
+        byTown[town].prices.push(price);
+        allPrices.push(price);
       }
     });
+
+    const periods = Object.keys(byPeriod).sort();
+    const counts = periods.map(pk => byPeriod[pk].count);
+    const medians = periods.map(pk => median(byPeriod[pk].prices));
+    const averages = periods.map(pk => {
+      const arr = byPeriod[pk].prices;
+      return arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+    });
+
+    // Heatmap: array of { town, count, median }
+    const heatmap = Object.entries(byTown)
+      .map(([town, d]) => ({ town, count:d.count, median:median(d.prices) }))
+      .sort((a,b) => b.count - a.count);
+
+    // Price distribution — fixed buckets
+    const buckets = [0,50000,100000,150000,200000,250000,300000,400000,500000,750000,1000000,Infinity];
+    const distLabels = [];
+    const distCounts = [];
+    for(let i=0;i<buckets.length-1;i++){
+      const lo = buckets[i], hi = buckets[i+1];
+      const label = hi === Infinity ? '$'+lo.toLocaleString()+'+' : '$'+lo.toLocaleString()+'-$'+hi.toLocaleString();
+      distLabels.push(label);
+      distCounts.push(allPrices.filter(p => p >= lo && p < hi).length);
+    }
+
+    return {
+      series: [{ label:'All', periods, counts, medians, averages }],
+      heatmap,
+      price_distribution: distLabels.map((label,i) => ({ range:label, count:distCounts[i] })),
+      totalSales: records.length
+    };
   }
 
-  // --- populate grand list categories from CODES ---
-  function cwBuildGrandList(){
-    const el = document.getElementById('cwGrandListTypes');
-    el.innerHTML = '';
-    if(!CODES.grand_list_categories) return;
-    Object.entries(CODES.grand_list_categories).forEach(([code, desc]) => {
-      const div = document.createElement('div');
-      div.innerHTML = '<label><input type="checkbox" data-code="'+code+'"> '+desc+'</label>';
-      el.appendChild(div);
-    });
-  }
+  // --- sync from map (main entry point) ---
+  window.cwSyncFromMap = function(){
+    const records = cwCollectSales();
+    const selCount = Object.keys(selectedSales).length;
+    const statusEl = document.getElementById('cwStatus');
+    if(!records.length){
+      statusEl.textContent = 'No sales data loaded on map';
+      cwData = null;
+      document.getElementById('cwVolumeWrap').style.display = 'none';
+      document.getElementById('cwPriceWrap').style.display = 'none';
+      document.getElementById('cwDistWrap').style.display = 'none';
+      document.getElementById('cwHeatWrap').style.display = 'none';
+      return;
+    }
 
-  // --- populate town list filtered by selected counties ---
-  window.cwCountyChanged = function(){
-    const checked = Array.from(document.querySelectorAll('#cwCountyList input:checked')).map(i=>i.value);
-    const el = document.getElementById('cwTownList');
-    el.innerHTML = '';
-    // Gather towns from TOWN_CENTROIDS filtered by selected county codes
-    const towns = [];
-    Object.entries(TOWN_CENTROIDS).forEach(([town, info]) => {
-      const code = String(info.county).padStart(2,'0');
-      if(checked.length === 0 || checked.includes(code)){
-        const name = town.replace(/\w\S*/g, t=>t.charAt(0).toUpperCase()+t.slice(1).toLowerCase());
-        towns.push(name);
-      }
-    });
-    towns.sort().forEach(t => {
-      const lbl = document.createElement('label');
-      lbl.innerHTML = '<input type="checkbox" value="'+t+'"> '+t;
-      el.appendChild(lbl);
-    });
-  };
+    cwData = cwAggregate(records);
 
-  window.cwSelectAll = function(id){
-    document.querySelectorAll('#'+id+' input[type=checkbox]').forEach(cb => { cb.checked = true; });
-    if(id === 'cwCountyList') cwCountyChanged();
-  };
-  window.cwClearAll = function(id){
-    document.querySelectorAll('#'+id+' input[type=checkbox]').forEach(cb => { cb.checked = false; });
-    if(id === 'cwCountyList') cwCountyChanged();
-  };
+    const src = selCount ? selCount + ' selected sales' : records.length + ' sales from current map view';
+    statusEl.textContent = 'Showing ' + cwData.totalSales + ' sales' + (selCount ? ' (draw selection)' : ' from map');
 
-  // --- quick date buttons ---
-  window.cwQuickDate = function(months){
-    const to = new Date();
-    const from = new Date();
-    from.setMonth(from.getMonth() - months);
-    document.getElementById('cwDateFrom').value = from.toISOString().slice(0,10);
-    document.getElementById('cwDateTo').value = to.toISOString().slice(0,10);
-  };
-  window.cwClearDates = function(){
-    document.getElementById('cwDateFrom').value = '';
-    document.getElementById('cwDateTo').value = '';
-  };
+    const showVolume = document.getElementById('cwAnaVolume').checked;
+    const showPriceTrend = document.getElementById('cwAnaPriceTrend').checked;
+    const showPriceDist = document.getElementById('cwAnaPriceDist').checked;
+    const showHeatMap = document.getElementById('cwAnaHeatMap').checked;
 
-  // Set default date range to last 24 months
-  function cwSetDefaultDates(){
-    const to = new Date();
-    const from = new Date();
-    from.setMonth(from.getMonth() - 24);
-    document.getElementById('cwDateFrom').value = from.toISOString().slice(0,10);
-    document.getElementById('cwDateTo').value = to.toISOString().slice(0,10);
-  }
+    document.getElementById('cwVolumeWrap').style.display = showVolume ? '' : 'none';
+    document.getElementById('cwPriceWrap').style.display = showPriceTrend ? '' : 'none';
+    document.getElementById('cwDistWrap').style.display = showPriceDist ? '' : 'none';
+    document.getElementById('cwHeatWrap').style.display = showHeatMap ? '' : 'none';
+
+    if(showVolume) cwRedrawVolume();
+    if(showPriceTrend) cwRedrawPrice();
+    if(showPriceDist) cwRedrawDist();
+    if(showHeatMap) cwRedrawHeatmap();
+  };
 
   // --- grouping toggle ---
   window.cwSetGrouping = function(g){
     cwGrouping = g;
     ['Month','Quarter','Year'].forEach(s => {
-      document.getElementById('cwGrp'+s).classList.toggle('active', s.toLowerCase() === g);
+      document.getElementById('cwGrp'+s).classList.toggle('active', s.toLowerCase()===g);
     });
-    cwApply();
+    cwSyncFromMap();
   };
 
   // --- volume view toggle ---
@@ -5812,7 +5738,7 @@ function submitContactForm() {
     cwVolView = v;
     ['Date','Town','Price'].forEach(s => {
       const btn = document.getElementById('cwVolView'+s);
-      if(btn) btn.classList.toggle('active', s.toLowerCase() === v);
+      if(btn) btn.classList.toggle('active', s.toLowerCase()===v);
     });
     cwRedrawVolume();
   };
@@ -5825,121 +5751,6 @@ function submitContactForm() {
     cwRedrawHeatmap();
   };
 
-  // --- linear regression ---
-  function linReg(ys){
-    const n = ys.length;
-    if(n < 2) return [];
-    let sx=0, sy=0, sxx=0, sxy=0;
-    for(let i=0;i<n;i++){
-      const y = ys[i]===null ? 0 : ys[i];
-      sx+=i; sy+=y; sxx+=i*i; sxy+=i*y;
-    }
-    const m=(n*sxy - sx*sy)/(n*sxx - sx*sx);
-    const b=(sy - m*sx)/n;
-    return ys.map((_,i) => Math.round((m*i+b)*100)/100);
-  }
-
-  // --- per-period % annotation ---
-  function trendPctText(label, ys, groupLabel){
-    const valid = ys.filter(v=>v!==null && v>0);
-    if(valid.length < 2) return '';
-    const first = valid[0], last = valid[valid.length-1];
-    const totalPct = ((last-first)/first)*100;
-    const perPeriod = totalPct / (valid.length - 1);
-    const sign = perPeriod >= 0 ? '+' : '';
-    return 'The ' + label + ' ' + groupLabel + ' change is ' + sign + perPeriod.toFixed(1) + '%';
-  }
-
-  // --- apply / fetch ---
-  window.cwApply = function(){
-    const counties = Array.from(document.querySelectorAll('#cwCountyList input:checked')).map(i=>i.value);
-    const towns = Array.from(document.querySelectorAll('#cwTownList input:checked')).map(i=>i.value);
-    const bts = Array.from(document.querySelectorAll('#cwBuildingTypes input[data-code]:checked')).map(i=>i.dataset.code);
-    const dateFrom = document.getElementById('cwDateFrom').value;
-    const dateTo = document.getElementById('cwDateTo').value;
-    const priceMin = document.getElementById('cwPriceMin').value;
-    const priceMax = document.getElementById('cwPriceMax').value;
-    const landMin = document.getElementById('cwLandMin').value;
-    const landMax = document.getElementById('cwLandMax').value;
-    const grandList = Array.from(document.querySelectorAll('#cwGrandListTypes input[data-code]:checked')).map(i=>i.dataset.code);
-    const noLand = document.getElementById('cwMhNoLand');
-
-    const params = new URLSearchParams();
-    if(counties.length) params.set('county', counties.join(','));
-    if(towns.length) params.set('town', towns.join(','));
-    if(bts.length) params.set('building_type', bts.join(','));
-    if(dateFrom) params.set('date_from', dateFrom);
-    if(dateTo) params.set('date_to', dateTo);
-    if(priceMin) params.set('price_min', priceMin);
-    if(priceMax) params.set('price_max', priceMax);
-    if(landMin) params.set('land_min', landMin);
-    if(landMax) params.set('land_max', landMax);
-    if(grandList.length) params.set('grand_list', grandList.join(','));
-    if(noLand && noLand.checked) params.set('no_land', '1');
-    params.set('grouping', cwGrouping);
-
-    // Determine which analysis types are checked
-    const showVolume = document.getElementById('cwAnaVolume').checked;
-    const showPriceTrend = document.getElementById('cwAnaPriceTrend').checked;
-    const showPriceDist = document.getElementById('cwAnaPriceDist').checked;
-    const showHeatMap = document.getElementById('cwAnaHeatMap').checked;
-
-    document.getElementById('cwLoading').style.display = 'block';
-    document.getElementById('cwVolumeWrap').style.display = 'none';
-    document.getElementById('cwPriceWrap').style.display = 'none';
-    document.getElementById('cwDistWrap').style.display = 'none';
-    document.getElementById('cwHeatWrap').style.display = 'none';
-
-    fetch('/charts/data?' + params.toString())
-      .then(r => r.json())
-      .then(data => {
-        cwData = data;
-        document.getElementById('cwLoading').style.display = 'none';
-        if(showVolume){
-          document.getElementById('cwVolumeWrap').style.display = '';
-          cwRedrawVolume();
-        }
-        if(showPriceTrend){
-          document.getElementById('cwPriceWrap').style.display = '';
-          cwRedrawPrice();
-        }
-        if(showPriceDist){
-          document.getElementById('cwDistWrap').style.display = '';
-          cwRedrawDist();
-        }
-        if(showHeatMap){
-          document.getElementById('cwHeatWrap').style.display = '';
-          cwRedrawHeatmap();
-        }
-      })
-      .catch(err => {
-        document.getElementById('cwLoading').style.display = 'none';
-        console.error('Charts fetch error', err);
-      });
-  };
-
-  // --- unified period labels across all series ---
-  function unifiedPeriods(series){
-    const set = new Set();
-    series.forEach(s => (s.periods||[]).forEach(p => set.add(p)));
-    return Array.from(set).sort();
-  }
-
-  function alignSeries(s, periods, fillVal){
-    const map = {};
-    (s.periods||[]).forEach((p,i) => { map[p] = i; });
-    return periods.map(p => {
-      const idx = map[p];
-      return idx !== undefined ? s : fillVal;
-    });
-  }
-
-  function alignValues(vals, srcPeriods, dstPeriods, fillVal){
-    const map = {};
-    (srcPeriods||[]).forEach((p,i) => { map[p] = vals[i]; });
-    return dstPeriods.map(p => map[p] !== undefined ? map[p] : fillVal);
-  }
-
   // --- draw volume chart ---
   window.cwRedrawVolume = function(){
     if(!cwData) return;
@@ -5947,79 +5758,62 @@ function submitContactForm() {
     if(cwVolumeChart){ cwVolumeChart.destroy(); cwVolumeChart = null; }
 
     const series = cwData.series || [];
-    const periods = unifiedPeriods(series);
-    const groupLabel = cwGrouping === 'month' ? 'monthly' : cwGrouping === 'quarter' ? 'quarterly' : 'annual';
+    const periods = series[0] ? series[0].periods : [];
+    const groupLabel = cwGrouping==='month'?'monthly':cwGrouping==='quarter'?'quarterly':'annual';
 
     if(cwVolView === 'price'){
-      // By Price Range histogram
       const dist = cwData.price_distribution || [];
       cwVolumeChart = new Chart(canvas, {
         type:'bar',
-        data:{
-          labels: dist.map(d=>d.range),
-          datasets:[{ label:'Sales', data:dist.map(d=>d.count), backgroundColor:'#1565c0' }]
-        },
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } }
+        data:{ labels:dist.map(d=>d.range), datasets:[{label:'Sales',data:dist.map(d=>d.count),backgroundColor:'#1565c0'}] },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
       });
       document.getElementById('cwVolumeAnnotation').textContent = '';
       return;
     }
 
     if(cwVolView === 'town'){
-      // By Town — one bar per town
       const hm = cwData.heatmap || [];
       cwVolumeChart = new Chart(canvas, {
         type:'bar',
-        data:{
-          labels: hm.map(h=>h.town),
-          datasets:[{ label:'Sales', data:hm.map(h=>h.count), backgroundColor:'#1565c0' }]
-        },
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } }
+        data:{ labels:hm.map(h=>h.town), datasets:[{label:'Sales',data:hm.map(h=>h.count),backgroundColor:'#1565c0'}] },
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
       });
       document.getElementById('cwVolumeAnnotation').textContent = '';
       return;
     }
 
-    // By Date (default)
+    // By Date
     const datasets = [];
     const annotations = [];
     series.forEach((s,idx) => {
-      const counts = alignValues(s.counts, s.periods, periods, 0);
+      const counts = s.counts;
       datasets.push({
-        label: s.label + ' (Volume)',
-        data: counts,
-        backgroundColor: PALETTE[idx % PALETTE.length] + '99',
-        borderColor: PALETTE[idx % PALETTE.length],
-        borderWidth: 1,
+        label: s.label+' (Volume)', data:counts,
+        backgroundColor: PALETTE[idx%PALETTE.length]+'99',
+        borderColor: PALETTE[idx%PALETTE.length], borderWidth:1,
       });
-      // Trendlines
       if(document.getElementById('cwVolTrendMedian').checked){
-        const medians = alignValues(s.medians, s.periods, periods, null);
-        const trend = linReg(counts);
         datasets.push({
-          label: s.label + ' Median Vol Trend',
-          data: trend, type:'line', borderColor: PALETTE[idx % PALETTE.length],
-          borderDash:[5,3], pointRadius:0, borderWidth:2, fill:false,
+          label:s.label+' Median Vol Trend', data:linReg(counts), type:'line',
+          borderColor:PALETTE[idx%PALETTE.length], borderDash:[5,3], pointRadius:0, borderWidth:2, fill:false,
         });
-        annotations.push(trendPctText('Median volume', counts, groupLabel));
+        annotations.push(trendPctText('Median volume',counts,groupLabel));
       }
       if(document.getElementById('cwVolTrendAvg').checked){
-        const trend = linReg(counts);
         datasets.push({
-          label: s.label + ' Avg Vol Trend',
-          data: trend, type:'line', borderColor: PALETTE[idx % PALETTE.length],
-          borderDash:[2,2], pointRadius:0, borderWidth:2, fill:false,
+          label:s.label+' Avg Vol Trend', data:linReg(counts), type:'line',
+          borderColor:PALETTE[idx%PALETTE.length], borderDash:[2,2], pointRadius:0, borderWidth:2, fill:false,
         });
-        annotations.push(trendPctText('Average volume', counts, groupLabel));
+        annotations.push(trendPctText('Average volume',counts,groupLabel));
       }
     });
 
     cwVolumeChart = new Chart(canvas, {
-      type:'bar',
-      data:{ labels:periods, datasets },
+      type:'bar', data:{labels:periods, datasets},
       options:{ responsive:true, maintainAspectRatio:false,
-        scales:{ y:{ beginAtZero:true } },
-        plugins:{ legend:{ position:'bottom', labels:{ font:{ size:10 } } } }
+        scales:{y:{beginAtZero:true}},
+        plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}
       }
     });
     document.getElementById('cwVolumeAnnotation').textContent = annotations.filter(Boolean).join(' | ');
@@ -6032,8 +5826,8 @@ function submitContactForm() {
     if(cwPriceChart){ cwPriceChart.destroy(); cwPriceChart = null; }
 
     const series = cwData.series || [];
-    const periods = unifiedPeriods(series);
-    const groupLabel = cwGrouping === 'month' ? 'monthly' : cwGrouping === 'quarter' ? 'quarterly' : 'annual';
+    const periods = series[0] ? series[0].periods : [];
+    const groupLabel = cwGrouping==='month'?'monthly':cwGrouping==='quarter'?'quarterly':'annual';
     const datasets = [];
     const annotations = [];
 
@@ -6043,65 +5837,53 @@ function submitContactForm() {
     const showAvgVol = document.getElementById('cwPriceVolAvg').checked;
 
     series.forEach((s,idx) => {
-      const color = PALETTE[idx % PALETTE.length];
+      const color = PALETTE[idx%PALETTE.length];
       if(showMedianPrice){
-        const vals = alignValues(s.medians, s.periods, periods, null);
         datasets.push({
-          label: s.label + ' Median Price',
-          data: vals, borderColor: color, backgroundColor: color+'33',
+          label:s.label+' Median Price', data:s.medians,
+          borderColor:color, backgroundColor:color+'33',
           pointRadius:2, borderWidth:2, fill:false, spanGaps:true,
         });
-        const trend = linReg(vals);
         datasets.push({
-          label: s.label + ' Median Price Trend',
-          data: trend, borderColor: color, borderDash:[5,3],
-          pointRadius:0, borderWidth:1.5, fill:false,
+          label:s.label+' Median Price Trend', data:linReg(s.medians),
+          borderColor:color, borderDash:[5,3], pointRadius:0, borderWidth:1.5, fill:false,
         });
-        annotations.push(trendPctText('Median price', vals, groupLabel));
+        annotations.push(trendPctText('Median price',s.medians,groupLabel));
       }
       if(showAvgPrice){
-        const vals = alignValues(s.averages, s.periods, periods, null);
         datasets.push({
-          label: s.label + ' Avg Price',
-          data: vals, borderColor: color, backgroundColor: color+'33',
+          label:s.label+' Avg Price', data:s.averages,
+          borderColor:color, backgroundColor:color+'33',
           borderDash:[8,4], pointRadius:2, borderWidth:2, fill:false, spanGaps:true,
         });
-        const trend = linReg(vals);
         datasets.push({
-          label: s.label + ' Avg Price Trend',
-          data: trend, borderColor: color, borderDash:[2,2],
-          pointRadius:0, borderWidth:1.5, fill:false,
+          label:s.label+' Avg Price Trend', data:linReg(s.averages),
+          borderColor:color, borderDash:[2,2], pointRadius:0, borderWidth:1.5, fill:false,
         });
-        annotations.push(trendPctText('Average price', vals, groupLabel));
+        annotations.push(trendPctText('Average price',s.averages,groupLabel));
       }
       if(showMedianVol){
-        const vals = alignValues(s.counts, s.periods, periods, 0);
         datasets.push({
-          label: s.label + ' Median Vol',
-          data: vals, borderColor:'#888', borderDash:[4,4],
-          pointRadius:0, borderWidth:1.5, fill:false, yAxisID:'y1',
+          label:s.label+' Median Vol', data:s.counts,
+          borderColor:'#888', borderDash:[4,4], pointRadius:0, borderWidth:1.5, fill:false, yAxisID:'y1',
         });
       }
       if(showAvgVol){
-        const vals = alignValues(s.counts, s.periods, periods, 0);
         datasets.push({
-          label: s.label + ' Avg Vol',
-          data: vals, borderColor:'#bbb', borderDash:[2,4],
-          pointRadius:0, borderWidth:1.5, fill:false, yAxisID:'y1',
+          label:s.label+' Avg Vol', data:s.counts,
+          borderColor:'#bbb', borderDash:[2,4], pointRadius:0, borderWidth:1.5, fill:false, yAxisID:'y1',
         });
       }
     });
 
-    const hasY1 = datasets.some(d => d.yAxisID === 'y1');
-    const scales = { y:{ beginAtZero:true, position:'left', title:{ display:true, text:'Price ($)' } } };
-    if(hasY1) scales.y1 = { beginAtZero:true, position:'right', grid:{ drawOnChartArea:false }, title:{ display:true, text:'Volume' } };
+    const hasY1 = datasets.some(d=>d.yAxisID==='y1');
+    const scales = {y:{beginAtZero:true,position:'left',title:{display:true,text:'Price ($)'}}};
+    if(hasY1) scales.y1 = {beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Volume'}};
 
     cwPriceChart = new Chart(canvas, {
-      type:'line',
-      data:{ labels:periods, datasets },
-      options:{ responsive:true, maintainAspectRatio:false,
-        scales,
-        plugins:{ legend:{ position:'bottom', labels:{ font:{ size:10 } } } }
+      type:'line', data:{labels:periods, datasets},
+      options:{ responsive:true, maintainAspectRatio:false, scales,
+        plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}
       }
     });
     document.getElementById('cwPriceAnnotation').textContent = annotations.filter(Boolean).join(' | ');
@@ -6115,40 +5897,24 @@ function submitContactForm() {
     const heatmap = cwData.heatmap || [];
     if(!heatmap.length) return;
 
-    const selectedTowns = new Set(
-      Array.from(document.querySelectorAll('#cwTownList input:checked')).map(i=>i.value.toUpperCase())
-    );
-
-    const vals = heatmap.map(h => cwHeatMode === 'volume' ? h.count : (h.median||0));
+    const vals = heatmap.map(h => cwHeatMode==='volume' ? h.count : (h.median||0));
     const maxVal = Math.max(...vals, 1);
 
     heatmap.forEach(h => {
-      const val = cwHeatMode === 'volume' ? h.count : (h.median||0);
+      const val = cwHeatMode==='volume' ? h.count : (h.median||0);
       const ratio = val / maxVal;
       const cell = document.createElement('div');
       cell.className = 'cw-heatmap-cell';
       cell.textContent = h.town;
-      const isSelected = selectedTowns.size === 0 || selectedTowns.has(h.town.toUpperCase());
-      if(isSelected){
-        if(cwHeatMode === 'volume'){
-          // white -> orange
-          const r = Math.round(255);
-          const g = Math.round(255 - ratio*110);
-          const b = Math.round(255 - ratio*255);
-          cell.style.background = 'rgb('+r+','+g+','+b+')';
-        } else {
-          // white -> blue
-          const r = Math.round(255 - ratio*195);
-          const g = Math.round(255 - ratio*155);
-          const b = Math.round(255);
-          cell.style.background = 'rgb('+r+','+g+','+b+')';
-        }
+      if(cwHeatMode === 'volume'){
+        const r=255, g=Math.round(255-ratio*110), b=Math.round(255-ratio*255);
+        cell.style.background = 'rgb('+r+','+g+','+b+')';
       } else {
-        cell.style.background = '#e0e0e0';
-        cell.style.color = '#999';
+        const r=Math.round(255-ratio*195), g=Math.round(255-ratio*155), b=255;
+        cell.style.background = 'rgb('+r+','+g+','+b+')';
       }
-      const tipVal = cwHeatMode === 'volume' ? h.count + ' sales' : '$' + (h.median||0).toLocaleString();
-      cell.setAttribute('data-tip', h.town + ': ' + tipVal);
+      const tipVal = cwHeatMode==='volume' ? h.count+' sales' : '$'+(h.median||0).toLocaleString();
+      cell.setAttribute('data-tip', h.town+': '+tipVal);
       grid.appendChild(cell);
     });
   };
@@ -6162,11 +5928,8 @@ function submitContactForm() {
     if(!dist.length) return;
     cwDistChart = new Chart(canvas, {
       type:'bar',
-      data:{
-        labels: dist.map(d=>d.range),
-        datasets:[{ label:'Sales', data:dist.map(d=>d.count), backgroundColor:'#1565c0' }]
-      },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } }
+      data:{ labels:dist.map(d=>d.range), datasets:[{label:'Sales',data:dist.map(d=>d.count),backgroundColor:'#1565c0'}] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
     });
   };
 
@@ -6176,14 +5939,8 @@ function submitContactForm() {
     const box = document.getElementById(boxId);
     const startY = e.clientY;
     const startH = box.offsetHeight;
-    function onMove(ev){
-      const newH = Math.max(120, startH + (ev.clientY - startY));
-      box.style.height = newH + 'px';
-    }
-    function onUp(){
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    }
+    function onMove(ev){ box.style.height = Math.max(120, startH+(ev.clientY-startY))+'px'; }
+    function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   };
@@ -6191,51 +5948,41 @@ function submitContactForm() {
   // --- window drag ---
   (function(){
     const bar = cw.querySelector('.cw-titlebar');
-    let dragging = false, ox, oy;
+    let dragging=false, ox, oy;
     bar.addEventListener('mousedown', function(e){
-      if(e.target.tagName === 'BUTTON') return;
-      dragging = true;
-      ox = e.clientX - cw.offsetLeft;
-      oy = e.clientY - cw.offsetTop;
-      document.addEventListener('mousemove', onDrag);
-      document.addEventListener('mouseup', stopDrag);
+      if(e.target.tagName==='BUTTON') return;
+      dragging=true; ox=e.clientX-cw.offsetLeft; oy=e.clientY-cw.offsetTop;
+      document.addEventListener('mousemove',onDrag);
+      document.addEventListener('mouseup',stopDrag);
     });
-    function onDrag(e){
-      if(!dragging) return;
-      cw.style.left = (e.clientX - ox) + 'px';
-      cw.style.top  = (e.clientY - oy) + 'px';
-    }
-    function stopDrag(){ dragging = false; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag); }
+    function onDrag(e){ if(!dragging) return; cw.style.left=(e.clientX-ox)+'px'; cw.style.top=(e.clientY-oy)+'px'; }
+    function stopDrag(){ dragging=false; document.removeEventListener('mousemove',onDrag); document.removeEventListener('mouseup',stopDrag); }
   })();
 
   // --- window resize handles ---
   cw.querySelectorAll('.cw-resize-handle').forEach(handle => {
     handle.addEventListener('mousedown', function(e){
       e.preventDefault();
-      const rect = cw.getBoundingClientRect();
-      const startX = e.clientX, startY = e.clientY;
-      const startW = rect.width, startH = rect.height;
-      const startL = rect.left, startT = rect.top;
-      const cls = handle.className;
-      const isN = cls.includes('cw-n');
-      const isS = cls.includes('cw-s');
-      const isE = cls.includes('cw-e');
-      const isW = cls.includes('cw-w');
-
+      const rect=cw.getBoundingClientRect();
+      const startX=e.clientX, startY=e.clientY;
+      const startW=rect.width, startH=rect.height;
+      const startL=rect.left, startT=rect.top;
+      const cls=handle.className;
+      const isN=cls.includes('cw-n'), isS=cls.includes('cw-s');
+      const isE=cls.includes('cw-e'), isW=cls.includes('cw-w');
       function onMove(ev){
-        let dx = ev.clientX - startX;
-        let dy = ev.clientY - startY;
-        let w = startW, h = startH, l = startL, t = startT;
-        if(isE || cls.includes('cw-ne') || cls.includes('cw-se')) w = Math.max(400, startW + dx);
-        if(isW || cls.includes('cw-nw') || cls.includes('cw-sw')){ w = Math.max(400, startW - dx); l = startL + dx; if(w===400) l = startL + startW - 400; }
-        if(isS || cls.includes('cw-se') || cls.includes('cw-sw')) h = Math.max(400, startH + dy);
-        if(isN || cls.includes('cw-ne') || cls.includes('cw-nw')){ h = Math.max(400, startH - dy); t = startT + dy; if(h===400) t = startT + startH - 400; }
-        cw.style.width = w + 'px'; cw.style.height = h + 'px';
-        cw.style.left = l + 'px'; cw.style.top = t + 'px';
+        let dx=ev.clientX-startX, dy=ev.clientY-startY;
+        let w=startW,h=startH,l=startL,t=startT;
+        if(isE||cls.includes('cw-ne')||cls.includes('cw-se')) w=Math.max(400,startW+dx);
+        if(isW||cls.includes('cw-nw')||cls.includes('cw-sw')){w=Math.max(400,startW-dx);l=startL+dx;if(w===400)l=startL+startW-400;}
+        if(isS||cls.includes('cw-se')||cls.includes('cw-sw')) h=Math.max(400,startH+dy);
+        if(isN||cls.includes('cw-ne')||cls.includes('cw-nw')){h=Math.max(400,startH-dy);t=startT+dy;if(h===400)t=startT+startH-400;}
+        cw.style.width=w+'px'; cw.style.height=h+'px';
+        cw.style.left=l+'px'; cw.style.top=t+'px';
       }
-      function onUp(){ document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
     });
   });
 
@@ -6243,18 +5990,14 @@ function submitContactForm() {
   window.openChartsWindow = function(){
     if(cw.style.display === 'block') return;
     cw.style.display = 'block';
-    // Size and position to match the map container
     var mapRect = document.getElementById('map').getBoundingClientRect();
-    cw.style.left = mapRect.left + 'px';
-    cw.style.top = mapRect.top + 'px';
-    cw.style.width = mapRect.width + 'px';
-    cw.style.height = mapRect.height + 'px';
+    cw.style.left = mapRect.left+'px';
+    cw.style.top = mapRect.top+'px';
+    cw.style.width = mapRect.width+'px';
+    cw.style.height = mapRect.height+'px';
     cwMaximized = false;
-    cwBuildCountyList();
-    cwCountyChanged();
-    cwBuildBuildingTypes();
-    cwBuildGrandList();
-    cwSetDefaultDates();
+    // Auto-sync from map on open
+    cwSyncFromMap();
   };
   window.closeChartsWindow = function(){
     cw.style.display = 'none';
@@ -6265,15 +6008,13 @@ function submitContactForm() {
   };
   window.toggleMaxChartsWindow = function(){
     if(cwMaximized){
-      cw.style.left = cwPreMax.l + 'px';
-      cw.style.top = cwPreMax.t + 'px';
-      cw.style.width = cwPreMax.w + 'px';
-      cw.style.height = cwPreMax.h + 'px';
+      cw.style.left=cwPreMax.l+'px'; cw.style.top=cwPreMax.t+'px';
+      cw.style.width=cwPreMax.w+'px'; cw.style.height=cwPreMax.h+'px';
       cwMaximized = false;
     } else {
-      cwPreMax = { l:cw.offsetLeft, t:cw.offsetTop, w:cw.offsetWidth, h:cw.offsetHeight };
-      cw.style.left = '0px'; cw.style.top = '0px';
-      cw.style.width = '100vw'; cw.style.height = '100vh';
+      cwPreMax = {l:cw.offsetLeft,t:cw.offsetTop,w:cw.offsetWidth,h:cw.offsetHeight};
+      cw.style.left='0px'; cw.style.top='0px';
+      cw.style.width='100vw'; cw.style.height='100vh';
       cwMaximized = true;
     }
   };
