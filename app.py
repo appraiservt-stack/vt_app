@@ -3760,6 +3760,7 @@ def charts_data():
 
     # Determine series mode
     # county-only mode: county selected but no specific towns
+    county_param = request.args.get("county", "").strip()
     county_only = bool(county_param) and not town_param
     if len(town_set) >= 2:
         series_towns = sorted(town_set)
