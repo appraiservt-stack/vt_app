@@ -3662,146 +3662,57 @@ def charts_data():
       grand_list  – comma-separated grand list category codes (TownGlCat)
       grouping    – month | quarter | year (default year)
     """
-    county_param = request.args.get("county", "").strip()
-    town_param   = request.args.get("town", "").strip()
-    bt_param     = request.args.get("building_type", "").strip()
-    date_from    = request.args.get("date_from", "").strip()
-    date_to      = request.args.get("date_to", "").strip()
-    price_min    = request.args.get("price_min", "").strip()
-    price_max    = request.args.get("price_max", "").strip()
-    land_min     = request.args.get("land_min", "").strip()
-    land_max     = request.args.get("land_max", "").strip()
-    grand_list   = request.args.get("grand_list", "").strip()
-    grouping     = request.args.get("grouping", "year").strip().lower()
+    town_param = request.args.get("town", "").strip()
+    grouping   = request.args.get("grouping", "year").strip().lower()
     if grouping not in ("month", "quarter", "year"):
         grouping = "year"
 
-    # Build WHERE clause pieces
-    clauses = ["ValPdOrTrn > 0"]
+    # Build filters dict for build_where_clause()
+    filters = {
+        "counties": request.args.get("county", ""),
+        "towns": request.args.get("town", ""),
+        "building": request.args.get("building_type", ""),
+        "date_from": request.args.get("date_from", ""),
+        "date_to": request.args.get("date_to", ""),
+        "no_land": request.args.get("no_land", ""),
+        "grand_list": request.args.get("grand_list", ""),
+        # leave name/span/other fields empty
+        "span": "",
+        "street": "",
+        "buyer_last": "",
+        "seller_last": "",
+        "buyer_entity": "",
+        "seller_entity": "",
+        "interest": "",
+        "seller_use": "",
+        "buyer_use": "",
+        "ptt_exemption": "",
+        "price_low": "",
+        "price_high": "",
+        "land_low": "",
+        "land_high": "",
+    }
+    where = build_where_clause(filters)
 
-    # County filter
-    if county_param:
-        codes = county_param.split(",")
-        all_codes = set()
-        for c in codes:
-            c = c.strip()
-            if c:
-                all_codes.add(c)
-                try:
-                    all_codes.add(str(int(c)))
-                except ValueError:
-                    pass
-        if all_codes:
-            codes_sql = ",".join(f"'{c}'" for c in sorted(all_codes))
-            clauses.append(f"countyCode IN ({codes_sql})")
-
-    # Town filter via schoolCode (use canonical names, pad codes with zfill(3))
-    requested_towns = []
-    if town_param:
-        requested_towns = [t.strip() for t in town_param.split(",") if t.strip()]
-        school_codes = set()
-        for town in requested_towns:
-            for code, mapped_town in SCHOOL_TO_CANONICAL_TOWN.items():
-                if mapped_town.upper() == town.upper():
-                    school_codes.add(str(code))
-                    school_codes.add(str(code).zfill(3))
-        if school_codes:
-            codes_sql = ",".join(f"'{c}'" for c in sorted(school_codes))
-            clauses.append(f"schoolCode IN ({codes_sql})")
-        else:
-            clauses.append("1=0")
-
-    # Building type filter
-    if bt_param:
-        bt_keys = [b.strip() for b in bt_param.split(",") if b.strip()]
-        bt_clauses = []
-        for bk in bt_keys:
-            bk_lower = bk.lower()
-            if bk_lower in ("vacant_land", "vacant land"):
-                bt_clauses.append("(blCn1 IN ('01','1') OR blCn1 IS NULL)")
-            elif bk_lower in ("single_family", "single family"):
-                bt_clauses.append("blCn1 IN ('02','2')")
-            elif bk_lower in ("mobile_home", "mobile home"):
-                bt_clauses.append("blCn1 IN ('04','4')")
-            elif bk_lower in ("condo",):
-                bt_clauses.append("blCn1 IN ('06','6')")
-            elif bk_lower in ("multi_family", "multi family", "multi-family"):
-                bt_clauses.append("blCn1 IN ('03','3')")
-            elif bk_lower in ("commercial",):
-                bt_clauses.append("blCn1 IN ('05','5')")
-            elif bk_lower in ("other",):
-                bt_clauses.append("blCn1 NOT IN ('01','1','02','2','03','3','04','4','05','5','06','6')")
-        if bt_clauses:
-            clauses.append("(" + " OR ".join(bt_clauses) + ")")
-
-    # Date range
-    if date_from:
-        try:
-            datetime.strptime(date_from, "%Y-%m-%d")
-            clauses.append(f"closeDate >= DATE '{date_from}'")
-        except Exception:
-            pass
-    if date_to:
-        try:
-            datetime.strptime(date_to, "%Y-%m-%d")
-            clauses.append(f"closeDate <= DATE '{date_to}'")
-        except Exception:
-            pass
-
-    # Price range
-    if price_min:
-        try:
-            val = float(price_min)
-            if val > 0:
-                clauses.append(f"ValPdOrTrn >= {val}")
-        except (ValueError, TypeError):
-            pass
-    if price_max:
-        try:
-            val = float(price_max)
-            if val > 0:
-                clauses.append(f"ValPdOrTrn <= {val}")
-        except (ValueError, TypeError):
-            pass
-
-    # Land size range
-    if land_min:
-        try:
-            val = float(land_min)
-            if val > 0:
-                clauses.append(f"landSize >= {val}")
-        except (ValueError, TypeError):
-            pass
-    if land_max:
-        try:
-            val = float(land_max)
-            if val > 0:
-                clauses.append(f"landSize <= {val}")
-        except (ValueError, TypeError):
-            pass
-
-    # Grand list category filter
-    if grand_list:
-        gl_codes = [g.strip() for g in grand_list.split(",") if g.strip()]
-        all_gl = set()
-        for g in gl_codes:
-            all_gl.add(g)
-            try:
-                all_gl.add(str(int(g)))
-            except ValueError:
-                pass
-            all_gl.add(g.zfill(2))
-        if all_gl:
-            gl_sql = ",".join(f"'{g}'" for g in sorted(all_gl))
-            clauses.append(f"TownGlCat IN ({gl_sql})")
-
-    where = " AND ".join(clauses)
+    # Price and land size range filters (not handled by build_where_clause)
+    price_min = request.args.get("price_min", "")
+    price_max = request.args.get("price_max", "")
+    land_min = request.args.get("land_min", "")
+    land_max = request.args.get("land_max", "")
+    extra_clauses = []
+    if price_min: extra_clauses.append(f"ValPdOrTrn >= {float(price_min)}")
+    if price_max: extra_clauses.append(f"ValPdOrTrn <= {float(price_max)}")
+    if land_min: extra_clauses.append(f"landSize >= {float(land_min)}")
+    if land_max: extra_clauses.append(f"landSize <= {float(land_max)}")
+    if extra_clauses:
+        where = where + " AND " + " AND ".join(extra_clauses)
     # Include countyCode when we need to group by county
     fields = "OBJECTID,ValPdOrTrn,closeDate,schoolCode,blCn1,propLocCty,countyCode"
     features = fetch_all_features(where, fields=fields)
 
     # Build per-town aggregation
     # Determine if we have specific town selections
+    requested_towns = [t.strip() for t in town_param.split(",") if t.strip()] if town_param else []
     town_set = set(t.upper() for t in requested_towns) if requested_towns else set()
 
     # Group records by town and period
