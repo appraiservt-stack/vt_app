@@ -3786,7 +3786,8 @@ def charts_data():
             clauses.append(f"TownGlCat IN ({gl_sql})")
 
     where = " AND ".join(clauses)
-    fields = "OBJECTID,ValPdOrTrn,closeDate,schoolCode,blCn1,propLocCty"
+    # Include countyCode when we need to group by county
+    fields = "OBJECTID,ValPdOrTrn,closeDate,schoolCode,blCn1,propLocCty,countyCode"
     features = fetch_all_features(where, fields=fields)
 
     # Build per-town aggregation
@@ -3838,12 +3839,14 @@ def charts_data():
         town_periods[town_name][period].append(price)
 
     # Determine series mode
+    # county-only mode: county selected but no specific towns
+    county_only = bool(county_param) and not town_param
     if len(town_set) >= 2:
         series_towns = sorted(town_set)
     elif len(town_set) == 1:
         series_towns = list(town_set)
     else:
-        series_towns = None  # statewide
+        series_towns = None  # statewide or county-grouped
 
     # Build unified period labels
     all_periods = set()
@@ -3882,6 +3885,59 @@ def charts_data():
                 averages.append(round(sum(prices) / len(prices), 2) if prices else None)
             series.append({
                 "label": town_title,
+                "periods": sorted_periods,
+                "counts": counts,
+                "medians": medians,
+                "averages": averages,
+            })
+    elif county_only:
+        # Group by county: aggregate town data into county buckets
+        county_periods = defaultdict(lambda: defaultdict(list))
+        for feat in features:
+            attr = feat.get("attributes", {})
+            price = attr.get("ValPdOrTrn")
+            close_date = attr.get("closeDate")
+            if price is None or price <= 0 or close_date is None:
+                continue
+            raw_cc = attr.get("countyCode")
+            if raw_cc is None:
+                continue
+            # Look up county name from COUNTY_CODE_TO_NAME using both padded and unpadded forms
+            cc_str = str(raw_cc).strip()
+            county_name = COUNTY_CODE_TO_NAME.get(cc_str.zfill(2)) or COUNTY_CODE_TO_NAME.get(cc_str)
+            if not county_name:
+                continue
+            try:
+                dt = datetime.fromtimestamp(int(close_date) / 1000, tz=timezone.utc)
+            except Exception:
+                continue
+            if grouping == "month":
+                period = dt.strftime("%Y-%m")
+            elif grouping == "quarter":
+                q = (dt.month - 1) // 3 + 1
+                period = f"{dt.year}-Q{q}"
+            else:
+                period = str(dt.year)
+            county_periods[county_name][period].append(price)
+
+        # Rebuild sorted_periods from county data
+        all_periods = set()
+        for cp in county_periods.values():
+            all_periods.update(cp.keys())
+        sorted_periods = sorted(all_periods)
+
+        for county_name in sorted(county_periods.keys()):
+            data_map = county_periods[county_name]
+            counts = []
+            medians = []
+            averages = []
+            for p in sorted_periods:
+                prices = data_map.get(p, [])
+                counts.append(len(prices))
+                medians.append(median(prices))
+                averages.append(round(sum(prices) / len(prices), 2) if prices else None)
+            series.append({
+                "label": county_name,
                 "periods": sorted_periods,
                 "counts": counts,
                 "medians": medians,
