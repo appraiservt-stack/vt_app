@@ -426,10 +426,7 @@
         <button class="small" onclick="uncheckAllIn('buildingList')">Clear</button>
       </div>
       <div class="checkbox-scroll" id="buildingList"></div>
-      <div style="display:flex; align-items:center; margin-left:12px; margin-top:1px;">
-        <div style="width:10px; height:12px; border-left:1px solid #999; border-bottom:1px solid #999; margin-right:4px; flex-shrink:0;"></div>
-        <label style="font-size:12px;"><input type="checkbox" id="mhNoLand" name="mhNoLand"> No Land</label>
-      </div>
+
     </div>
 
     <!-- ===== INTEREST TYPE ===== -->
@@ -2070,6 +2067,31 @@ function loadCodes(){
     }
     // Build checkbox lists — default = ONE item checked per group
     buildCheckboxList('buildingList',  CODES.building_types);
+    // Insert No Land sub-checkbox after Mobile Home (code '4') in building list
+    (function(){
+      var list = document.getElementById('buildingList');
+      if(!list) return;
+      var labels = list.querySelectorAll('label');
+      var mhLabel = null;
+      labels.forEach(function(l){
+        var cb = l.querySelector('input[type=checkbox]');
+        if(cb && (cb.dataset.code === '4' || cb.dataset.code === '04')) mhLabel = l;
+      });
+      if(!mhLabel) return;
+      var wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display:flex; align-items:center; padding:1px 0; padding-left:4px;';
+      var connector = document.createElement('div');
+      connector.style.cssText = 'width:10px; height:14px; border-left:1px solid #999; border-bottom:1px solid #999; margin-right:4px; flex-shrink:0; margin-top:-7px;';
+      var lbl = document.createElement('label');
+      lbl.style.cssText = 'font-size:11px; display:flex; align-items:center; gap:4px; cursor:pointer;';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.id = 'mhNoLand'; cb.name = 'mhNoLand';
+      lbl.appendChild(cb);
+      lbl.appendChild(document.createTextNode(' No Land'));
+      wrapper.appendChild(connector);
+      wrapper.appendChild(lbl);
+      mhLabel.parentNode.insertBefore(wrapper, mhLabel.nextSibling);
+    })();
     buildCheckboxList('interestList',  CODES.interest_types);
     buildCheckboxList('sellerUseList', CODES.use_of_property);
     buildCheckboxList('buyerUseList',  CODES.use_of_property);
