@@ -245,6 +245,15 @@ COUNTY_CODE_TO_NAME = VT_CODES["counties"]
 TOWN_TO_COUNTY      = VT_CODES["town_to_county"]
 SCHOOL_TO_TOWN      = {int(k): v for k, v in VT_CODES["school_to_town"].items()}
 
+# Canonical town names: strip suffixes like " ID", " Independent District", " Ind. District"
+def _canonical_town(name):
+    for suf in (" Independent District", " Ind. District", " ID"):
+        if name.endswith(suf):
+            return name[: -len(suf)].strip()
+    return name
+
+SCHOOL_TO_CANONICAL_TOWN = {code: _canonical_town(name) for code, name in SCHOOL_TO_TOWN.items()}
+
 # Village/hamlet names filers write as propLocCty that are not official town names.
 # Used to resolve centroid lookups and county derivation when propLocCty is a village.
 VILLAGE_TO_TOWN = {
@@ -3686,17 +3695,18 @@ def charts_data():
             codes_sql = ",".join(f"'{c}'" for c in sorted(all_codes))
             clauses.append(f"countyCode IN ({codes_sql})")
 
-    # Town filter via schoolCode
+    # Town filter via schoolCode (use canonical names, pad codes with zfill(3))
     requested_towns = []
     if town_param:
         requested_towns = [t.strip() for t in town_param.split(",") if t.strip()]
-        school_codes = []
+        school_codes = set()
         for town in requested_towns:
-            for code, mapped_town in SCHOOL_TO_TOWN.items():
+            for code, mapped_town in SCHOOL_TO_CANONICAL_TOWN.items():
                 if mapped_town.upper() == town.upper():
-                    school_codes.append(str(code))
+                    school_codes.add(str(code))
+                    school_codes.add(str(code).zfill(3))
         if school_codes:
-            codes_sql = ",".join(f"'{c}'" for c in school_codes)
+            codes_sql = ",".join(f"'{c}'" for c in sorted(school_codes))
             clauses.append(f"schoolCode IN ({codes_sql})")
         else:
             clauses.append("1=0")
@@ -3805,18 +3815,17 @@ def charts_data():
         if price is None or price <= 0 or close_date is None:
             continue
 
-        # Resolve town name
+        # Resolve town name via canonical mapping only; skip unmapped records
         sc = attr.get("schoolCode")
         town_name = None
         if sc is not None:
             try:
                 sc_int = int(float(str(sc)))
-                town_name = SCHOOL_TO_TOWN.get(sc_int)
+                town_name = SCHOOL_TO_CANONICAL_TOWN.get(sc_int)
             except (TypeError, ValueError):
                 pass
-        if not town_name:
-            plc = attr.get("propLocCty") or ""
-            town_name = plc.strip().title() if plc.strip() else "Unknown"
+        if not town_name or town_name.upper() == "UNKNOWN":
+            continue
 
         # If specific towns selected, skip records not in those towns
         if town_set and town_name.upper() not in town_set:
