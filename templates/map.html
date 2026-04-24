@@ -245,7 +245,33 @@
         }
         #chartsWindow .cw-titlebar button:hover { opacity:0.7; }
         #chartsWindow .cw-body {
-            overflow-y:auto; padding:10px; height:calc(100% - 34px);
+            display:flex; height:calc(100% - 34px); overflow:hidden;
+        }
+        /* Left filter panel */
+        .cw-left-panel {
+            width:280px; min-width:280px; max-width:280px;
+            overflow-y:auto; padding:8px; border-right:1px solid #ddd;
+            background:#f9f9f9; font-size:11px;
+        }
+        .cw-left-panel .cw-section {
+            margin-bottom:6px; border:1px solid #e0e0e0; border-radius:4px;
+            background:#fff;
+        }
+        .cw-left-panel .cw-section-header {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:5px 8px; cursor:pointer; font-weight:bold; font-size:11px;
+            background:#f0f0f0; border-radius:3px 3px 0 0; user-select:none;
+        }
+        .cw-left-panel .cw-section-header:hover { background:#e8e8e8; }
+        .cw-left-panel .cw-section-header .cw-chevron {
+            font-size:10px; transition:transform 0.15s;
+        }
+        .cw-left-panel .cw-section-header .cw-chevron.collapsed { transform:rotate(-90deg); }
+        .cw-left-panel .cw-section-body { padding:6px 8px; }
+        .cw-left-panel .cw-section-body.collapsed { display:none; }
+        /* Right charts panel */
+        .cw-right-panel {
+            flex:1; overflow-y:auto; padding:10px;
         }
         .cw-resize-handle {
             position:absolute; z-index:3001;
@@ -302,6 +328,12 @@
             z-index:9999; pointer-events:none;
         }
         .cw-annotation { font-size:11px; color:#555; margin-top:4px; font-style:italic; }
+        .cw-section-divider {
+            text-align:center; font-weight:bold; font-size:11px; color:#666;
+            border-top:1px solid #ccc; border-bottom:1px solid #ccc;
+            padding:4px 0; margin:6px 0; background:#f5f5f5;
+        }
+        .cw-analysis-checks label { display:block; font-size:11px; padding:2px 0; cursor:pointer; }
     </style>
 </head>
 <body>
@@ -902,105 +934,168 @@
     </span>
   </div>
   <div class="cw-body" id="cwBody">
-    <!-- FILTERS -->
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <div class="cw-filter-section" style="flex:1; min-width:140px;">
-        <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">County
-          <a href="#" onclick="cwSelectAll('cwCountyList'); return false" style="font-size:10px;">All</a> |
-          <a href="#" onclick="cwClearAll('cwCountyList'); return false" style="font-size:10px;">Clear</a>
+    <!-- ===== LEFT FILTER PANEL ===== -->
+    <div class="cw-left-panel">
+
+      <!-- Location -->
+      <div class="cw-section">
+        <div class="cw-section-header" onclick="cwToggleSection(this)">
+          <span>Location</span><span class="cw-chevron">&#9660;</span>
         </div>
-        <div class="cw-checkbox-scroll" id="cwCountyList"></div>
-      </div>
-      <div class="cw-filter-section" style="flex:1; min-width:140px;">
-        <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">Town
-          <a href="#" onclick="cwSelectAll('cwTownList'); return false" style="font-size:10px;">All</a> |
-          <a href="#" onclick="cwClearAll('cwTownList'); return false" style="font-size:10px;">Clear</a>
+        <div class="cw-section-body">
+          <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">County
+            <a href="#" onclick="cwSelectAll('cwCountyList'); return false" style="font-size:10px;">All</a> |
+            <a href="#" onclick="cwClearAll('cwCountyList'); return false" style="font-size:10px;">Clear</a>
+          </div>
+          <div class="cw-checkbox-scroll" id="cwCountyList"></div>
+          <div style="font-weight:bold; font-size:11px; margin:6px 0 2px;">Town
+            <a href="#" onclick="cwSelectAll('cwTownList'); return false" style="font-size:10px;">All</a> |
+            <a href="#" onclick="cwClearAll('cwTownList'); return false" style="font-size:10px;">Clear</a>
+          </div>
+          <div class="cw-checkbox-scroll" id="cwTownList" style="max-height:120px;"></div>
         </div>
-        <div class="cw-checkbox-scroll" id="cwTownList" style="max-height:120px;"></div>
       </div>
-    </div>
-    <div class="cw-filter-section">
-      <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">Building Type</div>
-      <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:11px;" id="cwBuildingTypes">
-        <label><input type="checkbox" value="single_family"> Single Family</label>
-        <label><input type="checkbox" value="mobile_home"> Mobile Home</label>
-        <label><input type="checkbox" value="condo"> Condo</label>
-        <label><input type="checkbox" value="multi_family"> Multi-Family</label>
-        <label><input type="checkbox" value="commercial"> Commercial</label>
-        <label><input type="checkbox" value="other"> Other</label>
-        <label><input type="checkbox" value="vacant_land"> Vacant Land</label>
+
+      <!-- Closing Date Range -->
+      <div class="cw-section">
+        <div class="cw-section-header" onclick="cwToggleSection(this)">
+          <span>Closing Date Range</span><span class="cw-chevron">&#9660;</span>
+        </div>
+        <div class="cw-section-body">
+          <div class="cw-quick-row">
+            <button onclick="cwQuickDate(3)">3M</button>
+            <button onclick="cwQuickDate(6)">6M</button>
+            <button onclick="cwQuickDate(12)">12M</button>
+            <button onclick="cwQuickDate(24)">24M</button>
+            <button onclick="cwQuickDate(36)">36M</button>
+            <button onclick="cwClearDates()">Clear</button>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center; font-size:11px;">
+            <label>From: <input type="date" id="cwDateFrom" style="font-size:11px; width:110px;"></label>
+            <label>To: <input type="date" id="cwDateTo" style="font-size:11px; width:110px;"></label>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="cw-filter-section">
-      <div style="font-weight:bold; font-size:11px; margin-bottom:2px;">Date Range</div>
-      <div class="cw-quick-row">
-        <button onclick="cwQuickDate(3)">3M</button>
-        <button onclick="cwQuickDate(6)">6M</button>
-        <button onclick="cwQuickDate(9)">9M</button>
-        <button onclick="cwQuickDate(12)">12M</button>
-        <button onclick="cwQuickDate(18)">18M</button>
-        <button onclick="cwQuickDate(24)">24M</button>
-        <button onclick="cwQuickDate(36)">36M</button>
-        <button onclick="cwClearDates()">Clear</button>
+
+      <!-- Sale Price Range -->
+      <div class="cw-section">
+        <div class="cw-section-header" onclick="cwToggleSection(this)">
+          <span>Sale Price Range</span><span class="cw-chevron">&#9660;</span>
+        </div>
+        <div class="cw-section-body">
+          <div style="display:flex; gap:6px; align-items:center; font-size:11px;">
+            <label>Min $: <input type="number" id="cwPriceMin" min="0" style="font-size:11px; width:90px;"></label>
+            <label>Max $: <input type="number" id="cwPriceMax" min="0" style="font-size:11px; width:90px;"></label>
+          </div>
+        </div>
       </div>
-      <div style="display:flex; gap:6px; align-items:center; font-size:11px;">
-        <label>From: <input type="date" id="cwDateFrom" style="font-size:11px;"></label>
-        <label>To: <input type="date" id="cwDateTo" style="font-size:11px;"></label>
+
+      <!-- Land Size -->
+      <div class="cw-section">
+        <div class="cw-section-header" onclick="cwToggleSection(this)">
+          <span>Land Size (acres)</span><span class="cw-chevron">&#9660;</span>
+        </div>
+        <div class="cw-section-body">
+          <div style="display:flex; gap:6px; align-items:center; font-size:11px;">
+            <label>Min: <input type="number" id="cwLandMin" min="0" step="0.1" style="font-size:11px; width:80px;"></label>
+            <label>Max: <input type="number" id="cwLandMax" min="0" step="0.1" style="font-size:11px; width:80px;"></label>
+          </div>
+        </div>
       </div>
-    </div>
-    <div style="display:flex; gap:6px; align-items:center; margin-bottom:8px;">
+
+      <!-- Building Type -->
+      <div class="cw-section">
+        <div class="cw-section-header" onclick="cwToggleSection(this)">
+          <span>Building Type</span><span class="cw-chevron">&#9660;</span>
+        </div>
+        <div class="cw-section-body">
+          <div id="cwBuildingTypes" style="font-size:11px;"></div>
+        </div>
+      </div>
+
+      <!-- Grand List Category -->
+      <div class="cw-section">
+        <div class="cw-section-header" onclick="cwToggleSection(this)">
+          <span>Grand List Category</span><span class="cw-chevron">&#9660;</span>
+        </div>
+        <div class="cw-section-body">
+          <div id="cwGrandListTypes" style="font-size:11px;"></div>
+        </div>
+      </div>
+
+      <!-- Analysis Type -->
+      <div class="cw-section-divider">&#9472;&#9472; Analysis Type &#9472;&#9472;</div>
+      <div class="cw-analysis-checks" style="margin-bottom:8px;">
+        <label><input type="checkbox" id="cwAnaVolume" checked> Sales Volume</label>
+        <label><input type="checkbox" id="cwAnaPriceTrend" checked> Price Trends</label>
+        <label><input type="checkbox" id="cwAnaPriceDist"> Price Distribution</label>
+        <label><input type="checkbox" id="cwAnaHeatMap"> Heat Map by Town</label>
+      </div>
+
+      <!-- Apply button -->
       <button onclick="cwApply()"
-        style="padding:5px 16px; font-size:12px; font-weight:bold; background:#1565c0; color:#fff;
-               border:none; border-radius:3px; cursor:pointer;">Apply</button>
-      <div class="cw-toggle-row" style="margin-bottom:0;">
+        style="width:100%; padding:6px; font-size:12px; font-weight:bold; background:#1565c0; color:#fff;
+               border:none; border-radius:4px; cursor:pointer;">Apply</button>
+    </div>
+
+    <!-- ===== RIGHT CHARTS PANEL ===== -->
+    <div class="cw-right-panel">
+      <div class="cw-toggle-row" style="margin-bottom:8px;">
         <button id="cwGrpMonth" onclick="cwSetGrouping('month')">Monthly</button>
         <button id="cwGrpQuarter" onclick="cwSetGrouping('quarter')">Quarterly</button>
         <button id="cwGrpYear" class="active" onclick="cwSetGrouping('year')">Yearly</button>
       </div>
-    </div>
-    <div id="cwLoading" style="display:none; text-align:center; padding:20px; color:#555;">Loading chart data...</div>
+      <div id="cwLoading" style="display:none; text-align:center; padding:20px; color:#555;">Loading chart data...</div>
 
-    <!-- SALES VOLUME CHART -->
-    <div class="cw-chart-wrap" id="cwVolumeWrap" style="display:none;">
-      <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Sales Volume</div>
-      <div class="cw-toggle-row">
-        <button class="active" id="cwVolViewDate" onclick="cwSetVolView('date')">By Date</button>
-        <button id="cwVolViewTown" onclick="cwSetVolView('town')">By Town</button>
-        <button id="cwVolViewPrice" onclick="cwSetVolView('price')">By Price Range</button>
-      </div>
-      <div style="font-size:11px; margin-bottom:4px;">
-        <label><input type="checkbox" id="cwVolTrendMedian" onchange="cwRedrawVolume()"> Median Volume Trend</label>
-        <label style="margin-left:8px;"><input type="checkbox" id="cwVolTrendAvg" onchange="cwRedrawVolume()"> Average Volume Trend</label>
-      </div>
-      <div style="height:250px;" id="cwVolumeChartBox"><canvas id="cwVolumeCanvas"></canvas></div>
-      <div class="cw-annotation" id="cwVolumeAnnotation"></div>
-      <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwVolumeChartBox')"></div>
-    </div>
-
-    <!-- PRICE TRENDS CHART -->
-    <div class="cw-chart-wrap" id="cwPriceWrap" style="display:none;">
-      <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Price Trends</div>
-      <div style="font-size:11px; margin-bottom:4px;">
-        <label><input type="checkbox" id="cwPriceMedian" checked onchange="cwRedrawPrice()"> Median Price Trend</label>
-        <label style="margin-left:6px;"><input type="checkbox" id="cwPriceAvg" checked onchange="cwRedrawPrice()"> Average Price Trend</label>
-        <label style="margin-left:6px;"><input type="checkbox" id="cwPriceVolMedian" onchange="cwRedrawPrice()"> Median Volume Trend</label>
-        <label style="margin-left:6px;"><input type="checkbox" id="cwPriceVolAvg" onchange="cwRedrawPrice()"> Average Volume Trend</label>
-      </div>
-      <div style="height:250px;" id="cwPriceChartBox"><canvas id="cwPriceCanvas"></canvas></div>
-      <div class="cw-annotation" id="cwPriceAnnotation"></div>
-      <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwPriceChartBox')"></div>
-    </div>
-
-    <!-- HEAT MAP -->
-    <div class="cw-chart-wrap" id="cwHeatWrap" style="display:none;">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-        <span style="font-weight:bold; font-size:12px;">Heat Map by Town</span>
-        <div class="cw-toggle-row" style="margin-bottom:0;">
-          <button class="active" id="cwHeatVolBtn" onclick="cwSetHeatMode('volume')">Sales Volume</button>
-          <button id="cwHeatPriceBtn" onclick="cwSetHeatMode('price')">Median Price</button>
+      <!-- SALES VOLUME CHART -->
+      <div class="cw-chart-wrap" id="cwVolumeWrap" style="display:none;">
+        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Sales Volume</div>
+        <div class="cw-toggle-row">
+          <button class="active" id="cwVolViewDate" onclick="cwSetVolView('date')">By Date</button>
+          <button id="cwVolViewTown" onclick="cwSetVolView('town')">By Town</button>
+          <button id="cwVolViewPrice" onclick="cwSetVolView('price')">By Price Range</button>
         </div>
+        <div style="font-size:11px; margin-bottom:4px;">
+          <label><input type="checkbox" id="cwVolTrendMedian" onchange="cwRedrawVolume()"> Median Volume Trend</label>
+          <label style="margin-left:8px;"><input type="checkbox" id="cwVolTrendAvg" onchange="cwRedrawVolume()"> Average Volume Trend</label>
+        </div>
+        <div style="height:250px;" id="cwVolumeChartBox"><canvas id="cwVolumeCanvas"></canvas></div>
+        <div class="cw-annotation" id="cwVolumeAnnotation"></div>
+        <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwVolumeChartBox')"></div>
       </div>
-      <div class="cw-heatmap-grid" id="cwHeatGrid"></div>
+
+      <!-- PRICE TRENDS CHART -->
+      <div class="cw-chart-wrap" id="cwPriceWrap" style="display:none;">
+        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Price Trends</div>
+        <div style="font-size:11px; margin-bottom:4px;">
+          <label><input type="checkbox" id="cwPriceMedian" checked onchange="cwRedrawPrice()"> Median Price Trend</label>
+          <label style="margin-left:6px;"><input type="checkbox" id="cwPriceAvg" checked onchange="cwRedrawPrice()"> Average Price Trend</label>
+          <label style="margin-left:6px;"><input type="checkbox" id="cwPriceVolMedian" onchange="cwRedrawPrice()"> Median Volume Trend</label>
+          <label style="margin-left:6px;"><input type="checkbox" id="cwPriceVolAvg" onchange="cwRedrawPrice()"> Average Volume Trend</label>
+        </div>
+        <div style="height:250px;" id="cwPriceChartBox"><canvas id="cwPriceCanvas"></canvas></div>
+        <div class="cw-annotation" id="cwPriceAnnotation"></div>
+        <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwPriceChartBox')"></div>
+      </div>
+
+      <!-- PRICE DISTRIBUTION CHART -->
+      <div class="cw-chart-wrap" id="cwDistWrap" style="display:none;">
+        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Price Distribution</div>
+        <div style="height:250px;" id="cwDistChartBox"><canvas id="cwDistCanvas"></canvas></div>
+        <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwDistChartBox')"></div>
+      </div>
+
+      <!-- HEAT MAP -->
+      <div class="cw-chart-wrap" id="cwHeatWrap" style="display:none;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+          <span style="font-weight:bold; font-size:12px;">Heat Map by Town</span>
+          <div class="cw-toggle-row" style="margin-bottom:0;">
+            <button class="active" id="cwHeatVolBtn" onclick="cwSetHeatMode('volume')">Sales Volume</button>
+            <button id="cwHeatPriceBtn" onclick="cwSetHeatMode('price')">Median Price</button>
+          </div>
+        </div>
+        <div class="cw-heatmap-grid" id="cwHeatGrid"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -5582,9 +5677,23 @@ function submitContactForm() {
   let cwPreMax = null;        // stored position before maximize
   let cwVolumeChart = null;
   let cwPriceChart = null;
+  let cwDistChart = null;
 
   // --- palette ---
   const PALETTE = ['#1565c0','#e65100','#2e7d32','#6a1b9a','#c62828','#00838f','#ff8f00','#4e342e','#37474f','#ad1457','#00695c','#283593'];
+
+  // --- collapsible section toggle ---
+  window.cwToggleSection = function(header){
+    var body = header.nextElementSibling;
+    var chevron = header.querySelector('.cw-chevron');
+    if(body.classList.contains('collapsed')){
+      body.classList.remove('collapsed');
+      chevron.classList.remove('collapsed');
+    } else {
+      body.classList.add('collapsed');
+      chevron.classList.add('collapsed');
+    }
+  };
 
   // --- populate county list from countyMap ---
   function cwBuildCountyList(){
@@ -5594,6 +5703,46 @@ function submitContactForm() {
       const lbl = document.createElement('label');
       lbl.innerHTML = '<input type="checkbox" value="'+code+'" onchange="cwCountyChanged()"> '+countyMap[code];
       el.appendChild(lbl);
+    });
+  }
+
+  // --- populate building types from CODES ---
+  function cwBuildBuildingTypes(){
+    const el = document.getElementById('cwBuildingTypes');
+    el.innerHTML = '';
+    if(!CODES.building_types) return;
+    Object.entries(CODES.building_types).forEach(([code, desc]) => {
+      const div = document.createElement('div');
+      div.innerHTML = '<label><input type="checkbox" data-code="'+code+'"> '+desc+'</label>';
+      el.appendChild(div);
+      // Insert No Land sub-checkbox after Mobile Home (code '4' or '04')
+      if(code === '4' || code === '04'){
+        var wrapper = document.createElement('div');
+        wrapper.style.cssText = 'display:flex; align-items:center; padding:1px 0; padding-left:4px;';
+        var connector = document.createElement('div');
+        connector.style.cssText = 'width:10px; height:14px; border-left:1px solid #999; border-bottom:1px solid #999; margin-right:4px; flex-shrink:0; margin-top:-7px;';
+        var lbl = document.createElement('label');
+        lbl.style.cssText = 'font-size:11px; display:flex; align-items:center; gap:4px; cursor:pointer;';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.id = 'cwMhNoLand';
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(' No Land'));
+        wrapper.appendChild(connector);
+        wrapper.appendChild(lbl);
+        el.appendChild(wrapper);
+      }
+    });
+  }
+
+  // --- populate grand list categories from CODES ---
+  function cwBuildGrandList(){
+    const el = document.getElementById('cwGrandListTypes');
+    el.innerHTML = '';
+    if(!CODES.grand_list_categories) return;
+    Object.entries(CODES.grand_list_categories).forEach(([code, desc]) => {
+      const div = document.createElement('div');
+      div.innerHTML = '<label><input type="checkbox" data-code="'+code+'"> '+desc+'</label>';
+      el.appendChild(div);
     });
   }
 
@@ -5705,9 +5854,15 @@ function submitContactForm() {
   window.cwApply = function(){
     const counties = Array.from(document.querySelectorAll('#cwCountyList input:checked')).map(i=>i.value);
     const towns = Array.from(document.querySelectorAll('#cwTownList input:checked')).map(i=>i.value);
-    const bts = Array.from(document.querySelectorAll('#cwBuildingTypes input:checked')).map(i=>i.value);
+    const bts = Array.from(document.querySelectorAll('#cwBuildingTypes input[data-code]:checked')).map(i=>i.dataset.code);
     const dateFrom = document.getElementById('cwDateFrom').value;
     const dateTo = document.getElementById('cwDateTo').value;
+    const priceMin = document.getElementById('cwPriceMin').value;
+    const priceMax = document.getElementById('cwPriceMax').value;
+    const landMin = document.getElementById('cwLandMin').value;
+    const landMax = document.getElementById('cwLandMax').value;
+    const grandList = Array.from(document.querySelectorAll('#cwGrandListTypes input[data-code]:checked')).map(i=>i.dataset.code);
+    const noLand = document.getElementById('cwMhNoLand');
 
     const params = new URLSearchParams();
     if(counties.length) params.set('county', counties.join(','));
@@ -5715,11 +5870,24 @@ function submitContactForm() {
     if(bts.length) params.set('building_type', bts.join(','));
     if(dateFrom) params.set('date_from', dateFrom);
     if(dateTo) params.set('date_to', dateTo);
+    if(priceMin) params.set('price_min', priceMin);
+    if(priceMax) params.set('price_max', priceMax);
+    if(landMin) params.set('land_min', landMin);
+    if(landMax) params.set('land_max', landMax);
+    if(grandList.length) params.set('grand_list', grandList.join(','));
+    if(noLand && noLand.checked) params.set('no_land', '1');
     params.set('grouping', cwGrouping);
+
+    // Determine which analysis types are checked
+    const showVolume = document.getElementById('cwAnaVolume').checked;
+    const showPriceTrend = document.getElementById('cwAnaPriceTrend').checked;
+    const showPriceDist = document.getElementById('cwAnaPriceDist').checked;
+    const showHeatMap = document.getElementById('cwAnaHeatMap').checked;
 
     document.getElementById('cwLoading').style.display = 'block';
     document.getElementById('cwVolumeWrap').style.display = 'none';
     document.getElementById('cwPriceWrap').style.display = 'none';
+    document.getElementById('cwDistWrap').style.display = 'none';
     document.getElementById('cwHeatWrap').style.display = 'none';
 
     fetch('/charts/data?' + params.toString())
@@ -5727,12 +5895,22 @@ function submitContactForm() {
       .then(data => {
         cwData = data;
         document.getElementById('cwLoading').style.display = 'none';
-        document.getElementById('cwVolumeWrap').style.display = '';
-        document.getElementById('cwPriceWrap').style.display = '';
-        document.getElementById('cwHeatWrap').style.display = '';
-        cwRedrawVolume();
-        cwRedrawPrice();
-        cwRedrawHeatmap();
+        if(showVolume){
+          document.getElementById('cwVolumeWrap').style.display = '';
+          cwRedrawVolume();
+        }
+        if(showPriceTrend){
+          document.getElementById('cwPriceWrap').style.display = '';
+          cwRedrawPrice();
+        }
+        if(showPriceDist){
+          document.getElementById('cwDistWrap').style.display = '';
+          cwRedrawDist();
+        }
+        if(showHeatMap){
+          document.getElementById('cwHeatWrap').style.display = '';
+          cwRedrawHeatmap();
+        }
       })
       .catch(err => {
         document.getElementById('cwLoading').style.display = 'none';
@@ -5975,6 +6153,23 @@ function submitContactForm() {
     });
   };
 
+  // --- draw price distribution chart ---
+  window.cwRedrawDist = function(){
+    if(!cwData) return;
+    const canvas = document.getElementById('cwDistCanvas');
+    if(cwDistChart){ cwDistChart.destroy(); cwDistChart = null; }
+    const dist = cwData.price_distribution || [];
+    if(!dist.length) return;
+    cwDistChart = new Chart(canvas, {
+      type:'bar',
+      data:{
+        labels: dist.map(d=>d.range),
+        datasets:[{ label:'Sales', data:dist.map(d=>d.count), backgroundColor:'#1565c0' }]
+      },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } } }
+    });
+  };
+
   // --- chart resize handle ---
   window.cwStartChartResize = function(e, boxId){
     e.preventDefault();
@@ -6048,13 +6243,17 @@ function submitContactForm() {
   window.openChartsWindow = function(){
     if(cw.style.display === 'block') return;
     cw.style.display = 'block';
-    cw.style.width = '700px';
-    cw.style.height = '600px';
-    cw.style.left = Math.max(0, (window.innerWidth - 700)/2) + 'px';
-    cw.style.top = Math.max(0, (window.innerHeight - 600)/2) + 'px';
+    // Size and position to match the map container
+    var mapRect = document.getElementById('map').getBoundingClientRect();
+    cw.style.left = mapRect.left + 'px';
+    cw.style.top = mapRect.top + 'px';
+    cw.style.width = mapRect.width + 'px';
+    cw.style.height = mapRect.height + 'px';
     cwMaximized = false;
     cwBuildCountyList();
     cwCountyChanged();
+    cwBuildBuildingTypes();
+    cwBuildGrandList();
     cwSetDefaultDates();
   };
   window.closeChartsWindow = function(){
