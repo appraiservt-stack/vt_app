@@ -334,13 +334,6 @@
         <label>High:</label>
         <input type="number" id="landHigh" placeholder="No maximum" min="0" step="0.01">
       </div>
-      <div class="filter-row" style="margin-top:4px;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
-          <input type="checkbox" id="noLandCheck"
-                 onchange="if(this.checked){ document.getElementById('landLow').value=''; document.getElementById('landHigh').value=''; }">
-          No land (sale did not involve land)
-        </label>
-      </div>
     </div>
 
     <!-- ===== BUILDING TYPE ===== -->
@@ -356,6 +349,9 @@
         <button class="small" onclick="uncheckAllIn('buildingList')">Clear</button>
       </div>
       <div class="checkbox-scroll" id="buildingList"></div>
+      <div style="margin-left:20px; margin-top:2px;">
+        <label><input type="checkbox" id="mhNoLand" name="mhNoLand"> No Land</label>
+      </div>
     </div>
 
     <!-- ===== INTEREST TYPE ===== -->
@@ -2160,7 +2156,7 @@ function buildFilterParams(){
   if(ptt.length > 0) params.set("ptt_exemption", ptt.join("|"));
 
   // No Land checkbox — sends landSize=0 exact match
-  const noLand = document.getElementById("noLandCheck");
+  const noLand = document.getElementById("mhNoLand");
   if(noLand && noLand.checked) params.set("no_land", "1");
 
   // Names / SPAN
@@ -2426,7 +2422,7 @@ function loadData(){
     // Fetch main data, timeshares, and MH collectors in parallel
     const fInterest = (params.get('interest') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
     const fBuilding = (params.get('building') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-    const noLandCk  = document.getElementById('noLandCheck')?.checked || false;
+    const noLandCk  = document.getElementById('mhNoLand')?.checked || false;
     const activeGL  = (params.get('grand_list') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
     // Only fetch TS when Timeshare interest type is explicitly selected
     const showTS = fInterest.includes('05') || fInterest.includes('5');
@@ -2779,7 +2775,7 @@ function loadApproxData(){
 
     // Approx badge visibility uses same active filter sets as markersLayer
     const _abldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
-    const _noLand   = document.getElementById('noLandCheck')?.checked || false;
+    const _noLand   = document.getElementById('mhNoLand')?.checked || false;
     const _condoSel = _abldg.has('05');
     const _mhSel    = _noLand && (_abldg.has('04') || _abldg.has('4'));
 
@@ -3014,7 +3010,7 @@ function renderData(records){
     const activeBldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
     const activeInterest = new Set(getCheckedCodes('interestList').map(c => c.padStart(2,'0')));
     const activeGL      = new Set(getCheckedCodes('grandListList').map(c => c.padStart(2,'0')));
-    const noLandActive  = document.getElementById('noLandCheck')?.checked || false;
+    const noLandActive  = document.getElementById('mhNoLand')?.checked || false;
     const condoSelected = activeBldg.has('05');
     const tsSelected    = activeInterest.has('05');
     const mhSelected    = noLandActive && (activeBldg.has('04') || activeBldg.has('4'));
@@ -3674,7 +3670,7 @@ function clearAllCheckboxes(){
   document.getElementById('priceHigh').value = '';
   document.getElementById('landLow').value   = '';
   document.getElementById('landHigh').value  = '';
-  const noLandEl = document.getElementById('noLandCheck');
+  const noLandEl = document.getElementById('mhNoLand');
   if(noLandEl) noLandEl.checked = false;
   ['sellerEntity','sellerLast','sellerFirst',
    'buyerEntity','buyerLast','buyerFirst',
@@ -3724,7 +3720,7 @@ function clearAllForNameSearch(){
   document.getElementById('priceHigh').value = '';
   document.getElementById('landLow').value   = '';
   document.getElementById('landHigh').value  = '';
-  const noLandEl = document.getElementById('noLandCheck');
+  const noLandEl = document.getElementById('mhNoLand');
   if(noLandEl) noLandEl.checked = false;
   ['sellerEntity','sellerLast','sellerFirst',
    'buyerEntity','buyerLast','buyerFirst',
