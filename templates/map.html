@@ -2538,6 +2538,8 @@ function applyFilters(){
           map.on("zoomend", onZoomEnd);
           loadData();
           loadApproxData();
+          if(townBdyOn) loadTownBoundaries();
+          if(cntyBdyOn) loadCntyBoundaries();
         }, 600);
         return;
       }
@@ -2588,6 +2590,8 @@ function applyFilters(){
           map.on("zoomend", onZoomEnd);
           loadData();
           loadApproxData();
+          if(townBdyOn) loadTownBoundaries();
+          if(cntyBdyOn) loadCntyBoundaries();
         }, 600);
         return;
       }
