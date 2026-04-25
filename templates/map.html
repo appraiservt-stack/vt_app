@@ -2167,7 +2167,10 @@ function buildFilterParams(){
   // Checkbox groups: any checked = filter to only those types.
   // Empty group = no restriction (param not sent to backend).
   const bldg = getCheckedCodes("buildingList");
-  if(bldg.length > 0) params.set("building", bldg.join("|"));
+  // Only send building filter if SOME (not all) types are checked.
+  // All checked = same as none checked = no filter (avoids excluding NULL blCn1 records)
+  const totalBldgTypes = Object.keys(CODES.building_types || {}).length;
+  if(bldg.length > 0 && bldg.length < totalBldgTypes) params.set("building", bldg.join("|"));
 
   const interest = getCheckedCodes("interestList");
   if(interest.length > 0) params.set("interest", interest.join("|"));
