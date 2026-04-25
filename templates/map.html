@@ -1934,7 +1934,7 @@ function uncheckAllIn(containerId){
 function getCheckedCodes(containerId){
   const codes = [];
   document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`).forEach(cb => {
-    codes.push(cb.dataset.code);
+    if(cb.dataset.code !== undefined && cb.dataset.code !== '') codes.push(cb.dataset.code);
   });
   return codes;
 }
