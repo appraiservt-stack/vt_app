@@ -1797,9 +1797,10 @@ function _loadBoundaryLayer(which){
   fetch(url + '?' + params.toString(), { signal: ctrl.signal })
   .then(r => r.json())
   .then(data => {
+    if(!data.features || !data.features.length){ polyLayer.clearLayers(); lblLayer.clearLayers(); return; }
+    // Clear only after new data arrives to prevent flash of empty boundaries on zoom
     polyLayer.clearLayers();
     lblLayer.clearLayers();
-    if(!data.features || !data.features.length) return;
 
     const style = getBdyStyle(which);
     const showLabels = getBdyLabels(which);
