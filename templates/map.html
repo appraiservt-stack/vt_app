@@ -1849,8 +1849,9 @@ function loadCodes(){
     Object.entries(TOWN_CENTROIDS).forEach(([town, info]) => {
       const code = String(info.county).padStart(2, '0');
       if(!townsByCounty[code]) townsByCounty[code] = new Set();
-      // Normalize to title case so duplicates from sales data don't appear
-      const normalized = town.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+      // Normalize to title case, converting SAINT -> St. to match sales data format
+      let normalized = town.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+      normalized = normalized.replace(/\bSaint\b/g, 'St.');
       townsByCounty[code].add(normalized);
     });
     // Rebuild all town flyouts with pre-populated towns
@@ -2085,8 +2086,9 @@ function addKnownTown(trustedTown, trustedCountyCode){
   if(!trustedTown || !trustedCountyCode) return;
   const code = String(trustedCountyCode).padStart(2, "0");
   if(!townsByCounty[code]) townsByCounty[code] = new Set();
-  // Normalize to title case to avoid duplicates with pre-populated centroid names
-  const normalized = trustedTown.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+  // Normalize to title case, converting SAINT -> St. to match centroid keys
+  let normalized = trustedTown.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+  normalized = normalized.replace(/\bSaint\b/g, 'St.');
   townsByCounty[code].add(normalized);
 }
 
@@ -2303,7 +2305,7 @@ function applyFilters(){
     let minLat=90, minLon=180, maxLat=-90, maxLon=-180;
     let found = false;
     allSelectedTowns.forEach(town => {
-      const c = TOWN_CENTROIDS[town.toUpperCase()];
+      const c = TOWN_CENTROIDS[town.toUpperCase()] || TOWN_CENTROIDS[town.toUpperCase().replace(/\bST\.\s*/g, 'SAINT ')];
       if(c){
         found = true;
         const pad = 0.05;

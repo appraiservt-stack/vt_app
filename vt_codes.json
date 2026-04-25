@@ -755,11 +755,6 @@
       "lon": -72.020564,
       "county": "10"
     },
-    "SAINT ALBANS TOWN": {
-      "lat": 44.810496,
-      "lon": -73.145729,
-      "county": "06"
-    },
     "BROWNINGTON": {
       "lat": 44.83121,
       "lon": -72.124797,
@@ -793,11 +788,6 @@
     "BAKERSFIELD": {
       "lat": 44.793733,
       "lon": -72.784467,
-      "county": "06"
-    },
-    "SAINT ALBANS CITY": {
-      "lat": 44.811906,
-      "lon": -73.084864,
       "county": "06"
     },
     "WESTMORE": {
@@ -1005,11 +995,6 @@
       "lon": -72.962968,
       "county": "04"
     },
-    "SAINT JOHNSBURY": {
-      "lat": 44.45545,
-      "lon": -72.011522,
-      "county": "03"
-    },
     "CONCORD": {
       "lat": 44.43156,
       "lon": -71.833726,
@@ -1039,11 +1024,6 @@
       "lat": 44.364944,
       "lon": -72.465925,
       "county": "12"
-    },
-    "SAINT GEORGE": {
-      "lat": 44.38083,
-      "lon": -73.120294,
-      "county": "04"
     },
     "BARNET": {
       "lat": 44.319774,
@@ -1914,6 +1894,26 @@
       "lat": 44.490048,
       "lon": -73.114466,
       "county": "04"
+    },
+    "SAINT ALBANS CITY": {
+      "lat": 44.811906,
+      "lon": -73.084864,
+      "county": "06"
+    },
+    "SAINT ALBANS TOWN": {
+      "lat": 44.810496,
+      "lon": -73.145729,
+      "county": "06"
+    },
+    "SAINT GEORGE": {
+      "lat": 44.38083,
+      "lon": -73.120294,
+      "county": "04"
+    },
+    "SAINT JOHNSBURY": {
+      "lat": 44.45545,
+      "lon": -72.011522,
+      "county": "03"
     }
   },
   "family_member_codes": {
