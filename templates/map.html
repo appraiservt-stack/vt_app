@@ -5621,7 +5621,8 @@ function submitContactForm() {
         if(seen.has(id)) return; seen.add(id);
         const ref = markerRefs[id];
         if(!ref) return;
-        const sale = ref.sales.find(s => s.id === id);
+        // Use String() comparison to handle numeric vs string id mismatch
+        const sale = ref.sales.find(s => String(s.id) === String(id)) || ref.sales[0];
         if(sale) records.push({ sale:sale, prop:ref.prop || ref.sales[0] });
       });
     } else {
@@ -5629,7 +5630,8 @@ function submitContactForm() {
         if(seen.has(id)) return; seen.add(id);
         const ref = markerRefs[id];
         if(!ref) return;
-        const sale = ref.sales.find(s => s.id === id);
+        // Use String() comparison to handle numeric vs string id mismatch
+        const sale = ref.sales.find(s => String(s.id) === String(id)) || ref.sales[0];
         if(sale) records.push({ sale:sale, prop:ref.prop || ref.sales[0] });
       });
     }
