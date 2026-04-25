@@ -1864,30 +1864,25 @@ function loadCodes(){
     }
     // Build checkbox lists — default = ONE item checked per group
     buildCheckboxList('buildingList',  CODES.building_types);
-    // Insert No Land sub-checkbox after Mobile Home (code '4') in building list
+    // Replace Mobile Home (code '4') with two separate checkboxes:
+    //   "Mobile Home with Land"    → data-code="4land"
+    //   "Mobile Home without Land" → data-code="4noland"
     (function(){
       var list = document.getElementById('buildingList');
       if(!list) return;
-      var labels = list.querySelectorAll('label');
-      var mhLabel = null;
-      labels.forEach(function(l){
+      var mhDiv = null;
+      list.querySelectorAll('label').forEach(function(l){
         var cb = l.querySelector('input[type=checkbox]');
-        if(cb && (cb.dataset.code === '4' || cb.dataset.code === '04')) mhLabel = l;
+        if(cb && (cb.dataset.code === '4' || cb.dataset.code === '04')) mhDiv = l.closest('div');
       });
-      if(!mhLabel) return;
-      var wrapper = document.createElement('div');
-      wrapper.style.cssText = 'display:flex; align-items:center; padding:1px 0; padding-left:4px;';
-      var connector = document.createElement('div');
-      connector.style.cssText = 'width:10px; height:14px; border-left:1px solid #999; border-bottom:1px solid #999; margin-right:4px; flex-shrink:0; margin-top:-7px;';
-      var lbl = document.createElement('label');
-      lbl.style.cssText = 'font-size:11px; display:flex; align-items:center; gap:4px; cursor:pointer;';
-      var cb = document.createElement('input');
-      cb.type = 'checkbox'; cb.id = 'mhNoLand'; cb.name = 'mhNoLand';
-      lbl.appendChild(cb);
-      lbl.appendChild(document.createTextNode(' No Land'));
-      wrapper.appendChild(connector);
-      wrapper.appendChild(lbl);
-      mhLabel.parentNode.insertBefore(wrapper, mhLabel.nextSibling);
+      if(!mhDiv) return;
+      var d1 = document.createElement('div');
+      d1.innerHTML = '<label><input type="checkbox" data-code="4land"> Mobile Home with Land</label>';
+      var d2 = document.createElement('div');
+      d2.innerHTML = '<label><input type="checkbox" data-code="4noland"> Mobile Home without Land</label>';
+      mhDiv.parentNode.insertBefore(d1, mhDiv);
+      mhDiv.parentNode.insertBefore(d2, mhDiv);
+      mhDiv.parentNode.removeChild(mhDiv);
     })();
     buildCheckboxList('interestList',  CODES.interest_types);
     buildCheckboxList('sellerUseList', CODES.use_of_property);
@@ -2169,7 +2164,7 @@ function buildFilterParams(){
   const bldg = getCheckedCodes("buildingList");
   // Only send building filter if SOME (not all) types are checked.
   // All checked = same as none checked = no filter (avoids excluding NULL blCn1 records)
-  const totalBldgTypes = Object.keys(CODES.building_types || {}).length;
+  const totalBldgTypes = Object.keys(CODES.building_types || {}).length + 1; // +1 for MH split into land/noland
   if(bldg.length > 0 && bldg.length < totalBldgTypes) params.set("building", bldg.join("|"));
 
   const interest = getCheckedCodes("interestList");
@@ -2186,10 +2181,6 @@ function buildFilterParams(){
 
   const ptt = getCheckedCodes("pttList");
   if(ptt.length > 0) params.set("ptt_exemption", ptt.join("|"));
-
-  // No Land checkbox — sends landSize=0 exact match
-  const noLand = document.getElementById("mhNoLand");
-  if(noLand && noLand.checked) params.set("no_land", "1");
 
   // Names / SPAN
   const se = document.getElementById("sellerEntity").value.trim();
@@ -2420,8 +2411,7 @@ function loadData(){
                       params0.get('span') || params0.get('street');
   const hasCheckbox = params0.get('building') || params0.get('interest') ||
                       params0.get('seller_use') || params0.get('buyer_use') ||
-                      params0.get('grand_list') || params0.get('ptt_exemption') ||
-                      params0.get('no_land');
+                      params0.get('grand_list') || params0.get('ptt_exemption');
   // Location alone (county/town) is not sufficient — user must also
   // specify WHAT they want via a checkbox or name/SPAN filter.
   if(!hasName && !hasCheckbox){
@@ -2458,13 +2448,11 @@ function loadData(){
     // Fetch main data, timeshares, and MH collectors in parallel
     const fInterest = (params.get('interest') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
     const fBuilding = (params.get('building') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
-    const noLandCk  = document.getElementById('mhNoLand')?.checked || false;
     const activeGL  = (params.get('grand_list') || '').split('|').filter(Boolean).map(c => c.trim().padStart(2,'0'));
     // Only fetch TS when Timeshare interest type is explicitly selected
     const showTS = fInterest.includes('05') || fInterest.includes('5');
-    // Only fetch MH when Mobile Home building type is selected AND No Land is checked
-    const mhBldgSelected = fBuilding.includes('04') || fBuilding.includes('4');
-    const showMH = noLandCk && mhBldgSelected;
+    // Only fetch MH when "Mobile Home without Land" checkbox is selected
+    const showMH = fBuilding.includes('4noland');
 
     const fetches = [
       fetch("/data?" + p, { signal: ctrl.signal }).then(r => r.json()),
@@ -2542,7 +2530,7 @@ function loadApproxData(){
     _p.get('span') || _p.get('street') ||
     _p.get('building') || _p.get('interest') ||
     _p.get('seller_use') || _p.get('buyer_use') ||
-    _p.get('grand_list') || _p.get('ptt_exemption') || _p.get('no_land');
+    _p.get('grand_list') || _p.get('ptt_exemption');
   if(!_hasAny){
     Object.keys(_approxVisible).forEach(k => {
       const e = _approxVisible[k];
@@ -2587,7 +2575,6 @@ function loadApproxData(){
   const dateTo   = params.get('date_to')   || '';
   const priceLow  = parseFloat(params.get('price_low'))  || 0;
   const priceHigh = parseFloat(params.get('price_high')) || Infinity;
-  const noLand    = params.get('no_land') === '1';
   // Checkbox filter sets — zero-padded to match ArcGIS stored values
   function padCodes(paramKey){
     const raw = params.get(paramKey) || '';
@@ -2637,13 +2624,28 @@ function loadApproxData(){
     if(priceHigh < Infinity && (p.price || 0) > priceHigh) return false;
 
     // Land size filters
-    if(noLand){
-      if((p.landSize || 0) !== 0) return false;
-    } else {
+    {
       const ll = parseFloat(params.get('land_low'))  || 0;
       const lh = parseFloat(params.get('land_high')) || Infinity;
       if(ll > 0 && (p.landSize || 0) < ll) return false;
       if(lh < Infinity && (p.landSize || 0) > lh) return false;
+    }
+
+    // Mobile Home land variant filter — if only one MH variant is checked,
+    // exclude records that don't match the land/no-land condition.
+    {
+      const mhLand   = fBuilding.includes('4land');
+      const mhNoLand = fBuilding.includes('4noland');
+      if(mhLand !== mhNoLand){ // only one variant selected
+        const isMH = [p.buildingConstruction1, p.buildingConstruction2, p.buildingConstruction3]
+          .some(v => String(v || '').replace(/^0+/,'') === '4');
+        if(isMH){
+          const ls = p.landSize;
+          const hasNoLand = (ls === 0 || ls === null || ls === undefined);
+          if(mhLand && hasNoLand) return false;
+          if(mhNoLand && !hasNoLand) return false;
+        }
+      }
     }
 
     // Checkbox filters — if a filter is active and the field is null
@@ -2811,9 +2813,8 @@ function loadApproxData(){
 
     // Approx badge visibility uses same active filter sets as markersLayer
     const _abldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
-    const _noLand   = document.getElementById('mhNoLand')?.checked || false;
     const _condoSel = _abldg.has('05');
-    const _mhSel    = _noLand && (_abldg.has('04') || _abldg.has('4'));
+    const _mhNoLandSel = _abldg.has('4noland');
 
     // Condo badge for approx layer dots — exclude timeshares, only when condo selected
     const approxIsCondo = _condoSel && sales.some(s =>
@@ -2839,7 +2840,7 @@ function loadApproxData(){
     }
 
     // Mobile home badge for approx layer dots — only when MH filter active
-    const approxIsMH = _mhSel && sales.some(s => {
+    const approxIsMH = _mhNoLandSel && sales.some(s => {
       const ls = s.landSize;
       const hasMH = [s.buildingConstruction1, s.buildingConstruction2, s.buildingConstruction3]
         .some(v => String(v || '').replace(/^0+/,'') === '4');
@@ -3046,10 +3047,9 @@ function renderData(records){
     const activeBldg    = new Set(getCheckedCodes('buildingList').map(c => c.padStart(2,'0')));
     const activeInterest = new Set(getCheckedCodes('interestList').map(c => c.padStart(2,'0')));
     const activeGL      = new Set(getCheckedCodes('grandListList').map(c => c.padStart(2,'0')));
-    const noLandActive  = document.getElementById('mhNoLand')?.checked || false;
     const condoSelected = activeBldg.has('05');
     const tsSelected    = activeInterest.has('05');
-    const mhSelected    = noLandActive && (activeBldg.has('04') || activeBldg.has('4'));
+    const mhNoLandSelected = activeBldg.has('4noland');
 
     // Detect condo group: multiple sales with blCn1='5' AND not timeshare
     // AND condo is in the active building type filter.
@@ -3059,9 +3059,8 @@ function renderData(records){
     );
     const isCondoGroup = isCondo && sales.length > 1;
 
-    // Mobile home without land badge — only when MH filter active.
-    // Uses blCn1/2/3=4 (Mobile Home building type) AND no land.
-    const isMobileHome = mhSelected && sales.some(s => {
+    // Mobile home without land badge — only when "MH without Land" checkbox active.
+    const isMobileHome = mhNoLandSelected && sales.some(s => {
       const ls = s.landSize;
       const hasMHCode = [
         s.buildingConstruction1, s.buildingConstruction2, s.buildingConstruction3
@@ -3706,8 +3705,6 @@ function clearAllCheckboxes(){
   document.getElementById('priceHigh').value = '';
   document.getElementById('landLow').value   = '';
   document.getElementById('landHigh').value  = '';
-  const noLandEl = document.getElementById('mhNoLand');
-  if(noLandEl) noLandEl.checked = false;
   ['sellerEntity','sellerLast','sellerFirst',
    'buyerEntity','buyerLast','buyerFirst',
    'streetAddr','spanInput'].forEach(id => {
@@ -3756,8 +3753,6 @@ function clearAllForNameSearch(){
   document.getElementById('priceHigh').value = '';
   document.getElementById('landLow').value   = '';
   document.getElementById('landHigh').value  = '';
-  const noLandEl = document.getElementById('mhNoLand');
-  if(noLandEl) noLandEl.checked = false;
   ['sellerEntity','sellerLast','sellerFirst',
    'buyerEntity','buyerLast','buyerFirst',
    'streetAddr','spanInput'].forEach(id => {
