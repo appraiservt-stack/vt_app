@@ -5642,6 +5642,7 @@ function submitContactForm() {
     // Also group by town for heatmap and by-town volume
     const byPeriod = {};
     const byTown = {};
+    const townPeriods = {}; // {townName: {period: {count, prices}}}
     const allPrices = []; // for distribution
 
     records.forEach(r => {
@@ -5664,6 +5665,10 @@ function submitContactForm() {
         byTown[town].prices.push(price);
         allPrices.push(price);
       }
+
+      if(!townPeriods[town]) townPeriods[town] = {};
+      if(!townPeriods[town][pk]) townPeriods[town][pk] = { count:0 };
+      townPeriods[town][pk].count++;
     });
 
     const periods = Object.keys(byPeriod).sort();
@@ -5693,6 +5698,7 @@ function submitContactForm() {
     return {
       series: [{ label:'All', periods, counts, medians, averages }],
       heatmap,
+      townPeriods,
       price_distribution: distLabels.map((label,i) => ({ range:label, count:distCounts[i] })),
       totalSales: records.length
     };
@@ -5783,11 +5789,27 @@ function submitContactForm() {
     }
 
     if(cwVolView === 'town'){
-      const hm = cwData.heatmap || [];
+      const tp = cwData.townPeriods || {};
+      const towns = Object.keys(tp).sort();
+      // Collect all periods across all towns and sort them
+      const periodSet = new Set();
+      towns.forEach(t => Object.keys(tp[t]).forEach(pk => periodSet.add(pk)));
+      const allPeriods = Array.from(periodSet).sort();
+      // One dataset per town, fill 0 for missing periods
+      const datasets = towns.map((town, idx) => ({
+        label: town,
+        data: allPeriods.map(pk => (tp[town][pk] ? tp[town][pk].count : 0)),
+        backgroundColor: PALETTE[idx % PALETTE.length] + '99',
+        borderColor: PALETTE[idx % PALETTE.length],
+        borderWidth: 1,
+      }));
       cwVolumeChart = new Chart(canvas, {
         type:'bar',
-        data:{ labels:hm.map(h=>h.town), datasets:[{label:'Sales',data:hm.map(h=>h.count),backgroundColor:'#1565c0'}] },
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+        data:{ labels:allPeriods, datasets },
+        options:{ responsive:true, maintainAspectRatio:false,
+          scales:{ y:{ beginAtZero:true } },
+          plugins:{ legend:{ position:'bottom', labels:{ font:{ size:10 } } } }
+        }
       });
       document.getElementById('cwVolumeAnnotation').textContent = '';
       return;
