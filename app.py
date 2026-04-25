@@ -734,16 +734,44 @@ def build_where_clause(filters):
 
     # Building construction — check blCn1, blCn2, blCn3 (preparer can use any slot)
     # Include both padded and unpadded forms for each code.
+    # Special codes: '4land' = MH with land, '4noland' = MH without land.
     if filters["building"]:
         raw_codes = [str(c).strip() for c in filters["building"].split('|') if c.strip()]
-        all_forms = set()
+        has_4land   = '4land'   in raw_codes
+        has_4noland = '4noland' in raw_codes
+        # Replace virtual MH codes with the real code '4' for the IN clause
+        normalised = []
         for c in raw_codes:
+            if c in ('4land', '4noland'):
+                normalised.append('4')
+            else:
+                normalised.append(c)
+        all_forms = set()
+        for c in normalised:
             all_forms.add(c.zfill(2))
             all_forms.add(c.lstrip('0') or '0')
         quoted = ','.join(f"'{v}'" for v in sorted(all_forms))
-        clauses.append(
-            f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
-        )
+
+        # When only ONE MH variant is selected, add a land-size sub-condition
+        # so that MH code 4 matches only the desired land/no-land subset.
+        mh_match = "(blCn1 IN ('4','04') OR (blCn2 IS NOT NULL AND blCn2 IN ('4','04')) OR (blCn3 IS NOT NULL AND blCn3 IN ('4','04')))"
+        if has_4land and not has_4noland:
+            # MH with land only — exclude MH rows that have no land
+            non_mh = f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
+            clauses.append(
+                f"(({non_mh}) AND NOT ({mh_match} AND (landSize = 0 OR landSize IS NULL)))"
+            )
+        elif has_4noland and not has_4land:
+            # MH without land only — exclude MH rows that have land
+            non_mh = f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
+            clauses.append(
+                f"(({non_mh}) AND NOT ({mh_match} AND landSize > 0))"
+            )
+        else:
+            # Both MH variants selected OR no MH at all — plain code match
+            clauses.append(
+                f"(blCn1 IN ({quoted}) OR blCn2 IN ({quoted}) OR blCn3 IN ({quoted}))"
+            )
 
     # Seller use of property — actual field name: sUsePr
     if filters["seller_use"]:
