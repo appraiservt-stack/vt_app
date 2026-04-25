@@ -1782,6 +1782,9 @@ function _loadBoundaryLayer(which){
     };
   }
 
+  // Abort previous fetch but do NOT clear layers — keep old boundaries visible until new data arrives
+  const oldCtrl = which === 'town' ? townBdyXhr : cntyBdyXhr;
+  if(oldCtrl) oldCtrl.abort();
   const ctrl = new AbortController();
   if(which === 'town') townBdyXhr = ctrl; else cntyBdyXhr = ctrl;
 
