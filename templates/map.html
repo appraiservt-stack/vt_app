@@ -5686,15 +5686,16 @@ function submitContactForm() {
       .map(([town, d]) => ({ town, count:d.count, median:median(d.prices) }))
       .sort((a,b) => b.count - a.count);
 
-    // Price distribution — fixed buckets, per town
-    const buckets = [0,50000,100000,200000,300000,500000,1000000,Infinity];
-    const distLabels = ['$0-50k','$50-100k','$100-200k','$200-300k','$300-500k','$500k-$1M','$1M+'];
-    const townDistribution = {}; // {townName: {rangeLabel: count}}
+    // Price distribution — detailed buckets, per town
+    const buckets = [0,50000,100000,150000,200000,250000,300000,400000,500000,750000,1000000,Infinity];
+    const distLabels = ['$0-$50k','$50k-$100k','$100k-$150k','$150k-$200k','$200k-$250k','$250k-$300k','$300k-$400k','$400k-$500k','$500k-$750k','$750k-$1M','$1M+'];
+    const townDistBuckets = {}; // {townName: [count per bucket]}
     Object.entries(townPrices).forEach(([town, prices]) => {
-      townDistribution[town] = {};
-      distLabels.forEach((label,i) => {
-        const lo = buckets[i], hi = buckets[i+1];
-        townDistribution[town][label] = prices.filter(p => p >= lo && p < hi).length;
+      townDistBuckets[town] = new Array(distLabels.length).fill(0);
+      prices.forEach(p => {
+        for(let i = 0; i < buckets.length - 1; i++){
+          if(p >= buckets[i] && p < buckets[i+1]){ townDistBuckets[town][i]++; break; }
+        }
       });
     });
 
@@ -5702,7 +5703,7 @@ function submitContactForm() {
       series: [{ label:'All', periods, counts, medians, averages }],
       heatmap,
       townPeriods,
-      townDistribution,
+      townDistBuckets,
       distLabels,
       totalSales: records.length
     };
@@ -5897,13 +5898,13 @@ function submitContactForm() {
     if(!cwData) return;
     const canvas = document.getElementById('cwDistCanvas');
     if(cwDistChart){ cwDistChart.destroy(); cwDistChart = null; }
-    const td = cwData.townDistribution || {};
+    const td = cwData.townDistBuckets || {};
     const labels = cwData.distLabels || [];
     const towns = Object.keys(td).sort();
     if(!towns.length) return;
     const datasets = towns.map((town, idx) => ({
       label: town,
-      data: labels.map(l => td[town][l] || 0),
+      data: td[town],
       backgroundColor: PALETTE[idx % PALETTE.length] + '99',
       borderColor: PALETTE[idx % PALETTE.length],
       borderWidth: 1,
