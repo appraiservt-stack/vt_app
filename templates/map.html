@@ -938,8 +938,6 @@
         <div style="font-size:11px; margin-bottom:4px;">
           <label><input type="checkbox" id="cwPriceMedian" checked onchange="cwRedrawPrice()"> Median Price Trend</label>
           <label style="margin-left:6px;"><input type="checkbox" id="cwPriceAvg" checked onchange="cwRedrawPrice()"> Average Price Trend</label>
-          <label style="margin-left:6px;"><input type="checkbox" id="cwPriceVolMedian" onchange="cwRedrawPrice()"> Median Volume Trend</label>
-          <label style="margin-left:6px;"><input type="checkbox" id="cwPriceVolAvg" onchange="cwRedrawPrice()"> Average Volume Trend</label>
         </div>
         <div style="height:250px;" id="cwPriceChartBox"><canvas id="cwPriceCanvas"></canvas></div>
         <div class="cw-annotation" id="cwPriceAnnotation"></div>
@@ -5669,8 +5667,9 @@ function submitContactForm() {
       }
 
       if(!townPeriods[town]) townPeriods[town] = {};
-      if(!townPeriods[town][pk]) townPeriods[town][pk] = { count:0 };
+      if(!townPeriods[town][pk]) townPeriods[town][pk] = { count:0, prices:[] };
       townPeriods[town][pk].count++;
+      if(price > 0) townPeriods[town][pk].prices.push(price);
     });
 
     const periods = Object.keys(byPeriod).sort();
@@ -5793,69 +5792,71 @@ function submitContactForm() {
     document.getElementById('cwVolumeAnnotation').textContent = '';
   };
 
-  // --- draw price chart ---
+  // --- draw price chart (per-town median & average lines) ---
   window.cwRedrawPrice = function(){
     if(!cwData) return;
     const canvas = document.getElementById('cwPriceCanvas');
     if(cwPriceChart){ cwPriceChart.destroy(); cwPriceChart = null; }
 
-    const series = cwData.series || [];
-    const periods = series[0] ? series[0].periods : [];
+    const tp = cwData.townPeriods || {};
+    const towns = Object.keys(tp).sort();
     const groupLabel = cwGrouping==='month'?'monthly':cwGrouping==='quarter'?'quarterly':'annual';
+
+    // Unified period labels across all towns
+    const periodSet = new Set();
+    towns.forEach(t => Object.keys(tp[t]).forEach(pk => periodSet.add(pk)));
+    const allPeriods = Array.from(periodSet).sort();
+
+    const showMedian = document.getElementById('cwPriceMedian').checked;
+    const showAvg = document.getElementById('cwPriceAvg').checked;
     const datasets = [];
     const annotations = [];
 
-    const showMedianPrice = document.getElementById('cwPriceMedian').checked;
-    const showAvgPrice = document.getElementById('cwPriceAvg').checked;
-    const showMedianVol = document.getElementById('cwPriceVolMedian').checked;
-    const showAvgVol = document.getElementById('cwPriceVolAvg').checked;
+    towns.forEach((town, idx) => {
+      const color = PALETTE[idx % PALETTE.length];
+      const townData = tp[town];
+      const medians = allPeriods.map(pk => {
+        const d = townData[pk];
+        return (d && d.prices && d.prices.length) ? median(d.prices) : null;
+      });
+      const averages = allPeriods.map(pk => {
+        const d = townData[pk];
+        return (d && d.prices && d.prices.length) ? Math.round(d.prices.reduce((a,b)=>a+b,0)/d.prices.length) : null;
+      });
 
-    series.forEach((s,idx) => {
-      const color = PALETTE[idx%PALETTE.length];
-      if(showMedianPrice){
+      if(showMedian){
         datasets.push({
-          label:s.label+' Median Price', data:s.medians,
-          borderColor:color, backgroundColor:color+'33',
-          pointRadius:2, borderWidth:2, fill:false, spanGaps:true,
+          label: town + ' Median',
+          data: medians,
+          borderColor: color,
+          backgroundColor: color + '33',
+          pointRadius: 2,
+          borderWidth: 2,
+          fill: false,
+          spanGaps: false,
         });
-        datasets.push({
-          label:s.label+' Median Price Trend', data:linReg(s.medians),
-          borderColor:color, borderDash:[5,3], pointRadius:0, borderWidth:1.5, fill:false,
-        });
-        annotations.push(trendPctText('Median price',s.medians,groupLabel));
+        annotations.push(trendPctText(town + ' median', medians, groupLabel));
       }
-      if(showAvgPrice){
+      if(showAvg){
         datasets.push({
-          label:s.label+' Avg Price', data:s.averages,
-          borderColor:color, backgroundColor:color+'33',
-          borderDash:[8,4], pointRadius:2, borderWidth:2, fill:false, spanGaps:true,
+          label: town + ' Avg',
+          data: averages,
+          borderColor: color,
+          backgroundColor: color + '33',
+          borderDash: [8,4],
+          pointRadius: 2,
+          borderWidth: 2,
+          fill: false,
+          spanGaps: false,
         });
-        datasets.push({
-          label:s.label+' Avg Price Trend', data:linReg(s.averages),
-          borderColor:color, borderDash:[2,2], pointRadius:0, borderWidth:1.5, fill:false,
-        });
-        annotations.push(trendPctText('Average price',s.averages,groupLabel));
-      }
-      if(showMedianVol){
-        datasets.push({
-          label:s.label+' Median Vol', data:s.counts,
-          borderColor:'#888', borderDash:[4,4], pointRadius:0, borderWidth:1.5, fill:false, yAxisID:'y1',
-        });
-      }
-      if(showAvgVol){
-        datasets.push({
-          label:s.label+' Avg Vol', data:s.counts,
-          borderColor:'#bbb', borderDash:[2,4], pointRadius:0, borderWidth:1.5, fill:false, yAxisID:'y1',
-        });
+        annotations.push(trendPctText(town + ' avg', averages, groupLabel));
       }
     });
 
-    const hasY1 = datasets.some(d=>d.yAxisID==='y1');
     const scales = {y:{beginAtZero:true,position:'left',title:{display:true,text:'Price ($)'}}};
-    if(hasY1) scales.y1 = {beginAtZero:true,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Volume'}};
 
     cwPriceChart = new Chart(canvas, {
-      type:'line', data:{labels:periods, datasets},
+      type:'line', data:{labels:allPeriods, datasets},
       options:{ responsive:true, maintainAspectRatio:false, scales,
         plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}
       }
