@@ -5644,7 +5644,7 @@ function submitContactForm() {
     const byPeriod = {};
     const byTown = {};
     const townPeriods = {}; // {townName: {period: {count, prices}}}
-    const allPrices = []; // for distribution
+    const townPrices = {}; // {townName: [prices]} for distribution
 
     records.forEach(r => {
       const s = r.sale;
@@ -5664,7 +5664,8 @@ function submitContactForm() {
       byTown[town].count++;
       if(price > 0){
         byTown[town].prices.push(price);
-        allPrices.push(price);
+        if(!townPrices[town]) townPrices[town] = [];
+        townPrices[town].push(price);
       }
 
       if(!townPeriods[town]) townPeriods[town] = {};
@@ -5685,22 +5686,24 @@ function submitContactForm() {
       .map(([town, d]) => ({ town, count:d.count, median:median(d.prices) }))
       .sort((a,b) => b.count - a.count);
 
-    // Price distribution — fixed buckets
-    const buckets = [0,50000,100000,150000,200000,250000,300000,400000,500000,750000,1000000,Infinity];
-    const distLabels = [];
-    const distCounts = [];
-    for(let i=0;i<buckets.length-1;i++){
-      const lo = buckets[i], hi = buckets[i+1];
-      const label = hi === Infinity ? '$'+lo.toLocaleString()+'+' : '$'+lo.toLocaleString()+'-$'+hi.toLocaleString();
-      distLabels.push(label);
-      distCounts.push(allPrices.filter(p => p >= lo && p < hi).length);
-    }
+    // Price distribution — fixed buckets, per town
+    const buckets = [0,50000,100000,200000,300000,500000,1000000,Infinity];
+    const distLabels = ['$0-50k','$50-100k','$100-200k','$200-300k','$300-500k','$500k-$1M','$1M+'];
+    const townDistribution = {}; // {townName: {rangeLabel: count}}
+    Object.entries(townPrices).forEach(([town, prices]) => {
+      townDistribution[town] = {};
+      distLabels.forEach((label,i) => {
+        const lo = buckets[i], hi = buckets[i+1];
+        townDistribution[town][label] = prices.filter(p => p >= lo && p < hi).length;
+      });
+    });
 
     return {
       series: [{ label:'All', periods, counts, medians, averages }],
       heatmap,
       townPeriods,
-      price_distribution: distLabels.map((label,i) => ({ range:label, count:distCounts[i] })),
+      townDistribution,
+      distLabels,
       totalSales: records.length
     };
   }
@@ -5894,12 +5897,24 @@ function submitContactForm() {
     if(!cwData) return;
     const canvas = document.getElementById('cwDistCanvas');
     if(cwDistChart){ cwDistChart.destroy(); cwDistChart = null; }
-    const dist = cwData.price_distribution || [];
-    if(!dist.length) return;
+    const td = cwData.townDistribution || {};
+    const labels = cwData.distLabels || [];
+    const towns = Object.keys(td).sort();
+    if(!towns.length) return;
+    const datasets = towns.map((town, idx) => ({
+      label: town,
+      data: labels.map(l => td[town][l] || 0),
+      backgroundColor: PALETTE[idx % PALETTE.length] + '99',
+      borderColor: PALETTE[idx % PALETTE.length],
+      borderWidth: 1,
+    }));
     cwDistChart = new Chart(canvas, {
       type:'bar',
-      data:{ labels:dist.map(d=>d.range), datasets:[{label:'Sales',data:dist.map(d=>d.count),backgroundColor:'#1565c0'}] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+      data:{ labels, datasets },
+      options:{ responsive:true, maintainAspectRatio:false,
+        scales:{ y:{ beginAtZero:true } },
+        plugins:{ legend:{ position:'bottom', labels:{ font:{ size:10 } } } }
+      }
     });
   };
 
