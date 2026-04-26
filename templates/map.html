@@ -289,12 +289,17 @@
       &#9660; Closing Date Range
     </div>
     <div id="dateDropdown" class="dropdown-content">
-      <div class="quick-date-row">
-        <button onclick="setQuickDate(12)">Last 12 mo</button>
-        <button onclick="setQuickDate(18)">Last 18 mo</button>
-        <button onclick="setQuickDate(24)">Last 24 mo</button>
-        <button onclick="setQuickDate(36)">Last 36 mo</button>
-        <button onclick="clearDates()">Clear</button>
+      <div class="quick-date-row" style="display:flex; flex-wrap:nowrap; gap:3px; align-items:center;">
+        <button onclick="setQuickDate(3)">3M</button>
+        <button onclick="setQuickDate(6)">6M</button>
+        <button onclick="setQuickDate(9)">9M</button>
+        <button onclick="setQuickDate(12)">12M</button>
+        <button onclick="setQuickDate(18)">18M</button>
+        <button onclick="setQuickDate(24)">24M</button>
+        <button onclick="setQuickDate(36)">36M</button>
+      </div>
+      <div style="margin-top:3px;">
+        <button onclick="clearDates()" style="font-size:11px; padding:2px 8px;">Clear</button>
       </div>
       <div class="filter-row">
         <label>From:</label>
