@@ -913,7 +913,7 @@
         </div>
         <div class="cw-analysis-checks" style="display:flex; gap:8px; flex-wrap:wrap;">
           <label><input type="checkbox" id="cwAnaVolume" checked onchange="cwSyncFromMap()"> Sales Volume</label>
-          <label><input type="checkbox" id="cwAnaPriceTrend" checked onchange="cwSyncFromMap()"> Price Trends</label>
+          <label><input type="checkbox" id="cwAnaPriceTrend" checked onchange="cwSyncFromMap()"> Price Trends (single town)</label>
           <label><input type="checkbox" id="cwAnaPriceDist" onchange="cwSyncFromMap()"> Price Distribution</label>
           <label><input type="checkbox" id="cwAnaHeatMap" onchange="cwSyncFromMap()"> Heat Map by Town</label>
         </div>
@@ -932,13 +932,10 @@
         <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwVolumeChartBox')"></div>
       </div>
 
-      <!-- PRICE TRENDS CHART -->
+      <!-- PRICE TRENDS CHART (scatter, single town) -->
       <div class="cw-chart-wrap" id="cwPriceWrap" style="display:none;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Price Trends</div>
-        <div style="font-size:11px; margin-bottom:4px;">
-          <label><input type="checkbox" id="cwPriceMedian" checked onchange="cwRedrawPrice()"> Median Price Trend</label>
-          <label style="margin-left:6px;"><input type="checkbox" id="cwPriceAvg" checked onchange="cwRedrawPrice()"> Average Price Trend</label>
-        </div>
+        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Price Trends (single town)</div>
+        <div id="cwPriceMsg" style="display:none; font-size:11px; color:#888; padding:8px 0;">Select a single town to view Price Trends scatter plot.</div>
         <div style="height:250px;" id="cwPriceChartBox"><canvas id="cwPriceCanvas"></canvas></div>
         <div class="cw-annotation" id="cwPriceAnnotation"></div>
         <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwPriceChartBox')"></div>
@@ -5556,6 +5553,7 @@ function submitContactForm() {
 (function(){
   const cw = document.getElementById('chartsWindow');
   let cwData = null;          // aggregated data from map
+  let cwRawRecords = [];      // raw sale records for scatter plot
   let cwGrouping = 'year';
   let cwVolView = 'town';
   let cwHeatMode = 'volume';
@@ -5716,6 +5714,7 @@ function submitContactForm() {
     if(!records.length){
       statusEl.textContent = 'No sales data loaded on map';
       cwData = null;
+      cwRawRecords = [];
       document.getElementById('cwVolumeWrap').style.display = 'none';
       document.getElementById('cwPriceWrap').style.display = 'none';
       document.getElementById('cwDistWrap').style.display = 'none';
@@ -5723,6 +5722,7 @@ function submitContactForm() {
       return;
     }
 
+    cwRawRecords = records;
     cwData = cwAggregate(records);
 
     const src = selCount ? selCount + ' selected sales' : records.length + ' sales from current map view';
@@ -5792,76 +5792,149 @@ function submitContactForm() {
     document.getElementById('cwVolumeAnnotation').textContent = '';
   };
 
-  // --- draw price chart (per-town median & average lines) ---
+  // --- draw price scatter plot (single town only) ---
   window.cwRedrawPrice = function(){
     if(!cwData) return;
     const canvas = document.getElementById('cwPriceCanvas');
+    const msgEl = document.getElementById('cwPriceMsg');
+    const chartBox = document.getElementById('cwPriceChartBox');
+    const annoEl = document.getElementById('cwPriceAnnotation');
     if(cwPriceChart){ cwPriceChart.destroy(); cwPriceChart = null; }
 
     const tp = cwData.townPeriods || {};
     const towns = Object.keys(tp).sort();
-    const groupLabel = cwGrouping==='month'?'monthly':cwGrouping==='quarter'?'quarterly':'annual';
 
-    // Unified period labels across all towns
-    const periodSet = new Set();
-    towns.forEach(t => Object.keys(tp[t]).forEach(pk => periodSet.add(pk)));
-    const allPeriods = Array.from(periodSet).sort();
+    // Only render for exactly 1 town
+    if(towns.length !== 1){
+      msgEl.style.display = '';
+      chartBox.style.display = 'none';
+      annoEl.textContent = '';
+      return;
+    }
+    msgEl.style.display = 'none';
+    chartBox.style.display = '';
 
-    const showMedian = document.getElementById('cwPriceMedian').checked;
-    const showAvg = document.getElementById('cwPriceAvg').checked;
-    const datasets = [];
-    const annotations = [];
-
-    towns.forEach((town, idx) => {
-      const color = PALETTE[idx % PALETTE.length];
-      const townData = tp[town];
-      const medians = allPeriods.map(pk => {
-        const d = townData[pk];
-        return (d && d.prices && d.prices.length) ? median(d.prices) : null;
-      });
-      const averages = allPeriods.map(pk => {
-        const d = townData[pk];
-        return (d && d.prices && d.prices.length) ? Math.round(d.prices.reduce((a,b)=>a+b,0)/d.prices.length) : null;
-      });
-
-      if(showMedian){
-        datasets.push({
-          label: town + ' Median',
-          data: medians,
-          borderColor: color,
-          backgroundColor: color + '33',
-          pointRadius: 2,
-          borderWidth: 2,
-          fill: false,
-          spanGaps: false,
-        });
-        annotations.push(trendPctText(town + ' median', medians, groupLabel));
-      }
-      if(showAvg){
-        datasets.push({
-          label: town + ' Avg',
-          data: averages,
-          borderColor: color,
-          backgroundColor: color + '33',
-          borderDash: [8,4],
-          pointRadius: 2,
-          borderWidth: 2,
-          fill: false,
-          spanGaps: false,
-        });
-        annotations.push(trendPctText(town + ' avg', averages, groupLabel));
-      }
+    // Collect individual sale points from raw records, exclude $0
+    const points = [];
+    const pointMeta = []; // parallel array for tooltip data
+    cwRawRecords.forEach(r => {
+      const s = r.sale;
+      const p = r.prop;
+      const price = Number(s.price);
+      if(!price || price <= 0) return;
+      const ts = Number(s.date);
+      if(!ts) return;
+      const addr = p.address || s.address || '';
+      points.push({ x: ts, y: price });
+      pointMeta.push({ address: addr });
     });
 
-    const scales = {y:{beginAtZero:true,position:'left',title:{display:true,text:'Price ($)'}}};
+    // Sort by date for trend line (keep points and meta in sync)
+    const combined = points.map((pt, i) => ({ pt, meta: pointMeta[i] }));
+    combined.sort((a, b) => a.pt.x - b.pt.x);
+    const sortedPoints = combined.map(c => c.pt);
+    const sortedMetaArr = combined.map(c => c.meta);
+
+    // Linear regression for trend line
+    let trendText = '';
+    const trendData = [];
+    if(sortedPoints.length >= 2){
+      const n = sortedPoints.length;
+      let sumX=0, sumY=0, sumXY=0, sumX2=0;
+      sortedPoints.forEach(p => { sumX+=p.x; sumY+=p.y; sumXY+=p.x*p.y; sumX2+=p.x*p.x; });
+      const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+      const intercept = (sumY - slope*sumX) / n;
+      const xMin = sortedPoints[0].x;
+      const xMax = sortedPoints[n-1].x;
+      trendData.push({ x: xMin, y: slope*xMin + intercept });
+      trendData.push({ x: xMax, y: slope*xMax + intercept });
+
+      // Trend % per month: slope is $/ms, convert to $/month
+      const msPerMonth = 30.4375*24*60*60*1000;
+      const slopePerMonth = slope * msPerMonth;
+      const avgPrice = sumY / n;
+      const pctPerMonth = (slopePerMonth / avgPrice) * 100;
+      const sign = pctPerMonth >= 0 ? '+' : '';
+      trendText = 'Trend: ' + sign + pctPerMonth.toFixed(1) + '% per month';
+    }
+
+    const datasets = [
+      {
+        label: towns[0] + ' Sales',
+        data: sortedPoints,
+        backgroundColor: '#1565c0' + '99',
+        borderColor: '#1565c0',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }
+    ];
+
+    if(trendData.length){
+      datasets.push({
+        label: 'Trend',
+        type: 'line',
+        data: trendData,
+        borderColor: '#e65100',
+        borderWidth: 2,
+        borderDash: [8, 4],
+        pointRadius: 0,
+        fill: false,
+      });
+    }
+
+    // Store meta on window for tooltip callback
+    window._cwScatterMeta = sortedMetaArr;
 
     cwPriceChart = new Chart(canvas, {
-      type:'line', data:{labels:allPeriods, datasets},
-      options:{ responsive:true, maintainAspectRatio:false, scales,
-        plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}
+      type: 'scatter',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'bottom',
+            title: { display: true, text: 'Sale Date' },
+            ticks: {
+              callback: function(val){
+                const d = new Date(val);
+                return (d.getMonth()+1) + '/' + d.getFullYear();
+              }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            position: 'left',
+            title: { display: true, text: 'Price ($)' },
+            ticks: {
+              callback: function(val){ return '$' + val.toLocaleString(); }
+            }
+          }
+        },
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 10 } } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                if(ctx.datasetIndex !== 0) return ctx.dataset.label;
+                const meta = window._cwScatterMeta;
+                const addr = meta && meta[ctx.dataIndex] ? meta[ctx.dataIndex].address : '';
+                const price = '$' + ctx.parsed.y.toLocaleString();
+                const date = new Date(ctx.parsed.x);
+                const dateStr = (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
+                const parts = [];
+                if(addr) parts.push(addr);
+                parts.push(price);
+                parts.push(dateStr);
+                return parts.join(' — ');
+              }
+            }
+          }
+        }
       }
     });
-    document.getElementById('cwPriceAnnotation').textContent = annotations.filter(Boolean).join(' | ');
+    annoEl.textContent = trendText;
   };
 
   // --- draw heatmap ---
