@@ -4032,11 +4032,11 @@ const drawLayer = new L.FeatureGroup().addTo(map);
 const drawControl = new L.Control.Draw({
   position: 'topleft',
   draw: {
-    circle:    { shapeOptions: { color: '#1F4E79', weight: 2, fillOpacity: 0.08 } },
-    rectangle: { shapeOptions: { color: '#1F4E79', weight: 2, fillOpacity: 0.08 } },
+    circle:    { shapeOptions: { color: '#1F4E79', weight: 2, fillColor: '#ffee00', fillOpacity: 0.15 } },
+    rectangle: { shapeOptions: { color: '#1F4E79', weight: 2, fillColor: '#ffee00', fillOpacity: 0.15 } },
     polygon:   {
       allowIntersection: false,
-      shapeOptions: { color: '#1F4E79', weight: 2, fillOpacity: 0.08 },
+      shapeOptions: { color: '#1F4E79', weight: 2, fillColor: '#ffee00', fillOpacity: 0.15 },
       showArea: false
     },
     polyline:     false,
