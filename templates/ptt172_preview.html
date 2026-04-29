@@ -307,6 +307,23 @@
         </div>
       </div>
 
+      <!-- Additional Parties -->
+      <div class="acc-section">
+        <button class="acc-toggle open" onclick="toggleAcc(this)">
+          Additional Parties <span class="arrow">&#9660;</span>
+        </button>
+        <div class="acc-content open">
+          <div class="code-row">
+            <span class="code-line"></span>
+            <span class="code-desc"><strong>Other Sellers:</strong> {{ rec.additionalSellerNames or '&mdash;' }}</span>
+          </div>
+          <div class="code-row">
+            <span class="code-line"></span>
+            <span class="code-desc"><strong>Other Buyers:</strong> {{ rec.additionalBuyerNames or '&mdash;' }}</span>
+          </div>
+        </div>
+      </div>
+
     </div><!-- end ref-body -->
     <div class="ref-footer">
       Source: Form PTT-172 Instructions Rev. 11/25<br>

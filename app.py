@@ -3354,6 +3354,11 @@ def ptt172(filename=None):  # noqa: C901
     draw_row("J14", "", f"General Rate Tax Due:        ${fmtm2(rec.get('GenRateTaxDue'))}", plain=True)
     draw_row("J15", "", f"Total Tax Due:               ${fmtm2(rec.get('TotalTaxDue'))}", plain=True)
 
+    # ---- Additional Parties ----
+    section_hdr("Additional Parties")
+    draw_row("", "", f"Other Sellers: {rec.get('additionalSellerNames') or '\u2014'}", plain=True)
+    draw_row("", "", f"Other Buyers: {rec.get('additionalBuyerNames') or '\u2014'}", plain=True)
+
     # ---- Footer ----
     nc.setFont("Helvetica", 7)
     nc.setFillColorRGB(0.5,0.5,0.5)
