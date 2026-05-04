@@ -225,80 +225,6 @@
             background: #1a7a1a; color: white;
         }
         .dual-popup .popup-tab:hover:not(.active) { background: #e0e0e0; }
-
-        /* ---- CHARTS FLOATING WINDOW ---- */
-        #chartsWindow {
-            display:none; position:fixed; z-index:3000;
-            background:#fff; border:2px solid #1565c0; border-radius:6px;
-            box-shadow:0 6px 24px rgba(0,0,0,0.35);
-            min-width:400px; min-height:400px;
-            overflow:hidden;
-        }
-        #chartsWindow .cw-titlebar {
-            display:flex; align-items:center; justify-content:space-between;
-            background:#1565c0; color:#fff; padding:6px 10px;
-            cursor:move; user-select:none; font-size:13px; font-weight:bold;
-        }
-        #chartsWindow .cw-titlebar button {
-            background:none; border:none; color:#fff; font-size:16px;
-            cursor:pointer; padding:0 4px; line-height:1;
-        }
-        #chartsWindow .cw-titlebar button:hover { opacity:0.7; }
-        #chartsWindow .cw-body {
-            display:flex; flex-direction:column; height:calc(100% - 34px); overflow:hidden;
-        }
-        /* Top control bar */
-        .cw-top-bar {
-            padding:8px 10px; border-bottom:1px solid #ddd; background:#f9f9f9;
-            font-size:11px; flex-shrink:0;
-        }
-        /* Charts panel */
-        .cw-right-panel {
-            flex:1; overflow-y:auto; padding:10px;
-        }
-        .cw-resize-handle {
-            position:absolute; z-index:3001;
-        }
-        .cw-resize-handle.cw-n  { top:-3px; left:6px; right:6px; height:6px; cursor:n-resize; }
-        .cw-resize-handle.cw-s  { bottom:-3px; left:6px; right:6px; height:6px; cursor:s-resize; }
-        .cw-resize-handle.cw-e  { right:-3px; top:6px; bottom:6px; width:6px; cursor:e-resize; }
-        .cw-resize-handle.cw-w  { left:-3px; top:6px; bottom:6px; width:6px; cursor:w-resize; }
-        .cw-resize-handle.cw-ne { top:-3px; right:-3px; width:10px; height:10px; cursor:ne-resize; }
-        .cw-resize-handle.cw-nw { top:-3px; left:-3px; width:10px; height:10px; cursor:nw-resize; }
-        .cw-resize-handle.cw-se { bottom:-3px; right:-3px; width:10px; height:10px; cursor:se-resize; }
-        .cw-resize-handle.cw-sw { bottom:-3px; left:-3px; width:10px; height:10px; cursor:sw-resize; }
-        .cw-toggle-row { display:flex; gap:2px; margin-bottom:6px; }
-        .cw-toggle-row button {
-            padding:4px 10px; font-size:11px; font-weight:bold;
-            border:1px solid #aaa; border-radius:3px; cursor:pointer;
-            background:#f0f0f0; color:#333;
-        }
-        .cw-toggle-row button.active { background:#1565c0; color:#fff; border-color:#1565c0; }
-        .cw-chart-wrap {
-            position:relative; margin-bottom:10px;
-            border:1px solid #e0e0e0; border-radius:4px; padding:6px;
-            background:#fafafa;
-        }
-        .cw-chart-resize {
-            height:6px; cursor:s-resize; background:linear-gradient(transparent, #ddd);
-            border-radius:0 0 4px 4px; user-select:none;
-        }
-        .cw-heatmap-grid {
-            display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;
-        }
-        .cw-heatmap-cell {
-            padding:4px 8px; border-radius:3px; font-size:10px;
-            font-weight:bold; cursor:default; position:relative;
-            border:1px solid #ddd;
-        }
-        .cw-heatmap-cell:hover::after {
-            content:attr(data-tip); position:absolute; bottom:110%; left:50%;
-            transform:translateX(-50%); background:#333; color:#fff;
-            padding:3px 8px; border-radius:4px; font-size:10px; white-space:nowrap;
-            z-index:9999; pointer-events:none;
-        }
-        .cw-annotation { font-size:11px; color:#555; margin-top:4px; font-style:italic; }
-        .cw-analysis-checks label { font-size:11px; cursor:pointer; }
     </style>
 </head>
 <body>
@@ -861,14 +787,6 @@
       </div>
     </div>
 
-    <!-- ===== CHARTS BUTTON ===== -->
-    <button onclick="openChartsWindow()"
-      style="width:100%; padding:6px; margin-top:6px; font-size:13px; font-weight:bold;
-             border:1px solid #1565c0; border-radius:3px; cursor:pointer;
-             background:#1976d2; color:white;">
-      &#128202; Charts
-    </button>
-
     <!-- ===== FOOTER ===== -->
     <div style="font-size:11px; color:#aaa; margin-top:8px; border-top:1px solid #ddd; padding-top:6px; line-height:1.6; text-align:center;">
       Data sourced from Vermont public records. Verify independently before relying on results.
@@ -885,93 +803,9 @@
 
 </div><!-- end container -->
 
-<!-- ==================== CHARTS FLOATING WINDOW ==================== -->
-<div id="chartsWindow">
-  <div class="cw-resize-handle cw-n"></div>
-  <div class="cw-resize-handle cw-s"></div>
-  <div class="cw-resize-handle cw-e"></div>
-  <div class="cw-resize-handle cw-w"></div>
-  <div class="cw-resize-handle cw-ne"></div>
-  <div class="cw-resize-handle cw-nw"></div>
-  <div class="cw-resize-handle cw-se"></div>
-  <div class="cw-resize-handle cw-sw"></div>
-  <div class="cw-titlebar">
-    <span>&#128202; Charts</span>
-    <span>
-      <button onclick="minimizeChartsWindow()" title="Minimize">&#8211;</button>
-      <button id="cwMaxBtn" onclick="toggleMaxChartsWindow()" title="Maximize">&#9744;</button>
-      <button onclick="closeChartsWindow()" title="Close">&#10005;</button>
-    </span>
-  </div>
-  <div class="cw-body" id="cwBody">
-    <!-- ===== TOP CONTROL BAR ===== -->
-    <div class="cw-top-bar">
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <div style="font-size:11px; color:#888; padding:4px 8px; text-align:center;">Charts update automatically when you click Apply Filters on the map.</div>
-        <span id="cwStatus" style="font-size:11px; color:#555;">No data synced yet</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px;">
-        <div class="cw-toggle-row" style="margin-bottom:0;">
-          <button id="cwGrpMonth" onclick="cwSetGrouping('month')">Monthly</button>
-          <button id="cwGrpQuarter" onclick="cwSetGrouping('quarter')">Quarterly</button>
-          <button id="cwGrpYear" class="active" onclick="cwSetGrouping('year')">Yearly</button>
-        </div>
-        <div class="cw-analysis-checks" style="display:flex; gap:8px; flex-wrap:wrap;">
-          <label><input type="checkbox" id="cwAnaVolume" checked onchange="cwSyncFromMap()"> Sales Volume</label>
-          <label><input type="checkbox" id="cwAnaPriceTrend" checked onchange="cwSyncFromMap()"> Price Trends (single town)</label>
-          <label><input type="checkbox" id="cwAnaPriceDist" onchange="cwSyncFromMap()"> Price Distribution</label>
-          <label><input type="checkbox" id="cwAnaHeatMap" onchange="cwSyncFromMap()"> Heat Map by Town</label>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== CHARTS PANEL ===== -->
-    <div class="cw-right-panel">
-      <div id="cwLoading" style="display:none; text-align:center; padding:20px; color:#555;">Processing...</div>
-
-      <!-- SALES VOLUME CHART -->
-      <div class="cw-chart-wrap" id="cwVolumeWrap" style="display:none;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Sales Volume</div>
-        <div style="height:250px;" id="cwVolumeChartBox"><canvas id="cwVolumeCanvas"></canvas></div>
-        <div class="cw-annotation" id="cwVolumeAnnotation"></div>
-        <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwVolumeChartBox')"></div>
-      </div>
-
-      <!-- PRICE TRENDS CHART (scatter, single town) -->
-      <div class="cw-chart-wrap" id="cwPriceWrap" style="display:none;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Price Trends (single town)</div>
-        <div id="cwPriceMsg" style="display:none; font-size:11px; color:#888; padding:8px 0;">Select a single town to view Price Trends scatter plot.</div>
-        <div style="height:250px;" id="cwPriceChartBox"><canvas id="cwPriceCanvas"></canvas></div>
-        <div class="cw-annotation" id="cwPriceAnnotation"></div>
-        <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwPriceChartBox')"></div>
-      </div>
-
-      <!-- PRICE DISTRIBUTION CHART -->
-      <div class="cw-chart-wrap" id="cwDistWrap" style="display:none;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">Price Distribution</div>
-        <div style="height:250px;" id="cwDistChartBox"><canvas id="cwDistCanvas"></canvas></div>
-        <div class="cw-chart-resize" onmousedown="cwStartChartResize(event, 'cwDistChartBox')"></div>
-      </div>
-
-      <!-- HEAT MAP -->
-      <div class="cw-chart-wrap" id="cwHeatWrap" style="display:none;">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-          <span style="font-weight:bold; font-size:12px;">Heat Map by Town</span>
-          <div class="cw-toggle-row" style="margin-bottom:0;">
-            <button class="active" id="cwHeatVolBtn" onclick="cwSetHeatMode('volume')">Sales Volume</button>
-            <button id="cwHeatPriceBtn" onclick="cwSetHeatMode('price')">Median Price</button>
-          </div>
-        </div>
-        <div class="cw-heatmap-grid" id="cwHeatGrid"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <script src="https://unpkg.com/esri-leaflet@3/dist/esri-leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 
 <script>
 // ===================================================
@@ -1640,6 +1474,22 @@ function _updateFemaLabels() {
   }
 }
 
+// Compute a proper polygon centroid (average of ring vertices)
+// More accurate than getBounds().getCenter() for irregular/elongated shapes
+function _polyCenter(layer) {
+  try {
+    var latlngs = layer.getLatLngs();
+    var ring = Array.isArray(latlngs[0][0]) ? latlngs[0][0] :
+               Array.isArray(latlngs[0])    ? latlngs[0]    : latlngs;
+    var latSum = 0, lngSum = 0, count = 0;
+    ring.forEach(function(ll) {
+      if (ll && ll.lat !== undefined) { latSum += ll.lat; lngSum += ll.lng; count++; }
+    });
+    if (count > 0) return L.latLng(latSum / count, lngSum / count);
+  } catch(err) {}
+  return layer.getBounds ? layer.getBounds().getCenter() : null;
+}
+
 var femaFloodLayer = L.esri.featureLayer({
   url: 'https://hazards.fema.gov/arcgis/rest/services/FIRMette/NFHLREST_FIRMette/MapServer/20',
   minZoom: FEMA_MIN_ZOOM,
@@ -1667,24 +1517,6 @@ var femaFloodLayer = L.esri.featureLayer({
       (subtype ? '<br>Subtype: ' + subtype : ''));
   }
 });
-
-// Compute a proper polygon centroid (average of ring vertices)
-// More accurate than getBounds().getCenter() for irregular/elongated shapes
-function _polyCenter(layer) {
-  try {
-    var latlngs = layer.getLatLngs();
-    // Flatten one level for MultiPolygon (array of arrays of arrays)
-    var ring = Array.isArray(latlngs[0][0]) ? latlngs[0][0] :
-               Array.isArray(latlngs[0])    ? latlngs[0]    : latlngs;
-    var latSum = 0, lngSum = 0, count = 0;
-    ring.forEach(function(ll) {
-      if (ll && ll.lat !== undefined) { latSum += ll.lat; lngSum += ll.lng; count++; }
-    });
-    if (count > 0) return L.latLng(latSum / count, lngSum / count);
-  } catch(err) {}
-  // Fallback to bounds center
-  return layer.getBounds ? layer.getBounds().getCenter() : null;
-}
 
 // createfeature fires {feature} only — use getFeature(id) to get the Leaflet layer
 femaFloodLayer.on('createfeature', function(e) {
@@ -3159,12 +2991,6 @@ function loadApproxData(){
 
     approxLayer.addLayer(marker);
   });
-
-  // Auto-sync charts if window is open
-  if(typeof cwSyncFromMap === 'function'){
-    const cw = document.getElementById('chartsWindow');
-    if(cw && cw.style.display !== 'none') cwSyncFromMap();
-  }
 }
 
 // Helper: compute the grouping key for an approx record.
@@ -3449,12 +3275,6 @@ function renderData(records){
   // Called here (not from onMoveEnd) so loadApproxData always sees complete
   // spanDotLookup / addressDotLookup — eliminates the pan race condition.
   loadApproxData();
-
-  // Auto-sync charts if window is open
-  if(typeof cwSyncFromMap === 'function'){
-    const cw = document.getElementById('chartsWindow');
-    if(cw && cw.style.display !== 'none') cwSyncFromMap();
-  }
 }
 
 // ===================================================
@@ -4047,7 +3867,6 @@ function clearAllForNameSearch(){
     if(radio) radio.checked = true;
   });
   nameSearchCache = null;
-  removeSubjectPin();
 }
 
 // ===================================================
@@ -5626,539 +5445,6 @@ function submitContactForm() {
     status.textContent = 'Network error. Please try again.';
   });
 }
-
-// ===================================================
-// CHARTS PANEL — map-driven, no duplicate filters
-// ===================================================
-(function(){
-  const cw = document.getElementById('chartsWindow');
-  let cwData = null;          // aggregated data from map
-  let cwRawRecords = [];      // raw sale records for scatter plot
-  let cwGrouping = 'year';
-  let cwVolView = 'town';
-  let cwHeatMode = 'volume';
-  let cwMaximized = false;
-  let cwPreMax = null;
-  let cwVolumeChart = null;
-  let cwPriceChart = null;
-  let cwDistChart = null;
-
-  const PALETTE = ['#1565c0','#e65100','#2e7d32','#6a1b9a','#c62828','#00838f','#ff8f00','#4e342e','#37474f','#ad1457','#00695c','#283593'];
-
-  // --- helpers ---
-  function median(arr){
-    if(!arr.length) return null;
-    const s = arr.slice().sort((a,b)=>a-b);
-    const mid = Math.floor(s.length/2);
-    return s.length % 2 ? s[mid] : (s[mid-1]+s[mid])/2;
-  }
-
-  function periodKey(ts){
-    const d = new Date(ts);
-    const y = d.getFullYear();
-    const m = d.getMonth()+1;
-    if(cwGrouping === 'year') return ''+y;
-    if(cwGrouping === 'quarter') return y+'-Q'+Math.ceil(m/3);
-    return y+'-'+(m<10?'0':'')+m;
-  }
-
-  function linReg(ys){
-    const n = ys.length;
-    if(n < 2) return [];
-    let sx=0,sy=0,sxx=0,sxy=0;
-    for(let i=0;i<n;i++){
-      const y = ys[i]===null?0:ys[i];
-      sx+=i; sy+=y; sxx+=i*i; sxy+=i*y;
-    }
-    const m2=(n*sxy-sx*sy)/(n*sxx-sx*sx);
-    const b=(sy-m2*sx)/n;
-    return ys.map((_,i)=>Math.round((m2*i+b)*100)/100);
-  }
-
-  function trendPctText(label, ys, groupLabel){
-    const valid = ys.filter(v=>v!==null&&v>0);
-    if(valid.length<2) return '';
-    const first=valid[0], last=valid[valid.length-1];
-    const totalPct=((last-first)/first)*100;
-    const perPeriod=totalPct/(valid.length-1);
-    const sign=perPeriod>=0?'+':'';
-    return 'The '+label+' '+groupLabel+' change is '+sign+perPeriod.toFixed(1)+'%';
-  }
-
-  // --- collect sales from map data ---
-  function cwCollectSales(){
-    // If draw-tool selections exist, use only those; otherwise all loaded dots
-    const selKeys = Object.keys(selectedSales);
-    const records = [];
-    const seen = new Set();
-    if(selKeys.length){
-      selKeys.forEach(id => {
-        if(seen.has(id)) return; seen.add(id);
-        const ref = markerRefs[id];
-        if(!ref) return;
-        // Use String() comparison to handle numeric vs string id mismatch
-        const sale = ref.sales.find(s => String(s.id) === String(id)) || ref.sales[0];
-        if(sale) records.push({ sale:sale, prop:ref.prop || ref.sales[0] });
-      });
-    } else {
-      Object.keys(markerRefs).forEach(id => {
-        if(seen.has(id)) return; seen.add(id);
-        const ref = markerRefs[id];
-        if(!ref) return;
-        // Use String() comparison to handle numeric vs string id mismatch
-        const sale = ref.sales.find(s => String(s.id) === String(id)) || ref.sales[0];
-        if(sale) records.push({ sale:sale, prop:ref.prop || ref.sales[0] });
-      });
-    }
-    return records;
-  }
-
-  // --- aggregate records into cwData ---
-  function cwAggregate(records){
-    // Group by period, compute counts/medians/averages per period (single "All" series)
-    // Also group by town for heatmap and by-town volume
-    const byPeriod = {};
-    const byTown = {};
-    const townPeriods = {}; // {townName: {period: {count, prices}}}
-    const townPrices = {}; // {townName: [prices]} for distribution
-
-    records.forEach(r => {
-      const s = r.sale;
-      const p = r.prop;
-      const ts = s.date;
-      if(!ts) return;
-      const pk = periodKey(ts);
-      const price = Number(s.price);
-      const town = (p.trustedTown || p.city || 'Unknown').toUpperCase()
-        .replace(/\w\S*/g, t=>t.charAt(0)+t.slice(1).toLowerCase());
-
-      if(!byPeriod[pk]) byPeriod[pk] = { count:0, prices:[] };
-      byPeriod[pk].count++;
-      if(price > 0) byPeriod[pk].prices.push(price);
-
-      if(!byTown[town]) byTown[town] = { count:0, prices:[] };
-      byTown[town].count++;
-      if(price > 0){
-        byTown[town].prices.push(price);
-        if(!townPrices[town]) townPrices[town] = [];
-        townPrices[town].push(price);
-      }
-
-      if(!townPeriods[town]) townPeriods[town] = {};
-      if(!townPeriods[town][pk]) townPeriods[town][pk] = { count:0, prices:[] };
-      townPeriods[town][pk].count++;
-      if(price > 0) townPeriods[town][pk].prices.push(price);
-    });
-
-    const periods = Object.keys(byPeriod).sort();
-    const counts = periods.map(pk => byPeriod[pk].count);
-    const medians = periods.map(pk => median(byPeriod[pk].prices));
-    const averages = periods.map(pk => {
-      const arr = byPeriod[pk].prices;
-      return arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
-    });
-
-    // Heatmap: array of { town, count, median }
-    const heatmap = Object.entries(byTown)
-      .map(([town, d]) => ({ town, count:d.count, median:median(d.prices) }))
-      .sort((a,b) => b.count - a.count);
-
-    // Price distribution — detailed buckets, per town
-    const buckets = [0,50000,100000,150000,200000,250000,300000,400000,500000,750000,1000000,Infinity];
-    const distLabels = ['$0-$50k','$50k-$100k','$100k-$150k','$150k-$200k','$200k-$250k','$250k-$300k','$300k-$400k','$400k-$500k','$500k-$750k','$750k-$1M','$1M+'];
-    const townDistBuckets = {}; // {townName: [count per bucket]}
-    Object.entries(townPrices).forEach(([town, prices]) => {
-      townDistBuckets[town] = new Array(distLabels.length).fill(0);
-      prices.forEach(p => {
-        for(let i = 0; i < buckets.length - 1; i++){
-          if(p >= buckets[i] && p < buckets[i+1]){ townDistBuckets[town][i]++; break; }
-        }
-      });
-    });
-
-    return {
-      series: [{ label:'All', periods, counts, medians, averages }],
-      heatmap,
-      townPeriods,
-      townDistBuckets,
-      distLabels,
-      totalSales: records.length
-    };
-  }
-
-  // --- sync from map (main entry point) ---
-  window.cwSyncFromMap = function(){
-    const records = cwCollectSales();
-    const selCount = Object.keys(selectedSales).length;
-    const statusEl = document.getElementById('cwStatus');
-    if(!records.length){
-      statusEl.textContent = 'No sales data loaded on map';
-      cwData = null;
-      cwRawRecords = [];
-      document.getElementById('cwVolumeWrap').style.display = 'none';
-      document.getElementById('cwPriceWrap').style.display = 'none';
-      document.getElementById('cwDistWrap').style.display = 'none';
-      document.getElementById('cwHeatWrap').style.display = 'none';
-      return;
-    }
-
-    cwRawRecords = records;
-    cwData = cwAggregate(records);
-
-    const src = selCount ? selCount + ' selected sales' : records.length + ' sales from current map view';
-    statusEl.textContent = 'Showing ' + cwData.totalSales + ' sales' + (selCount ? ' (draw selection)' : ' from map');
-
-    const showVolume = document.getElementById('cwAnaVolume').checked;
-    const showPriceTrend = document.getElementById('cwAnaPriceTrend').checked;
-    const showPriceDist = document.getElementById('cwAnaPriceDist').checked;
-    const showHeatMap = document.getElementById('cwAnaHeatMap').checked;
-
-    document.getElementById('cwVolumeWrap').style.display = showVolume ? '' : 'none';
-    document.getElementById('cwPriceWrap').style.display = showPriceTrend ? '' : 'none';
-    document.getElementById('cwDistWrap').style.display = showPriceDist ? '' : 'none';
-    document.getElementById('cwHeatWrap').style.display = showHeatMap ? '' : 'none';
-
-    if(showVolume) cwRedrawVolume();
-    if(showPriceTrend) cwRedrawPrice();
-    if(showPriceDist) cwRedrawDist();
-    if(showHeatMap) cwRedrawHeatmap();
-  };
-
-  // --- grouping toggle ---
-  window.cwSetGrouping = function(g){
-    cwGrouping = g;
-    ['Month','Quarter','Year'].forEach(s => {
-      document.getElementById('cwGrp'+s).classList.toggle('active', s.toLowerCase()===g);
-    });
-    cwSyncFromMap();
-  };
-
-  // --- heat map mode toggle ---
-  window.cwSetHeatMode = function(m){
-    cwHeatMode = m;
-    document.getElementById('cwHeatVolBtn').classList.toggle('active', m==='volume');
-    document.getElementById('cwHeatPriceBtn').classList.toggle('active', m==='price');
-    cwRedrawHeatmap();
-  };
-
-  // --- draw volume chart (always By Town) ---
-  window.cwRedrawVolume = function(){
-    if(!cwData) return;
-    const canvas = document.getElementById('cwVolumeCanvas');
-    if(cwVolumeChart){ cwVolumeChart.destroy(); cwVolumeChart = null; }
-
-    const tp = cwData.townPeriods || {};
-    const towns = Object.keys(tp).sort();
-    // Collect all periods across all towns and sort them
-    const periodSet = new Set();
-    towns.forEach(t => Object.keys(tp[t]).forEach(pk => periodSet.add(pk)));
-    const allPeriods = Array.from(periodSet).sort();
-    // One dataset per town, fill 0 for missing periods
-    const datasets = towns.map((town, idx) => ({
-      label: town,
-      data: allPeriods.map(pk => (tp[town][pk] ? tp[town][pk].count : 0)),
-      backgroundColor: PALETTE[idx % PALETTE.length] + '99',
-      borderColor: PALETTE[idx % PALETTE.length],
-      borderWidth: 1,
-    }));
-    cwVolumeChart = new Chart(canvas, {
-      type:'bar',
-      data:{ labels:allPeriods, datasets },
-      options:{ responsive:true, maintainAspectRatio:false,
-        scales:{ y:{ beginAtZero:true } },
-        plugins:{ legend:{ position:'bottom', labels:{ font:{ size:10 } } } }
-      }
-    });
-    document.getElementById('cwVolumeAnnotation').textContent = '';
-  };
-
-  // --- draw price scatter plot (single town only) ---
-  window.cwRedrawPrice = function(){
-    if(!cwData) return;
-    const canvas = document.getElementById('cwPriceCanvas');
-    const msgEl = document.getElementById('cwPriceMsg');
-    const chartBox = document.getElementById('cwPriceChartBox');
-    const annoEl = document.getElementById('cwPriceAnnotation');
-    if(cwPriceChart){ cwPriceChart.destroy(); cwPriceChart = null; }
-
-    const tp = cwData.townPeriods || {};
-    const towns = Object.keys(tp).sort();
-
-    // Only render for exactly 1 town
-    if(towns.length !== 1){
-      msgEl.style.display = '';
-      chartBox.style.display = 'none';
-      annoEl.textContent = '';
-      return;
-    }
-    msgEl.style.display = 'none';
-    chartBox.style.display = '';
-
-    // Collect individual sale points from raw records, exclude $0
-    const points = [];
-    const pointMeta = []; // parallel array for tooltip data
-    cwRawRecords.forEach(r => {
-      const s = r.sale;
-      const p = r.prop;
-      const price = Number(s.price);
-      if(!price || price <= 0) return;
-      const ts = Number(s.date);
-      if(!ts) return;
-      const addr = p.address || s.address || '';
-      points.push({ x: ts, y: price });
-      pointMeta.push({ address: addr });
-    });
-
-    // Sort by date for trend line (keep points and meta in sync)
-    const combined = points.map((pt, i) => ({ pt, meta: pointMeta[i] }));
-    combined.sort((a, b) => a.pt.x - b.pt.x);
-    const sortedPoints = combined.map(c => c.pt);
-    const sortedMetaArr = combined.map(c => c.meta);
-
-    // Linear regression for trend line
-    let trendText = '';
-    const trendData = [];
-    if(sortedPoints.length >= 2){
-      const n = sortedPoints.length;
-      let sumX=0, sumY=0, sumXY=0, sumX2=0;
-      sortedPoints.forEach(p => { sumX+=p.x; sumY+=p.y; sumXY+=p.x*p.y; sumX2+=p.x*p.x; });
-      const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
-      const intercept = (sumY - slope*sumX) / n;
-      const xMin = sortedPoints[0].x;
-      const xMax = sortedPoints[n-1].x;
-      trendData.push({ x: xMin, y: slope*xMin + intercept });
-      trendData.push({ x: xMax, y: slope*xMax + intercept });
-
-      // Trend % per month: slope is $/ms, convert to $/month
-      const msPerMonth = 30.4375*24*60*60*1000;
-      const slopePerMonth = slope * msPerMonth;
-      const avgPrice = sumY / n;
-      const pctPerMonth = (slopePerMonth / avgPrice) * 100;
-      const sign = pctPerMonth >= 0 ? '+' : '';
-      trendText = 'Trend: ' + sign + pctPerMonth.toFixed(1) + '% per month';
-    }
-
-    const datasets = [
-      {
-        label: towns[0] + ' Sales',
-        data: sortedPoints,
-        backgroundColor: '#1565c0' + '99',
-        borderColor: '#1565c0',
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      }
-    ];
-
-    if(trendData.length){
-      datasets.push({
-        label: 'Trend',
-        type: 'line',
-        data: trendData,
-        borderColor: '#e65100',
-        borderWidth: 2,
-        borderDash: [8, 4],
-        pointRadius: 0,
-        fill: false,
-      });
-    }
-
-    // Store meta on window for tooltip callback
-    window._cwScatterMeta = sortedMetaArr;
-
-    cwPriceChart = new Chart(canvas, {
-      type: 'scatter',
-      data: { datasets },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            type: 'linear',
-            position: 'bottom',
-            title: { display: true, text: 'Sale Date' },
-            ticks: {
-              callback: function(val){
-                const d = new Date(val);
-                return (d.getMonth()+1) + '/' + d.getFullYear();
-              }
-            }
-          },
-          y: {
-            beginAtZero: true,
-            position: 'left',
-            title: { display: true, text: 'Price ($)' },
-            ticks: {
-              callback: function(val){ return '$' + val.toLocaleString(); }
-            }
-          }
-        },
-        plugins: {
-          legend: { position: 'bottom', labels: { font: { size: 10 } } },
-          tooltip: {
-            callbacks: {
-              label: function(ctx){
-                if(ctx.datasetIndex !== 0) return ctx.dataset.label;
-                const meta = window._cwScatterMeta;
-                const addr = meta && meta[ctx.dataIndex] ? meta[ctx.dataIndex].address : '';
-                const price = '$' + ctx.parsed.y.toLocaleString();
-                const date = new Date(ctx.parsed.x);
-                const dateStr = (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
-                const parts = [];
-                if(addr) parts.push(addr);
-                parts.push(price);
-                parts.push(dateStr);
-                return parts.join(' — ');
-              }
-            }
-          }
-        }
-      }
-    });
-    annoEl.textContent = trendText;
-  };
-
-  // --- draw heatmap ---
-  window.cwRedrawHeatmap = function(){
-    if(!cwData) return;
-    const grid = document.getElementById('cwHeatGrid');
-    grid.innerHTML = '';
-    const heatmap = cwData.heatmap || [];
-    if(!heatmap.length) return;
-
-    const vals = heatmap.map(h => cwHeatMode==='volume' ? h.count : (h.median||0));
-    const maxVal = Math.max(...vals, 1);
-
-    heatmap.forEach(h => {
-      const val = cwHeatMode==='volume' ? h.count : (h.median||0);
-      const ratio = val / maxVal;
-      const cell = document.createElement('div');
-      cell.className = 'cw-heatmap-cell';
-      cell.textContent = h.town;
-      if(cwHeatMode === 'volume'){
-        const r=255, g=Math.round(255-ratio*110), b=Math.round(255-ratio*255);
-        cell.style.background = 'rgb('+r+','+g+','+b+')';
-      } else {
-        const r=Math.round(255-ratio*195), g=Math.round(255-ratio*155), b=255;
-        cell.style.background = 'rgb('+r+','+g+','+b+')';
-      }
-      const tipVal = cwHeatMode==='volume' ? h.count+' sales' : '$'+(h.median||0).toLocaleString();
-      cell.setAttribute('data-tip', h.town+': '+tipVal);
-      grid.appendChild(cell);
-    });
-  };
-
-  // --- draw price distribution chart ---
-  window.cwRedrawDist = function(){
-    if(!cwData) return;
-    const canvas = document.getElementById('cwDistCanvas');
-    if(cwDistChart){ cwDistChart.destroy(); cwDistChart = null; }
-    const td = cwData.townDistBuckets || {};
-    const labels = cwData.distLabels || [];
-    const towns = Object.keys(td).sort();
-    if(!towns.length) return;
-    const datasets = towns.map((town, idx) => ({
-      label: town,
-      data: td[town],
-      backgroundColor: PALETTE[idx % PALETTE.length] + '99',
-      borderColor: PALETTE[idx % PALETTE.length],
-      borderWidth: 1,
-    }));
-    cwDistChart = new Chart(canvas, {
-      type:'bar',
-      data:{ labels, datasets },
-      options:{ responsive:true, maintainAspectRatio:false,
-        scales:{ y:{ beginAtZero:true } },
-        plugins:{ legend:{ position:'bottom', labels:{ font:{ size:10 } } } }
-      }
-    });
-  };
-
-  // --- chart resize handle ---
-  window.cwStartChartResize = function(e, boxId){
-    e.preventDefault();
-    const box = document.getElementById(boxId);
-    const startY = e.clientY;
-    const startH = box.offsetHeight;
-    function onMove(ev){ box.style.height = Math.max(120, startH+(ev.clientY-startY))+'px'; }
-    function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  };
-
-  // --- window drag ---
-  (function(){
-    const bar = cw.querySelector('.cw-titlebar');
-    let dragging=false, ox, oy;
-    bar.addEventListener('mousedown', function(e){
-      if(e.target.tagName==='BUTTON') return;
-      dragging=true; ox=e.clientX-cw.offsetLeft; oy=e.clientY-cw.offsetTop;
-      document.addEventListener('mousemove',onDrag);
-      document.addEventListener('mouseup',stopDrag);
-    });
-    function onDrag(e){ if(!dragging) return; cw.style.left=(e.clientX-ox)+'px'; cw.style.top=(e.clientY-oy)+'px'; }
-    function stopDrag(){ dragging=false; document.removeEventListener('mousemove',onDrag); document.removeEventListener('mouseup',stopDrag); }
-  })();
-
-  // --- window resize handles ---
-  cw.querySelectorAll('.cw-resize-handle').forEach(handle => {
-    handle.addEventListener('mousedown', function(e){
-      e.preventDefault();
-      const rect=cw.getBoundingClientRect();
-      const startX=e.clientX, startY=e.clientY;
-      const startW=rect.width, startH=rect.height;
-      const startL=rect.left, startT=rect.top;
-      const cls=handle.className;
-      const isN=cls.includes('cw-n'), isS=cls.includes('cw-s');
-      const isE=cls.includes('cw-e'), isW=cls.includes('cw-w');
-      function onMove(ev){
-        let dx=ev.clientX-startX, dy=ev.clientY-startY;
-        let w=startW,h=startH,l=startL,t=startT;
-        if(isE||cls.includes('cw-ne')||cls.includes('cw-se')) w=Math.max(400,startW+dx);
-        if(isW||cls.includes('cw-nw')||cls.includes('cw-sw')){w=Math.max(400,startW-dx);l=startL+dx;if(w===400)l=startL+startW-400;}
-        if(isS||cls.includes('cw-se')||cls.includes('cw-sw')) h=Math.max(400,startH+dy);
-        if(isN||cls.includes('cw-ne')||cls.includes('cw-nw')){h=Math.max(400,startH-dy);t=startT+dy;if(h===400)t=startT+startH-400;}
-        cw.style.width=w+'px'; cw.style.height=h+'px';
-        cw.style.left=l+'px'; cw.style.top=t+'px';
-      }
-      function onUp(){ document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
-      document.addEventListener('mousemove',onMove);
-      document.addEventListener('mouseup',onUp);
-    });
-  });
-
-  // --- open/close/minimize/maximize ---
-  window.openChartsWindow = function(){
-    if(cw.style.display === 'block') return;
-    cw.style.display = 'block';
-    var mapRect = document.getElementById('map').getBoundingClientRect();
-    cw.style.left = mapRect.left+'px';
-    cw.style.top = mapRect.top+'px';
-    cw.style.width = mapRect.width+'px';
-    cw.style.height = mapRect.height+'px';
-    cwMaximized = false;
-    // Auto-sync from map on open
-    cwSyncFromMap();
-  };
-  window.closeChartsWindow = function(){
-    cw.style.display = 'none';
-    cwMaximized = false;
-  };
-  window.minimizeChartsWindow = function(){
-    cw.style.display = 'none';
-  };
-  window.toggleMaxChartsWindow = function(){
-    if(cwMaximized){
-      cw.style.left=cwPreMax.l+'px'; cw.style.top=cwPreMax.t+'px';
-      cw.style.width=cwPreMax.w+'px'; cw.style.height=cwPreMax.h+'px';
-      cwMaximized = false;
-    } else {
-      cwPreMax = {l:cw.offsetLeft,t:cw.offsetTop,w:cw.offsetWidth,h:cw.offsetHeight};
-      cw.style.left='0px'; cw.style.top='0px';
-      cw.style.width='100vw'; cw.style.height='100vh';
-      cwMaximized = true;
-    }
-  };
-})();
 </script>
 
 </body>
