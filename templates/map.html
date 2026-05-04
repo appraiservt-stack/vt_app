@@ -1686,14 +1686,14 @@ function _polyCenter(layer) {
   return layer.getBounds ? layer.getBounds().getCenter() : null;
 }
 
-// Use createfeature event — e.layer is the actual Leaflet layer, no getFeature() lookup needed
+// createfeature fires {feature} only — use getFeature(id) to get the Leaflet layer
 femaFloodLayer.on('createfeature', function(e) {
   var props = e.feature.properties || {};
   var zone = props.FLD_ZONE || '';
   var subtype = props.ZONE_SUBTY || '';
   var labelText = _femaLabelText(zone, subtype);
   var labelColor = _femaLabelColor(zone, subtype);
-  var layer = e.layer;
+  var layer = femaFloodLayer.getFeature(e.feature.id);
   if (!layer || !layer.getLatLngs) return;
   var center = _polyCenter(layer);
   if (!center) return;
