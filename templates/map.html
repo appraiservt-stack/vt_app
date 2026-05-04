@@ -1663,34 +1663,37 @@ var femaFloodLayer = L.esri.featureLayer({
     var zone = feature.properties.FLD_ZONE || 'Unknown';
     var subtype = feature.properties.ZONE_SUBTY || '';
     var labelText = _femaLabelText(zone, subtype);
-    var labelColor = _femaLabelColor(zone, subtype);
     layer.bindPopup('<b>FEMA Flood Zone: ' + labelText + '</b>' +
       (subtype ? '<br>Subtype: ' + subtype : ''));
-    // Add centroid label marker (visible at zoom 13+)
-    layer.on('add', function() {
-      var geojson = layer.toGeoJSON();
-      var bounds = layer.getBounds ? layer.getBounds() : null;
-      if (!bounds) return;
-      var center = bounds.getCenter();
-      var icon = L.divIcon({
-        className: '',
-        html: '<div style="' +
-          'color:' + labelColor + ';' +
-          'font-size:10px;' +
-          'font-weight:bold;' +
-          'white-space:nowrap;' +
-          'text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;' +
-          'pointer-events:none;' +
-          'user-select:none;' +
-          '">' + labelText + '</div>',
-        iconSize: null,
-        iconAnchor: [0, 0]
-      });
-      var marker = L.marker(center, { icon: icon, interactive: false, pane: 'femaPane' });
-      marker._femaLabel = true;
-      femaLabelLayer.addLayer(marker);
-    });
   }
+});
+
+// Use createfeature event (fires reliably for each feature as it is rendered)
+femaFloodLayer.on('createfeature', function(e) {
+  var props = e.feature.properties || {};
+  var zone = props.FLD_ZONE || '';
+  var subtype = props.ZONE_SUBTY || '';
+  var labelText = _femaLabelText(zone, subtype);
+  var labelColor = _femaLabelColor(zone, subtype);
+  var layer = femaFloodLayer.getFeature(e.feature.id);
+  if (!layer || !layer.getBounds) return;
+  var center = layer.getBounds().getCenter();
+  var icon = L.divIcon({
+    className: '',
+    html: '<div style="' +
+      'color:' + labelColor + ';' +
+      'font-size:10px;' +
+      'font-weight:bold;' +
+      'white-space:nowrap;' +
+      'text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;' +
+      'pointer-events:none;' +
+      'user-select:none;' +
+      '">' + labelText + '</div>',
+    iconSize: null,
+    iconAnchor: [0, 0]
+  });
+  var marker = L.marker(center, { icon: icon, interactive: false, pane: 'femaPane' });
+  femaLabelLayer.addLayer(marker);
 });
 
 map.on('zoomend', _updateFemaLabels);
