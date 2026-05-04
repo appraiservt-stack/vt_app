@@ -719,6 +719,71 @@ def _log_run_to_db(date_from, records_found, records_added, status, notes, dry_r
         print(f"[log-to-db] Error logging to DB: {e}")
 
 
+# ── GitHub push ──────────────────────────────────────────────────────────────────
+
+def _push_to_github(filepath, commit_message):
+    """
+    Push the updated geocoded_approx.json to GitHub via the API.
+    Requires GITHUB_TOKEN env var (fine-grained PAT, Contents: Read & Write).
+    Optional: GITHUB_REPO (default: appraiservt-stack/vt_app)
+              GITHUB_BRANCH (default: main)
+    """
+    token  = os.environ.get("GITHUB_TOKEN")
+    repo   = os.environ.get("GITHUB_REPO", "appraiservt-stack/vt_app")
+    branch = os.environ.get("GITHUB_BRANCH", "main")
+
+    if not token:
+        print("[github-push] GITHUB_TOKEN not set — skipping push.")
+        return False
+
+    filename = os.path.basename(filepath)
+    api_url  = f"https://api.github.com/repos/{repo}/contents/{filename}"
+    headers  = {
+        "Authorization": f"token {token}",
+        "Accept":        "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    # Step 1: get the current file SHA (required by GitHub API for updates)
+    try:
+        r = requests.get(api_url, headers=headers, params={"ref": branch}, timeout=15)
+        if r.status_code != 200:
+            print(f"[github-push] Could not fetch file SHA: {r.status_code} {r.text[:200]}")
+            return False
+        sha = r.json()["sha"]
+    except Exception as e:
+        print(f"[github-push] Error fetching SHA: {e}")
+        return False
+
+    # Step 2: base64-encode the file and push
+    import base64
+    try:
+        with open(filepath, "rb") as f:
+            content_b64 = base64.b64encode(f.read()).decode()
+    except Exception as e:
+        print(f"[github-push] Error reading file: {e}")
+        return False
+
+    payload = {
+        "message": commit_message,
+        "content": content_b64,
+        "sha":     sha,
+        "branch":  branch,
+    }
+    try:
+        r = requests.put(api_url, headers=headers, json=payload, timeout=60)
+        if r.status_code in (200, 201):
+            commit_sha = r.json()["commit"]["sha"][:8]
+            print(f"[github-push] Pushed successfully — commit {commit_sha}")
+            return True
+        else:
+            print(f"[github-push] Push failed: {r.status_code} {r.text[:300]}")
+            return False
+    except Exception as e:
+        print(f"[github-push] Error pushing: {e}")
+        return False
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
@@ -954,12 +1019,20 @@ def main():
             dry_run=args.dry_run,
         )
 
-    if not args.dry_run:
-        print()
-        print("Next steps:")
-        print("  git add geocoded_approx.json")
-        print('  git commit -m "Update geocoded approx records"')
-        print("  git push origin main")
+    if not args.dry_run and records_added > 0:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        pushed = _push_to_github(
+            OUTPUT_FILE,
+            f"Update geocoded approx records ({records_added} added, {date_str})"
+        )
+        if not pushed:
+            print()
+            print("Auto-push skipped. Manual steps:")
+            print("  git add geocoded_approx.json")
+            print('  git commit -m "Update geocoded approx records"')
+            print("  git push origin main")
+    elif not args.dry_run:
+        print("No records added — skipping push.")
 
 
 if __name__ == "__main__":
