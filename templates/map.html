@@ -1668,16 +1668,35 @@ var femaFloodLayer = L.esri.featureLayer({
   }
 });
 
-// Use createfeature event (fires reliably for each feature as it is rendered)
+// Compute a proper polygon centroid (average of ring vertices)
+// More accurate than getBounds().getCenter() for irregular/elongated shapes
+function _polyCenter(layer) {
+  try {
+    var latlngs = layer.getLatLngs();
+    // Flatten one level for MultiPolygon (array of arrays of arrays)
+    var ring = Array.isArray(latlngs[0][0]) ? latlngs[0][0] :
+               Array.isArray(latlngs[0])    ? latlngs[0]    : latlngs;
+    var latSum = 0, lngSum = 0, count = 0;
+    ring.forEach(function(ll) {
+      if (ll && ll.lat !== undefined) { latSum += ll.lat; lngSum += ll.lng; count++; }
+    });
+    if (count > 0) return L.latLng(latSum / count, lngSum / count);
+  } catch(err) {}
+  // Fallback to bounds center
+  return layer.getBounds ? layer.getBounds().getCenter() : null;
+}
+
+// Use createfeature event — e.layer is the actual Leaflet layer, no getFeature() lookup needed
 femaFloodLayer.on('createfeature', function(e) {
   var props = e.feature.properties || {};
   var zone = props.FLD_ZONE || '';
   var subtype = props.ZONE_SUBTY || '';
   var labelText = _femaLabelText(zone, subtype);
   var labelColor = _femaLabelColor(zone, subtype);
-  var layer = femaFloodLayer.getFeature(e.feature.id);
-  if (!layer || !layer.getBounds) return;
-  var center = layer.getBounds().getCenter();
+  var layer = e.layer;
+  if (!layer || !layer.getLatLngs) return;
+  var center = _polyCenter(layer);
+  if (!center) return;
   var icon = L.divIcon({
     className: '',
     html: '<div style="' +
