@@ -1613,7 +1613,32 @@ if(!map.getPane('femaPane')){
 }
 
 const FEMA_MIN_ZOOM = 10;
+const FEMA_LABEL_MIN_ZOOM = 13;
 let femaOn = false;
+
+// LayerGroup to hold FEMA zone text labels (shown at zoom 13+)
+var femaLabelLayer = L.layerGroup();
+
+function _femaLabelText(zone, subtype) {
+  if ((subtype || '').toUpperCase().indexOf('FLOODWAY') !== -1) return 'Floodway';
+  return 'Zone ' + zone.toUpperCase();
+}
+
+function _femaLabelColor(zone, subtype) {
+  if ((subtype || '').toUpperCase().indexOf('FLOODWAY') !== -1) return '#b03030';
+  if ((zone || '').toUpperCase() === 'AE') return '#2a6a85';
+  return '#c87040';
+}
+
+function _updateFemaLabels() {
+  if (!femaOn) return;
+  var zoom = map.getZoom();
+  if (zoom >= FEMA_LABEL_MIN_ZOOM) {
+    if (!map.hasLayer(femaLabelLayer)) femaLabelLayer.addTo(map);
+  } else {
+    if (map.hasLayer(femaLabelLayer)) map.removeLayer(femaLabelLayer);
+  }
+}
 
 var femaFloodLayer = L.esri.featureLayer({
   url: 'https://hazards.fema.gov/arcgis/rest/services/FIRMette/NFHLREST_FIRMette/MapServer/20',
@@ -1637,11 +1662,39 @@ var femaFloodLayer = L.esri.featureLayer({
   onEachFeature: function(feature, layer) {
     var zone = feature.properties.FLD_ZONE || 'Unknown';
     var subtype = feature.properties.ZONE_SUBTY || '';
-    var label = subtype.toUpperCase().indexOf('FLOODWAY') !== -1 ? 'Floodway' : 'Zone ' + zone;
-    layer.bindPopup('<b>FEMA Flood Zone: ' + label + '</b>' +
+    var labelText = _femaLabelText(zone, subtype);
+    var labelColor = _femaLabelColor(zone, subtype);
+    layer.bindPopup('<b>FEMA Flood Zone: ' + labelText + '</b>' +
       (subtype ? '<br>Subtype: ' + subtype : ''));
+    // Add centroid label marker (visible at zoom 13+)
+    layer.on('add', function() {
+      var geojson = layer.toGeoJSON();
+      var bounds = layer.getBounds ? layer.getBounds() : null;
+      if (!bounds) return;
+      var center = bounds.getCenter();
+      var icon = L.divIcon({
+        className: '',
+        html: '<div style="' +
+          'color:' + labelColor + ';' +
+          'font-size:10px;' +
+          'font-weight:bold;' +
+          'white-space:nowrap;' +
+          'text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;' +
+          'pointer-events:none;' +
+          'user-select:none;' +
+          '">' + labelText + '</div>',
+        iconSize: null,
+        iconAnchor: [0, 0]
+      });
+      var marker = L.marker(center, { icon: icon, interactive: false, pane: 'femaPane' });
+      marker._femaLabel = true;
+      femaLabelLayer.addLayer(marker);
+    });
   }
 });
+
+map.on('zoomend', _updateFemaLabels);
+
 function loadFema(){}
 
 // parcelLayer (L.esri.featureLayer) initialized above in the VT PARCELS section
@@ -1962,7 +2015,7 @@ map.on('overlayadd', function(e){
   if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = true; updateParcelStyle(); }
   if(e.name === 'Street Names (zoom 15+)') { roadLabelOn = true;  loadRoadLabels(); }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On      = true;  loadE911(); }
-  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; document.getElementById('fema-legend').style.display=''; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = true; document.getElementById('fema-legend').style.display=''; _updateFemaLabels(); }
   if(e.name === 'Town Boundaries')        { townBdyOn = true; loadTownBoundaries(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = true; loadCntyBoundaries(); }
   if(e.name === 'Conserved Lands (zoom 11+)'){ conservedOn = true; updateConservedZoomMsg(); }
@@ -1971,7 +2024,7 @@ map.on('overlayadd', function(e){
 map.on('overlayremove', function(e){
   if(e.name === 'VT Parcels (zoom 11+)')  { parcelsOn = false; }
   if(e.name === 'House Numbers (zoom 17+)'){ e911On = false; if(e911FetchCtrl) e911FetchCtrl.abort(); if(e911GeoLayer){ e911Layer.removeLayer(e911GeoLayer); e911GeoLayer = null; } }
-  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; document.getElementById('fema-legend').style.display='none'; }
+  if(e.name === 'FEMA Flood Zones')       { femaOn    = false; document.getElementById('fema-legend').style.display='none'; femaLabelLayer.clearLayers(); if(map.hasLayer(femaLabelLayer)) map.removeLayer(femaLabelLayer); }
   if(e.name === 'Town Boundaries')        { townBdyOn = false; townBdyLayer.clearLayers(); townLblLayer.clearLayers(); }
   if(e.name === 'County Boundaries')      { cntyBdyOn = false; cntyBdyLayer.clearLayers(); cntyLblLayer.clearLayers(); }
   if(e.name === 'Conserved Lands (zoom 11+)'){ conservedOn = false; updateConservedZoomMsg(); }
