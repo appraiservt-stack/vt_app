@@ -220,6 +220,13 @@ def login_required(f):
             # Account deleted or session stale — go to login
             session.clear()
             return redirect(url_for("auth.login"))
+        # Session token check — prevents credential sharing
+        # If the token doesn't match, someone else logged in from another device
+        if session.get("session_token") and \
+           session["session_token"] != (user.get("session_token") or ""):
+            session.clear()
+            flash("Your account was signed in from another location. Please log in again.", "warning")
+            return redirect(url_for("auth.login"))
         if not user_has_access(user):
             # Trial expired or cancelled — go to subscribe
             return redirect(url_for("auth.subscribe",
