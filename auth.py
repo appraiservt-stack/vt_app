@@ -487,6 +487,13 @@ def signup_success():
             session.permanent = True
             session["user_id"]    = user["id"]
             session["user_email"] = user["email"]
+            # Send welcome email (best-effort, non-blocking)
+            trial_end = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)
+            _send_welcome_email(
+                email,
+                user.get("first_name") or "there",
+                trial_end.strftime("%B %d, %Y")
+            )
             resp = make_response(redirect(url_for("index")))
             resp.set_cookie("remembered_email", email,
                             max_age=60*60*24*365, httponly=False, samesite="Lax")
@@ -833,6 +840,40 @@ def _send_cancellation_email(email):
         )
     except Exception:
         pass  # best-effort — don't block the cancellation flow
+
+def _send_welcome_email(email, first_name, trial_end_date):
+    """Send trial welcome email via Resend."""
+    import requests as http_requests
+    resend_key = os.environ.get("RESEND_API_KEY", "")
+    from_email = os.environ.get("CONTACT_FROM_EMAIL", "info@vtpropertysales.com")
+    if not resend_key:
+        return
+    try:
+        http_requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": from_email,
+                "to": [email],
+                "subject": "Welcome to VT Property Sales \u2014 Your 14-Day Trial Has Started",
+                "text": (
+                    f"Hi {first_name},\n\n"
+                    "Welcome to VTPropertySales.com! Your free 14-day trial is now active.\n\n"
+                    f"Your trial ends on {trial_end_date}. If you decide to continue, your card "
+                    "will be charged based on your selected plan on that date \u2014 no action needed on your part.\n\n"
+                    "To cancel at any time before then with no charge, log in and visit My Account.\n\n"
+                    "Log in here: https://www.vtpropertysales.com/login\n\n"
+                    "Questions? Email us at info@vtpropertysales.com"
+                ),
+            },
+            timeout=10,
+        )
+    except Exception:
+        pass  # best-effort \u2014 don't block the signup flow
+
 
 # ── Change plan ──────────────────────────────────────────────────────────────
 @auth_bp.route("/change-plan", methods=["POST"])
