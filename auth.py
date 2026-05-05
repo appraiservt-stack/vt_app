@@ -70,7 +70,8 @@ def init_db():
                 stripe_subscription_id  TEXT,
                 reset_token             TEXT,
                 reset_token_expires     TEXT,
-                has_had_trial           BOOLEAN DEFAULT FALSE
+                has_had_trial           BOOLEAN DEFAULT FALSE,
+                session_token           TEXT
             )
         """
         plans_sql = """
@@ -101,6 +102,7 @@ def init_db():
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS has_had_trial BOOLEAN DEFAULT FALSE")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS session_token TEXT")
             conn.commit()
         except Exception:
             conn.rollback()
@@ -144,7 +146,8 @@ def init_db():
                 stripe_subscription_id  TEXT,
                 reset_token             TEXT,
                 reset_token_expires     TEXT,
-                has_had_trial           INTEGER DEFAULT 0
+                has_had_trial           INTEGER DEFAULT 0,
+                session_token           TEXT
             )
         """)
         # Add plan_key column if missing
@@ -154,6 +157,10 @@ def init_db():
             pass
         try:
             conn.execute("ALTER TABLE users ADD COLUMN has_had_trial INTEGER DEFAULT 0")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN session_token TEXT")
         except Exception:
             pass  # column already exists
         # Add name/phone columns if missing
@@ -330,8 +337,12 @@ def login():
         if not user_has_access(user):
             flash("Your trial has expired. Please subscribe to continue.", "warning")
             return redirect(url_for("auth.subscribe", email=email))
-        session["user_id"]    = user["id"]
-        session["user_email"] = user["email"]
+        # Generate a new session token — invalidates any other active session
+        token = secrets.token_hex(32)
+        db_execute(_q("UPDATE users SET session_token = ? WHERE id = ?"), (token, user["id"]))
+        session["user_id"]       = user["id"]
+        session["user_email"]    = user["email"]
+        session["session_token"] = token
         # Set a long-lived cookie to remember the email for next login
         resp = make_response(redirect(url_for("index")))
         resp.set_cookie("remembered_email", email,
@@ -485,8 +496,12 @@ def signup_success():
         user = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if user:
             session.permanent = True
-            session["user_id"]    = user["id"]
-            session["user_email"] = user["email"]
+            # Generate session token on first login
+            token = secrets.token_hex(32)
+            db_execute(_q("UPDATE users SET session_token = ? WHERE id = ?"), (token, user["id"]))
+            session["user_id"]       = user["id"]
+            session["user_email"]    = user["email"]
+            session["session_token"] = token
             # Send welcome email (best-effort, non-blocking)
             trial_end = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)
             _send_welcome_email(
@@ -511,6 +526,10 @@ def signup_success():
 # ── Logout ────────────────────────────────────────────────────────────────────
 @auth_bp.route("/logout")
 def logout():
+    # Clear session token in DB so no session remains valid after logout
+    user_id = session.get("user_id")
+    if user_id and user_id != 0:  # 0 = admin bypass
+        db_execute(_q("UPDATE users SET session_token = NULL WHERE id = ?"), (user_id,))
     session.clear()
     return redirect(url_for("auth.login"))
 
