@@ -69,7 +69,8 @@ def init_db():
                 stripe_customer_id      TEXT,
                 stripe_subscription_id  TEXT,
                 reset_token             TEXT,
-                reset_token_expires     TEXT
+                reset_token_expires     TEXT,
+                has_had_trial           BOOLEAN DEFAULT FALSE
             )
         """
         plans_sql = """
@@ -99,6 +100,7 @@ def init_db():
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name TEXT")
             cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS has_had_trial BOOLEAN DEFAULT FALSE")
             conn.commit()
         except Exception:
             conn.rollback()
@@ -141,12 +143,17 @@ def init_db():
                 stripe_customer_id      TEXT,
                 stripe_subscription_id  TEXT,
                 reset_token             TEXT,
-                reset_token_expires     TEXT
+                reset_token_expires     TEXT,
+                has_had_trial           INTEGER DEFAULT 0
             )
         """)
         # Add plan_key column if missing
         try:
             conn.execute("ALTER TABLE users ADD COLUMN plan_key TEXT DEFAULT 'plan_monthly'")
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN has_had_trial INTEGER DEFAULT 0")
         except Exception:
             pass  # column already exists
         # Add name/phone columns if missing
@@ -371,6 +378,15 @@ def signup():
         # Check for existing account
         existing = db_fetchone(_q("SELECT * FROM users WHERE email = ?"), (email,))
         if existing:
+            # Returning cancelled user who has already used their free trial
+            if existing.get("has_had_trial") and existing["subscription_status"] == "cancelled":
+                session["pending_email"] = email
+                flash(
+                    "Welcome back. Your free trial has already been used. "
+                    "Please select a plan to subscribe — you will be charged immediately with no trial period.",
+                    "info"
+                )
+                return redirect(url_for("auth.subscribe", email=email, no_trial="1"))
             flash("An account with that email already exists. Please log in.", "error")
             return render_template("signup.html", plans=plans)
 
@@ -461,7 +477,8 @@ def signup_success():
                 subscription_status    = 'trialing',
                 stripe_customer_id     = ?,
                 stripe_subscription_id = ?,
-                plan_key               = ?
+                plan_key               = ?,
+                has_had_trial          = TRUE
             WHERE email = ?
         """), (customer_id, subscription_id, plan_key, email))
 
@@ -525,7 +542,11 @@ def create_checkout_session():
                     "UPDATE users SET stripe_customer_id = ? WHERE email = ?"
                 ), (customer_id, email))
 
-        checkout = stripe.checkout.Session.create(
+        # Skip trial for users who have already used their free trial
+        no_trial = request.form.get("no_trial") or request.args.get("no_trial") or \
+                   (user and user.get("has_had_trial") and user.get("subscription_status") == "cancelled")
+
+        checkout_kwargs = dict(
             customer=customer_id,
             payment_method_types=["card"],
             line_items=[{"price": plan["stripe_price_id"], "quantity": 1}],
@@ -535,6 +556,10 @@ def create_checkout_session():
             success_url=request.host_url + "subscribe/success?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.host_url + "subscribe",
         )
+        if not no_trial:
+            checkout_kwargs["subscription_data"]["trial_period_days"] = TRIAL_DAYS
+
+        checkout = stripe.checkout.Session.create(**checkout_kwargs)
         return redirect(checkout.url, code=303)
     except Exception as e:
         flash(f"Payment error: {str(e)}", "error")
@@ -555,7 +580,8 @@ def subscribe_success():
                 subscription_status    = 'active',
                 stripe_customer_id     = ?,
                 stripe_subscription_id = ?,
-                plan_key               = ?
+                plan_key               = ?,
+                has_had_trial          = TRUE
             WHERE email = ?
         """), (customer_id, subscription_id, plan_key, email))
 
@@ -757,8 +783,10 @@ def cancel_subscription():
             # Trial users: cancel immediately (no charge); active users: cancel at period end
             if user["subscription_status"] == "trialing":
                 stripe.Subscription.cancel(user["stripe_subscription_id"])
+                # Keep the user record — mark as cancelled and flag trial as used
+                # so they cannot start another free trial
                 db_execute(_q(
-                    "UPDATE users SET subscription_status = 'cancelled' WHERE id = ?"
+                    "UPDATE users SET subscription_status = 'cancelled', has_had_trial = TRUE WHERE id = ?"
                 ), (user["id"],))
                 # Send cancellation email via Resend
                 _send_cancellation_email(user["email"])
@@ -768,7 +796,7 @@ def cancel_subscription():
                 stripe.Subscription.modify(
                     user["stripe_subscription_id"], cancel_at_period_end=True
                 )
-                flash("Your subscription will cancel at the end of the billing period.", "info")
+                flash("Your subscription will cancel at the end of your current billing period. You will retain access until then.", "info")
         except Exception as e:
             flash(f"Error cancelling: {str(e)}", "error")
     return redirect(url_for("auth.account"))
