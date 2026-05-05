@@ -202,7 +202,7 @@
       {% endif %}
       <div class="actions">
         <form method="POST" action="/cancel-subscription"
-              onsubmit="return confirm('Cancel your free trial? Your card will NOT be charged and your access ends on {{ user.trial_ends_at[:10] }}.')">
+              onsubmit="return confirm('Cancel your free trial? Your card will NOT be charged and your access will end immediately.')">
           <button type="submit" class="btn btn-danger">Cancel Free Trial — No Charge</button>
         </form>
         <a href="/create-checkout-session-upgrade" class="btn btn-primary"
