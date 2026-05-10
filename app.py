@@ -251,6 +251,7 @@ with CODES_PATH.open() as f:
 COUNTY_CODE_TO_NAME = VT_CODES["counties"]
 TOWN_TO_COUNTY      = VT_CODES["town_to_county"]
 SCHOOL_TO_TOWN      = {int(k): v for k, v in VT_CODES["school_to_town"].items()}
+SPAN_PREFIX_TO_TOWN = VT_CODES.get("span_prefix_to_town", {})
 
 # Village/hamlet names filers write as propLocCty that are not official town names.
 # Used to resolve centroid lookups and county derivation when propLocCty is a village.
@@ -461,43 +462,42 @@ def derive_trusted_location(attr):
     trusted_town   = None
     trusted_county = None
 
-    # Primary: TownSpan first 3 digits = town code
-    # Zero-pad to 3 digits to match SCHOOL_TO_TOWN keys
-    if town_span and len(town_span.strip()) >= 3:
-        ts_town_code = town_span.strip()[:3]
-        # Convert town code to town name via townCode->town lookup
-        # townCode is a 3-digit numeric string like '441' for Northfield
-        # We can look it up via SCHOOL_TO_TOWN by matching townCode
-        # Actually use a direct townCode->town mapping built from vt_codes
-        ts_int = None
-        try:
-            ts_int = int(ts_town_code)
-        except (TypeError, ValueError):
-            pass
-        if ts_int is not None:
-            # Build town from townCode: school_to_town maps schoolCode->town
-            # but townCode != schoolCode. Use TOWN_TO_COUNTY inverted lookup.
-            # Find town whose county matches via town_code->town mapping
-            # VT town codes are used in SPAN prefix. Look up via schoolCode
-            # fallback if direct match fails.
-            # Best approach: match townCode against known town codes
-            for school, town in SCHOOL_TO_TOWN.items():
-                # VT town codes (3-digit) embedded in SPAN = first 3 of 11-digit SPAN
-                # We can derive town code from school code indirectly.
-                # For now, fall through to schoolCode if no direct match.
-                pass
-
-    # Primary: schoolCode (reliable, state-assigned)
+    # ── Step 1: SPAN prefix + schoolCode (most authoritative) ──────────────────
+    # Key = "{SPAN[:3]}-{schoolCode:03d}"  e.g. '042-144' -> 'Barton'
+    # Handles school-choice towns where one town has multiple school codes.
+    sc_int = None
     if school_code is not None:
         try:
             sc_int = int(float(str(school_code)))
         except (TypeError, ValueError):
-            sc_int = None
-        if sc_int is not None:
-            trusted_town = SCHOOL_TO_TOWN.get(sc_int)
+            pass
 
-    if trusted_town:
-        trusted_county = TOWN_TO_COUNTY.get(trusted_town)
+    if town_span and len(town_span.strip()) >= 3 and sc_int is not None:
+        span_key = f"{town_span.strip()[:3]}-{sc_int:03d}"
+        span_town = SPAN_PREFIX_TO_TOWN.get(span_key)
+        if span_town:
+            trusted_town   = span_town
+            trusted_county = TOWN_TO_COUNTY.get(span_town)
+
+    # ── Step 2: schoolCode fallback (SPAN missing or not in table) ────────────
+    if trusted_town is None and sc_int is not None:
+        trusted_town = SCHOOL_TO_TOWN.get(sc_int)
+        if trusted_town:
+            trusted_county = TOWN_TO_COUNTY.get(trusted_town)
+
+    # ── Step 3: TOWNNAME confirmation ─────────────────────────────────────────
+    # Use TOWNNAME as canonical display name when it agrees with the county
+    # already derived from SPAN/schoolCode. Fixes display names like
+    # 'Barre City' vs 'Barre Town', 'East Montpelier' vs 'E Montpelier'.
+    town_name_field = (attr.get("TOWNNAME") or attr.get("townName") or "").strip()
+    if town_name_field:
+        tn_county = TOWN_TO_COUNTY.get(town_name_field)
+        if tn_county is not None:
+            if trusted_county is None:
+                trusted_town   = town_name_field
+                trusted_county = tn_county
+            elif str(tn_county).zfill(2) == str(trusted_county).zfill(2):
+                trusted_town = town_name_field
 
     # Use TOWNNAME as canonical town name when available.
     # TOWNNAME contains official names like 'Barre City', 'Barre Town',
@@ -860,26 +860,19 @@ def build_where_clause(filters):
         clauses.append(f"CAST(span AS VARCHAR(20)) LIKE '%{sql_like(span_val)}%'")
 
     # ---------------------------------------------------------------
-    # Town filter — convert town names to schoolCodes for SQL IN()
-    # schoolCode is the most reliable town identifier in the ArcGIS data.
+    # Town filter — use TOWNNAME for SQL IN() filter.
+    # TOWNNAME is the authoritative municipal name in ArcGIS and correctly
+    # handles school-choice towns where one town has multiple school codes
+    # (e.g. Barton has schoolCode 013 and 144 but TOWNNAME='Barton' for both).
     # ---------------------------------------------------------------
     if filters.get("towns", "").strip():
-        requested_towns = [t.strip().upper() for t in filters["towns"].split(",") if t.strip()]
-        school_codes = []
-        for town in requested_towns:
-            # SCHOOL_TO_TOWN maps code->town; we need town->code(s)
-            for code, mapped_town in SCHOOL_TO_TOWN.items():
-                if mapped_town.upper() == town:
-                    # ArcGIS stores schoolCode as 3-digit zero-padded string ('011')
-                    # Include both padded and unpadded forms
-                    school_codes.append(str(code).zfill(3))
-                    school_codes.append(str(code))
-        if school_codes:
-            codes_sql = ",".join([f"'{c}'" for c in sorted(set(school_codes))])
-            clauses.append(f"schoolCode IN ({codes_sql})")
+        requested_towns = [t.strip() for t in filters["towns"].split(",") if t.strip()]
+        if requested_towns:
+            town_sql = ",".join(f"'{t.upper()}'" for t in requested_towns)
+            clauses.append(f"UPPER(TOWNNAME) IN ({town_sql})")
         else:
-            # No matching school codes found — force zero results rather
-            # than returning unfiltered statewide data
+            # No towns specified — force zero results rather than
+            # returning unfiltered statewide data
             clauses.append("1=0")
 
     # ---------------------------------------------------------------
