@@ -508,6 +508,23 @@ def derive_trusted_location(attr):
     if trusted_town:
         trusted_county = TOWN_TO_COUNTY.get(trusted_town)
 
+    # Use TOWNNAME as canonical town name when available.
+    # TOWNNAME contains official names like 'Barre City', 'Barre Town',
+    # 'East Montpelier', 'Essex Junction' that school codes sometimes
+    # fail to resolve correctly or produce inconsistent variants.
+    # Only override if TOWNNAME maps to the same county as schoolCode.
+    town_name_field = (attr.get("TOWNNAME") or attr.get("townName") or "").strip()
+    if town_name_field:
+        tn_county = TOWN_TO_COUNTY.get(town_name_field)
+        if tn_county is not None:
+            if trusted_county is None:
+                # No county yet — take TOWNNAME's county
+                trusted_town   = town_name_field
+                trusted_county = tn_county
+            elif str(tn_county).zfill(2) == str(trusted_county).zfill(2):
+                # TOWNNAME agrees with schoolCode county — use canonical name
+                trusted_town = town_name_field
+
     # Sanity check: if schoolCode resolves to a county but the actual geocoded
     # coordinates land outside that county bbox, the schoolCode is miscoded.
     # In that case, override with propLocCty-derived county if available.
