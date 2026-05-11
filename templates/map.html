@@ -364,6 +364,7 @@
     </div>
     <div id="dateDropdown" class="dropdown-content">
       <div class="quick-date-row" style="display:flex; flex-wrap:nowrap; gap:3px; align-items:center;">
+        <button onclick="setQuickDate(1)">1M</button>
         <button onclick="setQuickDate(3)">3M</button>
         <button onclick="setQuickDate(6)">6M</button>
         <button onclick="setQuickDate(9)">9M</button>
@@ -4008,7 +4009,7 @@ function clearAllCheckboxes(){
   setCheckedCode('interestList', '1');  // Fee Simple
   const today = new Date();
   const sixMonthsAgo = new Date(today);
-  sixMonthsAgo.setMonth(today.getMonth() - 6);
+  sixMonthsAgo.setMonth(today.getMonth() - 1);
   document.getElementById('dateFrom').value = sixMonthsAgo.toISOString().split('T')[0];
 
   // ---- Step 3: zoom back to statewide VT view and reload ----
@@ -4072,7 +4073,7 @@ function initMapEvents(){
     if(!df.value && !dt.value){
       const today = new Date();
       const sixMonthsAgo = new Date(today);
-      sixMonthsAgo.setMonth(today.getMonth() - 6);
+      sixMonthsAgo.setMonth(today.getMonth() - 1);
       df.value = sixMonthsAgo.toISOString().split('T')[0];
       // Leave dateTo blank so it defaults to "now" with no upper bound
     }
@@ -4080,7 +4081,7 @@ function initMapEvents(){
 
   map.on("moveend", onMoveEnd);
   map.on("zoomend", onZoomEnd);
-  // Fire statewide 6-month load immediately on startup
+  // Fire statewide 1-month load immediately on startup
   loadData();
   // Approx cache is deferred to first Apply click to keep startup fast.
   // initApproxCache() is called from applyFilters() on first use.
