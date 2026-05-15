@@ -3825,6 +3825,13 @@ function clearAllCheckboxes(){
   _lastZoomedTo = null;
 
   // ---- Step 2: restore startup defaults ----
+  // Reset basemap to Street (OSM)
+  [esriStreet, esriTopo, satellite, usgsTopo, imageryLabels].forEach(function(layer){
+    if (map.hasLayer(layer)) map.removeLayer(layer);
+  });
+  if (!map.hasLayer(street)) street.addTo(map);
+  activeBase = 'street';
+
   setCheckedCode('buildingList', '2');  // Single Family Dwelling
   setCheckedCode('interestList', '1');  // Fee Simple
   const today = new Date();
