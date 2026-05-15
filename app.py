@@ -3368,7 +3368,7 @@ def ptt172(filename=None):  # noqa: C901
     buf.seek(0)
     pdf_bytes = buf.read()
 
-    addr  = (rec.get("propertyLocationStreet") or "").replace(" ","_")[:30]
+    addr  = re.sub(r'[^A-Za-z0-9 \-]', '', rec.get("propertyLocationStreet") or "").replace(" ","_")[:30].rstrip('_')
     close = fmtd(rec.get("closingDate")).replace("/","-")
     fname = f"PTT-172_{addr}_{close}.pdf"
 
