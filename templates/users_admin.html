@@ -30,6 +30,15 @@
   .alert-error   { background: #fde8e8; color: #c0392b; border: 1px solid #f5c6c6; }
   .search-box { padding: 8px 12px; border: 1.5px solid #ccc; border-radius: 6px; font-size: 13px; width: 300px; margin-bottom: 16px; }
   .search-box:focus { outline: none; border-color: #1a3a5c; }
+  .create-form { background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 20px 24px; margin-bottom: 24px; }
+  .create-form h3 { font-size: 15px; color: #1a3a5c; margin-bottom: 14px; }
+  .form-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .form-field { display: flex; flex-direction: column; gap: 4px; }
+  .form-field label { font-size: 11px; color: #555; font-weight: 600; text-transform: uppercase; }
+  .form-field input, .form-field select { padding: 7px 10px; border: 1.5px solid #ccc; border-radius: 5px; font-size: 13px; min-width: 150px; }
+  .form-field input:focus, .form-field select:focus { outline: none; border-color: #1a3a5c; }
+  .btn-create { padding: 8px 20px; background: #1a3a5c; color: #fff; border: none; border-radius: 5px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-create:hover { background: #2d5a8c; }
 </style>
 </head>
 <body>
@@ -49,6 +58,52 @@
   <h2>User Management</h2>
 
   <div id="alert" class="alert"></div>
+
+  <div class="create-form">
+    <h3>Create User</h3>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Email *</label>
+        <input type="email" id="cu_email" placeholder="user@example.com">
+      </div>
+      <div class="form-field">
+        <label>Password *</label>
+        <input type="text" id="cu_password" placeholder="temporary password">
+      </div>
+      <div class="form-field">
+        <label>First Name</label>
+        <input type="text" id="cu_first" placeholder="First">
+      </div>
+      <div class="form-field">
+        <label>Last Name</label>
+        <input type="text" id="cu_last" placeholder="Last">
+      </div>
+      <div class="form-field">
+        <label>Status</label>
+        <select id="cu_status" onchange="toggleTrialEnd()">
+          <option value="active">Active</option>
+          <option value="trialing">Trialing</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Plan</label>
+        <select id="cu_plan">
+          <option value="plan_monthly">Monthly ($24.95)</option>
+          <option value="plan_3month">3-Month ($65.85)</option>
+          <option value="plan_6month">6-Month ($113.70)</option>
+          <option value="plan_12month">12-Month ($203.40)</option>
+        </select>
+      </div>
+      <div class="form-field" id="trialEndField" style="display:none;">
+        <label>Trial Ends</label>
+        <input type="date" id="cu_trial_end">
+      </div>
+      <div class="form-field">
+        <label>&nbsp;</label>
+        <button class="btn-create" onclick="createUser()">Create User</button>
+      </div>
+    </div>
+  </div>
 
   <input type="text" class="search-box" id="searchBox" placeholder="Search by email…" oninput="filterRows()">
 
@@ -153,6 +208,54 @@ function deleteUser(email) {
 }
 
 loadUsers();
+
+function toggleTrialEnd() {
+  var status = document.getElementById('cu_status').value;
+  document.getElementById('trialEndField').style.display =
+    status === 'trialing' ? '' : 'none';
+}
+
+function createUser() {
+  var email    = document.getElementById('cu_email').value.trim();
+  var password = document.getElementById('cu_password').value.trim();
+  var first    = document.getElementById('cu_first').value.trim();
+  var last     = document.getElementById('cu_last').value.trim();
+  var status   = document.getElementById('cu_status').value;
+  var plan     = document.getElementById('cu_plan').value;
+  var trialEnd = document.getElementById('cu_trial_end').value || null;
+
+  if (!email || !password) {
+    showAlert('Email and password are required.', 'error');
+    return;
+  }
+
+  fetch('/admin/users/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: email, password: password,
+      first_name: first, last_name: last,
+      status: status, plan_key: plan,
+      trial_ends_at: trialEnd
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.error) { showAlert(d.error, 'error'); return; }
+    showAlert('User ' + email + ' created successfully.', 'success');
+    // Clear form
+    document.getElementById('cu_email').value = '';
+    document.getElementById('cu_password').value = '';
+    document.getElementById('cu_first').value = '';
+    document.getElementById('cu_last').value = '';
+    document.getElementById('cu_status').value = 'active';
+    document.getElementById('cu_plan').value = 'plan_monthly';
+    document.getElementById('cu_trial_end').value = '';
+    document.getElementById('trialEndField').style.display = 'none';
+    loadUsers();
+  })
+  .catch(function() { showAlert('Network error', 'error'); });
+}
 </script>
 </body>
 </html>
