@@ -1062,6 +1062,45 @@ def users_list():
     )
     return jsonify(users)
 
+@auth_bp.route("/admin/users/create", methods=["POST"])
+def users_create():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return jsonify({"error": "unauthorized"}), 403
+    try:
+        data = request.get_json(force=True)
+        email      = (data.get("email") or "").strip().lower()
+        password   = (data.get("password") or "").strip()
+        first_name = (data.get("first_name") or "").strip()
+        last_name  = (data.get("last_name") or "").strip()
+        status     = (data.get("status") or "active").strip()
+        plan_key   = (data.get("plan_key") or "plan_monthly").strip()
+        trial_end  = (data.get("trial_ends_at") or "").strip() or None
+
+        if not email or not password:
+            return jsonify({"error": "email and password are required"}), 400
+
+        # Check for existing account
+        existing = db_fetchone(_q("SELECT id FROM users WHERE email = ?"), (email,))
+        if existing:
+            return jsonify({"error": f"Account already exists for {email}"}), 400
+
+        pw_hash = generate_password_hash(password)
+        now = datetime.now(timezone.utc).isoformat()
+
+        db_execute(_q("""
+            INSERT INTO users
+                (email, password_hash, first_name, last_name,
+                 subscription_status, plan_key, created_at,
+                 trial_ends_at, has_had_trial)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)
+        """), (email, pw_hash, first_name, last_name,
+               status, plan_key, now, trial_end))
+
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @auth_bp.route("/admin/users/delete", methods=["POST"])
 def users_delete():
     if session.get("user_email") != ADMIN_EMAIL:
