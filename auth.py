@@ -1084,7 +1084,7 @@ def users_create():
         if existing:
             return jsonify({"error": f"Account already exists for {email}"}), 400
 
-        pw_hash = generate_password_hash(password)
+        pw_hash = hash_password(password)
         now = datetime.now(timezone.utc).isoformat()
 
         db_execute(_q("""
