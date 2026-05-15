@@ -3362,6 +3362,20 @@ def ptt172(filename=None):  # noqa: C901
     for pg in notes_reader.pages:
         writer.add_page(pg)
 
+    # ---- Lock form fields (read-only permissions) ----
+    # Encrypt with empty user password and restrict permissions to
+    # printing + reading only. Prevents accidental editing in Acrobat.
+    # Note: permissions are enforced by compliant viewers (Acrobat, etc.)
+    try:
+        writer.encrypt(
+            user_password="",
+            owner_password=None,
+            use_128bit=True,
+            permissions_flag=4,  # print only (no modify, no copy)
+        )
+    except Exception:
+        pass  # best-effort — non-critical
+
     # ---- Produce final PDF bytes ----
     buf = _io.BytesIO()
     writer.write(buf)
