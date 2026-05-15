@@ -3362,15 +3362,6 @@ def ptt172(filename=None):  # noqa: C901
     for pg in notes_reader.pages:
         writer.add_page(pg)
 
-    # ---- Flatten form fields (make PDF non-editable) ----
-    # Remove /AcroForm from the document root so all filled fields
-    # become static text and cannot be edited by the recipient.
-    try:
-        if "/AcroForm" in writer._root_object:
-            del writer._root_object["/AcroForm"]
-    except Exception:
-        pass  # best-effort — non-critical
-
     # ---- Produce final PDF bytes ----
     buf = _io.BytesIO()
     writer.write(buf)
