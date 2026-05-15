@@ -3363,11 +3363,9 @@ def ptt172(filename=None):  # noqa: C901
         writer.add_page(pg)
 
     # ---- Flatten form fields (make PDF non-editable) ----
-    # Remove Widget annotations (form fields) from all pages, then remove
-    # the /AcroForm root entry. Widget annotations ARE the interactive fields;
-    # removing them leaves the visual appearance intact but non-editable.
+    # Remove /AcroForm from the document root so all filled fields
+    # become static text and cannot be edited by the recipient.
     try:
-        writer.remove_annotations("/Widget")
         if "/AcroForm" in writer._root_object:
             del writer._root_object["/AcroForm"]
     except Exception:
