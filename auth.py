@@ -254,19 +254,22 @@ def check_password(stored: str, provided: str) -> bool:
 # ── Access check ──────────────────────────────────────────────────────────────
 def user_has_access(user) -> bool:
     status = user["subscription_status"]
-    if status in ("active", "trialing"):
+    if status == "active":
         return True
-    if status == "trial":  # legacy no-card trial
+    if status in ("trialing", "trial"):
         try:
             val = user["trial_ends_at"]
             if val is None:
-                return False
+                # Stripe-managed trial with no local end date — allow access
+                # (Stripe handles expiry via webhook)
+                return True
             trial_end = val if not isinstance(val, str) else datetime.fromisoformat(val)
             if trial_end.tzinfo is None:
                 trial_end = trial_end.replace(tzinfo=timezone.utc)
             return datetime.now(timezone.utc) < trial_end
         except Exception:
-            return False
+            # If date can't be parsed, don't lock out Stripe-managed users
+            return True
     return False
 
 def days_left_in_trial(user) -> int:
