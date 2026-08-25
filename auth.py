@@ -86,6 +86,15 @@ def init_db():
                 active          BOOLEAN DEFAULT TRUE
             )
         """
+        login_log_sql = """
+            CREATE TABLE IF NOT EXISTS login_log (
+                id          SERIAL PRIMARY KEY,
+                email       TEXT NOT NULL,
+                ip_address  TEXT,
+                user_agent  TEXT,
+                login_at    TEXT NOT NULL
+            )
+        """
         conn = get_db()
         try:
             cur = conn.cursor()
@@ -125,6 +134,12 @@ def init_db():
                     ('plan_12month',  '12-Month', '$16.95', '', 'month', 12, 4, TRUE)
                 ON CONFLICT (key) DO NOTHING
             """)
+            conn.commit()
+        except Exception:
+            conn.rollback()
+        try:
+            cur = conn.cursor()
+            cur.execute(login_log_sql)
             conn.commit()
         except Exception:
             conn.rollback()
@@ -197,6 +212,15 @@ def init_db():
                 "INSERT OR IGNORE INTO subscription_plans (key, label, display_price, stripe_price_id, billing_interval, interval_count, sort_order, active) VALUES (?,?,?,?,?,?,?,?)",
                 row,
             )
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS login_log (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                email       TEXT NOT NULL,
+                ip_address  TEXT,
+                user_agent  TEXT,
+                login_at    TEXT NOT NULL
+            )
+        """)
         conn.commit()
         conn.close()
 
@@ -346,6 +370,15 @@ def login():
         session["user_id"]       = user["id"]
         session["user_email"]    = user["email"]
         session["session_token"] = token
+        # Log the login
+        try:
+            ip  = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+            ua  = request.headers.get("User-Agent", "")[:300]
+            now = datetime.now(timezone.utc).isoformat()
+            db_execute(_q("INSERT INTO login_log (email, ip_address, user_agent, login_at) VALUES (?,?,?,?)"),
+                       (user["email"], ip, ua, now))
+        except Exception:
+            pass  # best-effort — don't block login
         # Set a long-lived cookie to remember the email for next login
         resp = make_response(redirect(url_for("index")))
         resp.set_cookie("remembered_email", email,
@@ -1064,6 +1097,30 @@ def users_list():
         " FROM users ORDER BY created_at DESC"
     )
     return jsonify(users)
+
+@auth_bp.route("/admin/login-activity")
+def login_activity():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return redirect(url_for("auth.login"))
+    return render_template("login_activity.html")
+
+
+@auth_bp.route("/admin/login-activity/data")
+def login_activity_data():
+    if session.get("user_email") != ADMIN_EMAIL:
+        return jsonify({"error": "unauthorized"}), 403
+    rows = db_fetchall("""
+        SELECT email,
+               COUNT(*) AS total_logins,
+               COUNT(DISTINCT ip_address) AS distinct_ips,
+               MAX(login_at) AS last_login,
+               MIN(login_at) AS first_login
+        FROM login_log
+        GROUP BY email
+        ORDER BY total_logins DESC
+    """)
+    return jsonify(rows)
+
 
 @auth_bp.route("/admin/users/create", methods=["POST"])
 def users_create():

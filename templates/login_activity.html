@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Activity — VT Property Sales Admin</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f4f6f9; color: #333; }
+  .topbar { background: #1a3a5c; color: #fff; padding: 12px 24px; display: flex; align-items: center; gap: 24px; }
+  .topbar a { color: #fff; text-decoration: none; font-size: 13px; opacity: 0.85; }
+  .topbar a:hover { opacity: 1; }
+  .topbar .title { font-weight: 700; font-size: 15px; margin-right: auto; }
+  .container { max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+  h2 { font-size: 20px; color: #1a3a5c; margin-bottom: 20px; }
+  .summary { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat-card { background: #fff; border-radius: 8px; padding: 16px 22px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); min-width: 150px; }
+  .stat-card .label { font-size: 11px; color: #888; text-transform: uppercase; font-weight: 600; }
+  .stat-card .value { font-size: 28px; font-weight: 700; color: #1a3a5c; margin-top: 4px; }
+  .table-wrap { background: #fff; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #1a3a5c; color: #fff; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; }
+  td { padding: 9px 14px; border-bottom: 1px solid #eee; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f9fc; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: #e8f0fe; color: #1a3a5c; }
+  .empty { text-align: center; color: #aaa; padding: 40px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="title">VT Property Sales — Login Activity</span>
+  <a href="/map">← Back to Map</a>
+  <a href="/admin/users">Users</a>
+  <a href="/admin/geocoding">Geocoding</a>
+  <a href="/logout">Sign Out</a>
+</div>
+<div class="container">
+  <h2>Login Activity</h2>
+
+  <div class="summary" id="summary">
+    <div class="stat-card"><div class="label">Total Logins</div><div class="value" id="statTotal">—</div></div>
+    <div class="stat-card"><div class="label">Unique Accounts</div><div class="value" id="statAccounts">—</div></div>
+    <div class="stat-card"><div class="label">Unique IPs</div><div class="value" id="statIPs">—</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Total Logins</th>
+          <th>Distinct IPs</th>
+          <th>First Login</th>
+          <th>Last Login</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="5" class="empty">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function fmt(iso) {
+  if (!iso) return '—';
+  try {
+    var d = new Date(iso);
+    return d.toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric',
+                                       hour:'numeric', minute:'2-digit', hour12:true });
+  } catch(e) { return iso; }
+}
+
+fetch('/admin/login-activity/data')
+  .then(function(r) { return r.json(); })
+  .then(function(rows) {
+    var tbody = document.getElementById('tableBody');
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty">No login activity recorded yet.</td></tr>';
+      document.getElementById('statTotal').textContent = '0';
+      document.getElementById('statAccounts').textContent = '0';
+      document.getElementById('statIPs').textContent = '0';
+      return;
+    }
+
+    var totalLogins = rows.reduce(function(s, r) { return s + (r.total_logins || 0); }, 0);
+    var totalIPs    = rows.reduce(function(s, r) { return s + (r.distinct_ips || 0); }, 0);
+    document.getElementById('statTotal').textContent    = totalLogins;
+    document.getElementById('statAccounts').textContent = rows.length;
+    document.getElementById('statIPs').textContent      = totalIPs;
+
+    tbody.innerHTML = rows.map(function(r) {
+      return '<tr>' +
+        '<td>' + (r.email || '') + '</td>' +
+        '<td><span class="badge">' + (r.total_logins || 0) + '</span></td>' +
+        '<td>' + (r.distinct_ips || 0) + '</td>' +
+        '<td>' + fmt(r.first_login) + '</td>' +
+        '<td>' + fmt(r.last_login) + '</td>' +
+        '</tr>';
+    }).join('');
+  })
+  .catch(function() {
+    document.getElementById('tableBody').innerHTML =
+      '<tr><td colspan="5" class="empty">Error loading data.</td></tr>';
+  });
+</script>
+</body>
+</html>
